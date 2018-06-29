@@ -58,7 +58,7 @@ class GithubArchiveUpdater():
         except IndexError:
             raise ValueError('Url format is not supported.')
 
-    def get_latest_version(self):
+    def _get_latest_version(self):
         """Checks upstream and returns the latest version name we found."""
 
         url = 'https://api.github.com/repos/{}/{}/releases/latest'.format(
@@ -67,7 +67,7 @@ class GithubArchiveUpdater():
             self.data = json.loads(request.read().decode())
         return self.data[self.VERSION_FIELD]
 
-    def get_current_version(self):
+    def _get_current_version(self):
         """Returns the latest version name recorded in METADATA."""
         return self.metadata.third_party.version
 
@@ -80,10 +80,21 @@ class GithubArchiveUpdater():
                 metadata_url.value = url
         fileutils.write_metadata(path, updated_metadata)
 
+    def check(self):
+        """Checks update for package.
+
+        Returns True if a new version is available.
+        """
+        latest = self._get_latest_version()
+        current = self._get_current_version()
+        print('Current version: {}. Latest version: {}'.format(
+            current, latest), end='')
+        return current != latest
+
     def update(self):
         """Updates the package.
 
-        Has to call get_latest_version() before this function.
+        Has to call check() before this function.
         """
 
         supported_assets = [
