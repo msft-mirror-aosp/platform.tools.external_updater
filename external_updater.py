@@ -20,15 +20,17 @@ updater.sh update kotlinc
 
 import argparse
 import os
+import subprocess
 
 from google.protobuf import text_format    # pylint: disable=import-error
 
 import fileutils
+from git_updater import GitUpdater
 from github_archive_updater import GithubArchiveUpdater
 import updater_utils
 
 
-UPDATERS = [GithubArchiveUpdater]
+UPDATERS = [GithubArchiveUpdater, GitUpdater]
 
 
 def color_string(string, color):
@@ -82,21 +84,28 @@ def check_update(proj_path):
         end='')
     updater = build_updater(proj_path)
     if updater is None:
-        return
+        return (None, None)
     try:
-        latest = updater.get_latest_version()
-        current = updater.get_current_version()
-    except IOError as e:
-        print('{} {}.'.format(color_string('Failed to check latest version.',
-                                           'FAILED'),
-                              e))
-        return
-
-    if current != latest:
-        print('{} Current version: {}. Latest version: {}.'. format(
-            color_string('New version found.', 'SUCCESS'), current, latest))
-    else:
-        print('No new version. Current version: {}.'.format(latest))
+        new_version = updater.check()
+        if new_version:
+            print(color_string(' New version found.', 'SUCCESS'))
+        else:
+            print(' No new version.')
+        return (updater, new_version)
+    except IOError as err:
+        print('{} {}.'.format(color_string('Failed.', 'FAILED'),
+                              err))
+        return (None, None)
+    except subprocess.CalledProcessError as err:
+        print(
+            '{} {}\nstdout: {}\nstderr: {}.'.format(
+                color_string(
+                    'Failed.',
+                    'FAILED'),
+                err,
+                err.stdout,
+                err.stderr))
+        return (None, None)
 
 
 def check(args):
@@ -108,32 +117,11 @@ def check(args):
 def update(args):
     """Handler for update command."""
 
-    updater = build_updater(args.path)
+    updater, new_version = check_update(args.path)
     if updater is None:
         return
-    try:
-        latest = updater.get_latest_version()
-        current = updater.get_current_version()
-    except IOError as e:
-        print('{} {}.'.format(
-            color_string('Failed to check latest version.',
-                         'FAILED'),
-            e))
+    if not new_version and not args.force:
         return
-
-    if current == latest and not args.force:
-        print(
-            '{} for {}. Current version {} is latest. '
-            'Use --force to update anyway.'.format(
-                color_string(
-                    'Nothing to update',
-                    'FAILED'),
-                args.path,
-                current))
-        return
-
-    print('{} from version {} to version {}.{}'.format(
-        color_string('Updating', 'SUCCESS'), args.path, current, latest))
 
     updater.update()
 
