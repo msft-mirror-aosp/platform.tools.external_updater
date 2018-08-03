@@ -15,36 +15,50 @@
 # limitations under the License.
 
 # This script is used by external_updater to replace a package. Don't
-# invoke directly
+# invoke directly.
 
-cd $1
+set -e
 
-# Copies all files we want to reserve.
-cp -a -n $2/Android.bp       $1/  2> /dev/null
-cp -a -n $2/Android.mk       $1/  2> /dev/null
-cp -a -n $2/LICENSE          $1/  2> /dev/null
-cp -a -n $2/NOTICE           $1/  2> /dev/null
-cp -a -n $2/MODULE_LICENSE_* $1/  2> /dev/null
-cp -a -n $2/METADATA         $1/  2> /dev/null
-cp -a -n $2/.git             $1/  2> /dev/null
-cp -a -n $2/.gitignore       $1/  2> /dev/null
-cp -a -n $2/patches          $1/  2> /dev/null
-cp -a -n $2/post_update.sh   $1/  2> /dev/null
+tmp_dir=$1
+external_dir=$2
 
-# Applies all patches
-for p in $1/patches/*.diff
+echo "Entering $tmp_dir..."
+cd $tmp_dir
+
+function CopyIfPresent() {
+  if [ -e $external_dir/$1 ]; then
+    cp -a -n $external_dir/$1 .
+  fi
+}
+
+echo "Copying preserved files..."
+CopyIfPresent "Android.bp"
+CopyIfPresent "Android.mk"
+CopyIfPresent "LICENSE"
+CopyIfPresent "NOTICE"
+cp -a -f -n $external_dir/MODULE_LICENSE_* .
+CopyIfPresent "METADATA"
+CopyIfPresent ".git"
+CopyIfPresent ".gitignore"
+CopyIfPresent "patches"
+CopyIfPresent "post_update.sh"
+
+echo "Applying patches..."
+for p in $tmp_dir/patches/*.diff
 do
   [ -e "$p" ] || continue
-  echo Applying $p
-  patch -p1 -d $1 < $p;
+  echo "Applying $p..."
+  patch -p1 -d $tmp_dir < $p;
 done
 
-if [ -f $1/post_update.sh ]
+if [ -f $tmp_dir/post_update.sh ]
 then
-  echo Running post update script
-  $1/post_update.sh $1 $2
+  echo "Running post update script"
+  $tmp_dir/post_update.sh $tmp_dir $external_dir
 fi
 
-# Swap old and new.
-rm -rf $2
-mv $1 $2
+echo "Swapping old and new..."
+rm -rf $external_dir
+mv $tmp_dir $external_dir
+
+exit 0
