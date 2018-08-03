@@ -128,7 +128,7 @@ def update(args):
 
 def checkall(args):
     """Handler for checkall command."""
-    for root, _dirs, files in os.walk(args.path):
+    for root, _dirs, files in sorted(os.walk(args.path)):
         if fileutils.METADATA_FILENAME in files:
             check_update(root)
 
