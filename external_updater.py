@@ -36,8 +36,9 @@ UPDATERS = [GithubArchiveUpdater, GitUpdater]
 def color_string(string, color):
     """Changes the color of a string when print to terminal."""
     colors = {
-        'SUCCESS': '\x1b[92m',
-        'FAILED': '\x1b[91m',
+        'FRESH': '\x1b[32m',
+        'STALE': '\x1b[31;1m',
+        'ERROR': '\x1b[31m',
     }
     end_color = '\033[0m'
     return colors[color] + string + end_color
@@ -59,14 +60,14 @@ def build_updater(proj_path):
     try:
         metadata = fileutils.read_metadata(proj_path)
     except text_format.ParseError as err:
-        print('{} {}.'.format(color_string('Invalid metadata file:', 'FAILED'),
+        print('{} {}.'.format(color_string('Invalid metadata file:', 'ERROR'),
                               err))
         return None
 
     try:
         updater = updater_utils.create_updater(metadata, proj_path, UPDATERS)
     except ValueError:
-        print(color_string('No supported URL.', 'FAILED'))
+        print(color_string('No supported URL.', 'ERROR'))
         return None
     return updater
 
@@ -79,8 +80,7 @@ def check_update(proj_path):
     """
 
     print(
-        '{} {}. '.format(color_string('Checking', 'SUCCESS'),
-                         fileutils.get_relative_project_path(proj_path)),
+        'Checking {}. '.format(fileutils.get_relative_project_path(proj_path)),
         end='')
     updater = build_updater(proj_path)
     if updater is None:
@@ -88,12 +88,12 @@ def check_update(proj_path):
     try:
         new_version = updater.check()
         if new_version:
-            print(color_string(' New version found.', 'SUCCESS'))
+            print(color_string(' Out of date!', 'STALE'))
         else:
-            print(' No new version.')
+            print(color_string(' Up to date.', 'FRESH'))
         return (updater, new_version)
     except IOError as err:
-        print('{} {}.'.format(color_string('Failed.', 'FAILED'),
+        print('{} {}.'.format(color_string('Failed.', 'ERROR'),
                               err))
         return (None, None)
     except subprocess.CalledProcessError as err:
@@ -101,7 +101,7 @@ def check_update(proj_path):
             '{} {}\nstdout: {}\nstderr: {}.'.format(
                 color_string(
                     'Failed.',
-                    'FAILED'),
+                    'ERROR'),
                 err,
                 err.stdout,
                 err.stderr))
@@ -128,7 +128,7 @@ def update(args):
 
 def checkall(args):
     """Handler for checkall command."""
-    for root, _dirs, files in os.walk(args.path):
+    for root, _dirs, files in sorted(os.walk(args.path)):
         if fileutils.METADATA_FILENAME in files:
             check_update(root)
 
