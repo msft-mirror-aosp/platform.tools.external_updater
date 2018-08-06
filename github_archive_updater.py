@@ -118,5 +118,7 @@ class GithubArchiveUpdater():
             self._write_metadata(latest_url, package_dir)
             updater_utils.replace_package(package_dir, self.proj_path)
         finally:
-            shutil.rmtree(temporary_dir, ignore_errors=True)
+            # Don't remove the temporary directory, or it'll be impossible
+            # to debug the failure...
+            # shutil.rmtree(temporary_dir, ignore_errors=True)
             urllib.request.urlcleanup()
