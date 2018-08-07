@@ -22,6 +22,7 @@ def _run(cmd, cwd):
     return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                           check=True, cwd=cwd)
 
+
 def fetch(proj_path, remote_names):
     """Runs git fetch.
 
@@ -30,6 +31,7 @@ def fetch(proj_path, remote_names):
         remote_names: Array of string to specify remote names.
     """
     _run(['git', 'fetch', '--multiple'] + remote_names, cwd=proj_path)
+
 
 def add_remote(proj_path, name, url):
     """Adds a git remote.
@@ -40,6 +42,7 @@ def add_remote(proj_path, name, url):
         url: Url of the new remote.
     """
     _run(['git', 'remote', 'add', name, url], cwd=proj_path)
+
 
 def list_remotes(proj_path):
     """Lists all Git remotes.
@@ -54,6 +57,7 @@ def list_remotes(proj_path):
     lines = out.stdout.decode('utf-8').splitlines()
     return dict([line.split()[0:2] for line in lines])
 
+
 def get_commits_ahead(proj_path, branch, base_branch):
     """Lists commits in `branch` but not `base_branch`."""
     out = _run(['git', 'rev-list', '--left-only',
@@ -61,10 +65,12 @@ def get_commits_ahead(proj_path, branch, base_branch):
                proj_path)
     return out.stdout.decode('utf-8').splitlines()
 
+
 def get_commit_time(proj_path, commit):
     """Gets commit time of one commit."""
     out = _run(['git', 'show', '-s', '--format=%ct', commit], cwd=proj_path)
     return datetime.datetime.fromtimestamp(int(out.stdout))
+
 
 def list_remote_branches(proj_path, remote_name):
     """Lists all branches for a remote."""
