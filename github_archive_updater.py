@@ -16,7 +16,6 @@
 
 import json
 import re
-import shutil
 import urllib.request
 
 import archive_utils
@@ -27,6 +26,39 @@ import updater_utils
 GITHUB_URL_PATTERN = (r'^https:\/\/github.com\/([-\w]+)\/([-\w]+)\/' +
                       r'(releases\/download\/|archive\/)')
 GITHUB_URL_RE = re.compile(GITHUB_URL_PATTERN)
+
+
+def _edit_distance(str1, str2):
+    prev = list(range(0, len(str2) + 1))
+    for i, chr1 in enumerate(str1):
+        cur = [i + 1]
+        for j, chr2 in enumerate(str2):
+            if chr1 == chr2:
+                cur.append(prev[j])
+            else:
+                cur.append(min(prev[j + 1], prev[j], cur[j]) + 1)
+        prev = cur
+    return prev[len(str2)]
+
+
+def choose_best_url(urls, previous_url):
+    """Returns the best url to download from a list of candidate urls.
+
+    This function calculates similarity between previous url and each of new
+    urls. And returns the one best matches previous url.
+
+    Similarity is measured by editing distance.
+
+    Args:
+        urls: Array of candidate urls.
+        previous_url: String of the url used previously.
+
+    Returns:
+        One url from `urls`.
+    """
+    return min(urls, default=None,
+               key=lambda url: _edit_distance(
+                   url, previous_url))
 
 
 class GithubArchiveUpdater():
@@ -98,18 +130,18 @@ class GithubArchiveUpdater():
         """
 
         supported_assets = [
-            a for a in self.data['assets']
+            a['browser_download_url'] for a in self.data['assets']
             if archive_utils.is_supported_archive(a['browser_download_url'])]
 
-        # Finds the minimum sized archive to download.
-        minimum_asset = min(
-            supported_assets, key=lambda asset: asset['size'], default=None)
-        if minimum_asset is not None:
-            latest_url = minimum_asset.get('browser_download_url')
-        else:
-            # Guess the tarball url for source code.
-            latest_url = 'https://github.com/{}/{}/archive/{}.tar.gz'.format(
-                self.owner, self.repo, self.data.get('tag_name'))
+        # Adds source code urls.
+        supported_assets.append(
+            'https://github.com/{}/{}/archive/{}.tar.gz'.format(
+                self.owner, self.repo, self.data.get('tag_name')))
+        supported_assets.append(
+            'https://github.com/{}/{}/archive/{}.zip'.format(
+                self.owner, self.repo, self.data.get('tag_name')))
+
+        latest_url = choose_best_url(supported_assets, self.old_url.value)
 
         temporary_dir = None
         try:
@@ -118,5 +150,7 @@ class GithubArchiveUpdater():
             self._write_metadata(latest_url, package_dir)
             updater_utils.replace_package(package_dir, self.proj_path)
         finally:
-            shutil.rmtree(temporary_dir, ignore_errors=True)
+            # Don't remove the temporary directory, or it'll be impossible
+            # to debug the failure...
+            # shutil.rmtree(temporary_dir, ignore_errors=True)
             urllib.request.urlcleanup()
