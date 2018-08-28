@@ -34,6 +34,7 @@ function CopyIfPresent() {
 echo "Copying preserved files..."
 CopyIfPresent "Android.bp"
 CopyIfPresent "Android.mk"
+CopyIfPresent "CleanSpec.mk"
 CopyIfPresent "LICENSE"
 CopyIfPresent "NOTICE"
 cp -a -f -n $external_dir/MODULE_LICENSE_* .
