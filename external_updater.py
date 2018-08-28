@@ -128,8 +128,11 @@ def update(args):
 
 def checkall(args):
     """Handler for checkall command."""
-    for root, _dirs, files in sorted(os.walk(args.path)):
+    for root, dirs, files in os.walk(args.path):
+        dirs.sort(key=lambda d: d.lower())
         if fileutils.METADATA_FILENAME in files:
+            # Skip sub directories.
+            dirs = []
             check_update(root)
 
 
