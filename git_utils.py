@@ -60,7 +60,7 @@ def list_remotes(proj_path):
 
 def get_commits_ahead(proj_path, branch, base_branch):
     """Lists commits in `branch` but not `base_branch`."""
-    out = _run(['git', 'rev-list', '--left-only',
+    out = _run(['git', 'rev-list', '--left-only', '--ancestry-path',
                 '{}...{}'.format(branch, base_branch)],
                proj_path)
     return out.stdout.decode('utf-8').splitlines()
