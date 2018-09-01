@@ -19,6 +19,7 @@ import datetime
 import fileutils
 import git_utils
 import metadata_pb2    # pylint: disable=import-error
+import updater_utils
 
 
 class GitUpdater():
@@ -32,7 +33,8 @@ class GitUpdater():
         self.upstream_url = url
         self.upstream_remote_name = None
         self.android_remote_name = None
-        self.latest_commit = None
+        self.new_version = None
+        self.merge_from = None
 
     def _setup_remote(self):
         remotes = git_utils.list_remotes(self.proj_path)
@@ -56,6 +58,25 @@ class GitUpdater():
         """Checks upstream and returns whether a new version is available."""
 
         self._setup_remote()
+        if git_utils.is_commit(self.metadata.third_party.version):
+            # Update to remote head.
+            return self._check_head()
+
+        # Update to latest version tag.
+        return self._check_tag()
+
+    def _check_tag(self):
+        tags = git_utils.list_remote_tags(self.proj_path,
+                                          self.upstream_remote_name)
+        current_ver = self.metadata.third_party.version
+        self.new_version = updater_utils.get_latest_version(
+            current_ver, tags)
+        self.merge_from = self.new_version
+        print('Current version: {}. Latest version: {}'.format(
+            current_ver, self.new_version), end='')
+        return self.new_version != current_ver
+
+    def _check_head(self):
         commits = git_utils.get_commits_ahead(
             self.proj_path, self.upstream_remote_name + '/master',
             self.android_remote_name + '/master')
@@ -63,7 +84,19 @@ class GitUpdater():
         if not commits:
             return False
 
-        self.latest_commit = commits[0]
+        self.new_version = commits[0]
+
+        # See whether we have a local upstream.
+        branches = git_utils.list_remote_branches(
+            self.proj_path, self.android_remote_name)
+        upstreams = [
+            branch for branch in branches if branch.startswith('upstream-')]
+        if upstreams:
+            self.merge_from = '{}/{}'.format(
+                self.android_remote_name, upstreams[0])
+        else:
+            self.merge_from = 'update_origin/master'
+
         commit_time = git_utils.get_commit_time(self.proj_path, commits[-1])
         time_behind = datetime.datetime.now() - commit_time
         print('{} commits ({} days) behind.'.format(
@@ -73,7 +106,7 @@ class GitUpdater():
     def _write_metadata(self, path):
         updated_metadata = metadata_pb2.MetaData()
         updated_metadata.CopyFrom(self.metadata)
-        updated_metadata.third_party.version = self.latest_commit
+        updated_metadata.third_party.version = self.new_version
         fileutils.write_metadata(path, updated_metadata)
 
     def update(self):
@@ -81,32 +114,19 @@ class GitUpdater():
 
         Has to call check() before this function.
         """
-        # See whether we have a local upstream.
-        branches = git_utils.list_remote_branches(
-            self.proj_path, self.android_remote_name)
-        upstreams = [
-            branch for branch in branches if branch.startswith('upstream-')]
-        if len(upstreams) == 1:
-            merge_branch = '{}/{}'.format(
-                self.android_remote_name, upstreams[0])
-        elif not upstreams:
-            merge_branch = 'update_origin/master'
-        else:
-            raise ValueError('Ambiguous upstream branch. ' + upstreams)
-
         upstream_branch = self.upstream_remote_name + '/master'
 
         commits = git_utils.get_commits_ahead(
-            self.proj_path, merge_branch, upstream_branch)
+            self.proj_path, self.merge_from, upstream_branch)
         if commits:
-            print('Warning! {} is {} commits ahead of {}. {}'.format(
-                merge_branch, len(commits), upstream_branch, commits))
+            print('{} is {} commits ahead of {}. {}'.format(
+                self.merge_from, len(commits), upstream_branch, commits))
 
         commits = git_utils.get_commits_ahead(
-            self.proj_path, upstream_branch, merge_branch)
+            self.proj_path, upstream_branch, self.merge_from)
         if commits:
-            print('Warning! {} is {} commits behind of {}.'.format(
-                merge_branch, len(commits), upstream_branch))
+            print('{} is {} commits behind of {}.'.format(
+                self.merge_from, len(commits), upstream_branch))
 
         self._write_metadata(self.proj_path)
         print("""
@@ -115,4 +135,4 @@ This tool only updates METADATA. Run the following command to update:
 
 To check all local changes:
     git diff {merge_branch} HEAD
-""".format(merge_branch=merge_branch))
+""".format(merge_branch=self.merge_from))
