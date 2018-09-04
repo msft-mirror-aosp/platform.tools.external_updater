@@ -111,4 +111,5 @@ COMMIT_RE = re.compile(COMMIT_PATTERN)
 
 
 def is_commit(commit):
+    """Whether a string looks like a SHA1 hash."""
     return bool(COMMIT_RE.match(commit))
