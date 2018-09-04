@@ -14,6 +14,7 @@
 """Helper functions for updaters."""
 
 import os
+import re
 import subprocess
 import sys
 
@@ -55,3 +56,43 @@ def replace_package(source_dir, target_dir):
             sys.argv[0]),
         'update_package.sh')
     subprocess.check_call(['bash', script_path, source_dir, target_dir])
+
+
+VERSION_PATTERN = (r'^(?P<prefix>[^\d]*)' +
+                   r'(?P<version>\d+(\.\d+)*)' +
+                   r'(?P<suffix>.*)$')
+VERSION_RE = re.compile(VERSION_PATTERN)
+
+
+def parse_version(version):
+    match = VERSION_RE.match(version)
+    if match is None:
+        raise ValueError('Invalid version.')
+    try:
+        return match.group('prefix', 'version', 'suffix')
+    except IndexError:
+        raise ValueError('Invalid version.')
+
+
+def _match_and_get_version(prefix, suffix, version):
+    try:
+        version_prefix, version, version_suffix = parse_version(version)
+    except ValueError:
+        return []
+
+    if version_prefix != prefix or version_suffix != suffix:
+        return []
+
+    return [int(v) for v in version.split('.')]
+
+
+def get_latest_version(old_version, version_list):
+    old_prefix, _, old_suffix = parse_version(old_version)
+
+    latest = max(version_list + [old_version],
+                 key=lambda ver: _match_and_get_version(
+                     old_prefix, old_suffix, ver))
+    if not latest:
+        return None
+
+    return latest
