@@ -64,7 +64,7 @@ VERSION_PATTERN = (r'^(?P<prefix>[^\d]*)' +
 VERSION_RE = re.compile(VERSION_PATTERN)
 
 
-def parse_version(version):
+def _parse_version(version):
     match = VERSION_RE.match(version)
     if match is None:
         raise ValueError('Invalid version.')
@@ -76,7 +76,7 @@ def parse_version(version):
 
 def _match_and_get_version(prefix, suffix, version):
     try:
-        version_prefix, version, version_suffix = parse_version(version)
+        version_prefix, version, version_suffix = _parse_version(version)
     except ValueError:
         return []
 
@@ -86,13 +86,15 @@ def _match_and_get_version(prefix, suffix, version):
     return [int(v) for v in version.split('.')]
 
 
-def get_latest_version(old_version, version_list):
-    old_prefix, _, old_suffix = parse_version(old_version)
+def get_latest_version(current_version, version_list):
+    """Gets the latest version name from a list of versions.
 
-    latest = max(version_list + [old_version],
+    The new version must have the same prefix and suffix with old version.
+    If no matched version is newer, current version name will be returned.
+    """
+    prefix, _, suffix = _parse_version(current_version)
+
+    latest = max(version_list + [current_version],
                  key=lambda ver: _match_and_get_version(
-                     old_prefix, old_suffix, ver))
-    if not latest:
-        return None
-
+                     prefix, suffix, ver))
     return latest
