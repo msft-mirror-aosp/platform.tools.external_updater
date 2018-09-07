@@ -94,7 +94,10 @@ def get_latest_version(current_version, version_list):
     """
     prefix, _, suffix = _parse_version(current_version)
 
-    latest = max(version_list + [current_version],
+    latest = max(version_list,
                  key=lambda ver: _match_and_get_version(
-                     prefix, suffix, ver))
+                     prefix, suffix, ver),
+                 default=[])
+    if not latest:
+        raise ValueError('No matching version.')
     return latest
