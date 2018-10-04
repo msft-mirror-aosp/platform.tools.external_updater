@@ -92,7 +92,7 @@ def check_update(proj_path):
         else:
             print(color_string(' Up to date.', 'FRESH'))
         return (updater, new_version)
-    except IOError as err:
+    except (IOError, ValueError) as err:
         print('{} {}.'.format(color_string('Failed.', 'ERROR'),
                               err))
         return (None, None)
@@ -132,7 +132,7 @@ def checkall(args):
         dirs.sort(key=lambda d: d.lower())
         if fileutils.METADATA_FILENAME in files:
             # Skip sub directories.
-            dirs = []
+            dirs[:] = []
             check_update(root)
 
 
