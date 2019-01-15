@@ -14,6 +14,7 @@
 '''Helper functions to communicate with Git.'''
 
 import datetime
+import re
 import subprocess
 
 
@@ -60,7 +61,7 @@ def list_remotes(proj_path):
 
 def get_commits_ahead(proj_path, branch, base_branch):
     """Lists commits in `branch` but not `base_branch`."""
-    out = _run(['git', 'rev-list', '--left-only',
+    out = _run(['git', 'rev-list', '--left-only', '--ancestry-path',
                 '{}...{}'.format(branch, base_branch)],
                proj_path)
     return out.stdout.decode('utf-8').splitlines()
@@ -81,3 +82,34 @@ def list_remote_branches(proj_path, remote_name):
     remote_path_len = len(remote_path)
     return [line[remote_path_len:] for line in stripped
             if line.startswith(remote_path)]
+
+
+def _parse_remote_tag(line):
+    tag_prefix = 'refs/tags/'
+    tag_suffix = '^{}'
+    try:
+        line = line[line.index(tag_prefix):]
+    except ValueError:
+        return None
+    line = line[len(tag_prefix):]
+    if line.endswith(tag_suffix):
+        line = line[:-len(tag_suffix)]
+    return line
+
+
+def list_remote_tags(proj_path, remote_name):
+    """Lists all tags for a remote."""
+    out = _run(['git', "ls-remote", "--tags", remote_name],
+               cwd=proj_path)
+    lines = out.stdout.decode('utf-8').splitlines()
+    tags = [_parse_remote_tag(line) for line in lines]
+    return list(set(tags))
+
+
+COMMIT_PATTERN = r'^[a-f0-9]{40}$'
+COMMIT_RE = re.compile(COMMIT_PATTERN)
+
+
+def is_commit(commit):
+    """Whether a string looks like a SHA1 hash."""
+    return bool(COMMIT_RE.match(commit))

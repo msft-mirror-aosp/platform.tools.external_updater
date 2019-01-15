@@ -20,6 +20,7 @@ import urllib.request
 
 import archive_utils
 import fileutils
+import git_utils
 import metadata_pb2    # pylint: disable=import-error
 import updater_utils
 
@@ -76,7 +77,8 @@ class GithubArchiveUpdater():
         self.old_url = url
         self.owner = None
         self.repo = None
-        self.data = None
+        self.new_version = None
+        self.new_url = None
         self._parse_url(url)
 
     def _parse_url(self, url):
@@ -91,13 +93,38 @@ class GithubArchiveUpdater():
             raise ValueError('Url format is not supported.')
 
     def _get_latest_version(self):
-        """Checks upstream and returns the latest version name we found."""
+        """Checks upstream and gets the latest release tag."""
 
         url = 'https://api.github.com/repos/{}/{}/releases/latest'.format(
             self.owner, self.repo)
         with urllib.request.urlopen(url) as request:
-            self.data = json.loads(request.read().decode())
-        return self.data[self.VERSION_FIELD]
+            data = json.loads(request.read().decode())
+        self.new_version = data[self.VERSION_FIELD]
+
+        supported_assets = [
+            a['browser_download_url'] for a in data['assets']
+            if archive_utils.is_supported_archive(a['browser_download_url'])]
+
+        # Adds source code urls.
+        supported_assets.append(
+            'https://github.com/{}/{}/archive/{}.tar.gz'.format(
+                self.owner, self.repo, data.get('tag_name')))
+        supported_assets.append(
+            'https://github.com/{}/{}/archive/{}.zip'.format(
+                self.owner, self.repo, data.get('tag_name')))
+
+        self.new_url = choose_best_url(supported_assets, self.old_url.value)
+
+    def _get_latest_commit(self):
+        """Checks upstream and gets the latest commit to master."""
+
+        url = 'https://api.github.com/repos/{}/{}/commits/master'.format(
+            self.owner, self.repo)
+        with urllib.request.urlopen(url) as request:
+            data = json.loads(request.read().decode())
+        self.new_version = data['sha']
+        self.new_url = 'https://github.com/{}/{}/archive/{}.zip'.format(
+            self.owner, self.repo, self.new_version)
 
     def _get_current_version(self):
         """Returns the latest version name recorded in METADATA."""
@@ -106,7 +133,7 @@ class GithubArchiveUpdater():
     def _write_metadata(self, url, path):
         updated_metadata = metadata_pb2.MetaData()
         updated_metadata.CopyFrom(self.metadata)
-        updated_metadata.third_party.version = self.data[self.VERSION_FIELD]
+        updated_metadata.third_party.version = self.new_version
         for metadata_url in updated_metadata.third_party.url:
             if metadata_url == self.old_url:
                 metadata_url.value = url
@@ -117,37 +144,25 @@ class GithubArchiveUpdater():
 
         Returns True if a new version is available.
         """
-        latest = self._get_latest_version()
         current = self._get_current_version()
+        if git_utils.is_commit(current):
+            self._get_latest_commit()
+        else:
+            self._get_latest_version()
         print('Current version: {}. Latest version: {}'.format(
-            current, latest), end='')
-        return current != latest
+            current, self.new_version), end='')
+        return current != self.new_version
 
     def update(self):
         """Updates the package.
 
         Has to call check() before this function.
         """
-
-        supported_assets = [
-            a['browser_download_url'] for a in self.data['assets']
-            if archive_utils.is_supported_archive(a['browser_download_url'])]
-
-        # Adds source code urls.
-        supported_assets.append(
-            'https://github.com/{}/{}/archive/{}.tar.gz'.format(
-                self.owner, self.repo, self.data.get('tag_name')))
-        supported_assets.append(
-            'https://github.com/{}/{}/archive/{}.zip'.format(
-                self.owner, self.repo, self.data.get('tag_name')))
-
-        latest_url = choose_best_url(supported_assets, self.old_url.value)
-
         temporary_dir = None
         try:
-            temporary_dir = archive_utils.download_and_extract(latest_url)
+            temporary_dir = archive_utils.download_and_extract(self.new_url)
             package_dir = archive_utils.find_archive_root(temporary_dir)
-            self._write_metadata(latest_url, package_dir)
+            self._write_metadata(self.new_url, package_dir)
             updater_utils.replace_package(package_dir, self.proj_path)
         finally:
             # Don't remove the temporary directory, or it'll be impossible
