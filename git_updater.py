@@ -129,10 +129,4 @@ class GitUpdater():
                 self.merge_from, len(commits), upstream_branch))
 
         self._write_metadata(self.proj_path)
-        print("""
-This tool only updates METADATA. Run the following command to update:
-    git merge {merge_branch}
-
-To check all local changes:
-    git diff {merge_branch} HEAD
-""".format(merge_branch=self.merge_from))
+        git_utils.merge(self.proj_path, self.merge_from)

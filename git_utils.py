@@ -113,3 +113,8 @@ COMMIT_RE = re.compile(COMMIT_PATTERN)
 def is_commit(commit):
     """Whether a string looks like a SHA1 hash."""
     return bool(COMMIT_RE.match(commit))
+
+
+def merge(proj_path, branch):
+    """Merges a branch."""
+    _run(['git', 'merge', branch], cwd=proj_path)
