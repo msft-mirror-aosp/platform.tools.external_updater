@@ -23,15 +23,24 @@ python_binary_host {
     ],
 }
 
+python_binary_host {
+    name: "external_updater_notifier",
+    main: "notifier.py",
+    srcs: [
+        "notifier.py",
+    ],
+}
+
 python_library_host {
     name: "external_updater_lib",
     srcs: [
-        "*.py",
+        "archive_utils.py",
+        "fileutils.py",
+        "git_updater.py",
+        "git_utils.py",
+        "github_archive_updater.py",
         "metadata.proto",
-    ],
-    exclude_srcs: [
-        "*_test.py",
-        "external_updater.py",
+        "updater_utils.py",
     ],
     libs: [
         "python-symbol",

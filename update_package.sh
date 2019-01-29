@@ -43,6 +43,7 @@ CopyIfPresent ".git"
 CopyIfPresent ".gitignore"
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
+CopyIfPresent "OWNERS"
 
 echo "Applying patches..."
 for p in $tmp_dir/patches/*.diff

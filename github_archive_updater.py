@@ -92,7 +92,7 @@ class GithubArchiveUpdater():
         except IndexError:
             raise ValueError('Url format is not supported.')
 
-    def _get_latest_version(self):
+    def _fetch_latest_version(self):
         """Checks upstream and gets the latest release tag."""
 
         url = 'https://api.github.com/repos/{}/{}/releases/latest'.format(
@@ -115,7 +115,7 @@ class GithubArchiveUpdater():
 
         self.new_url = choose_best_url(supported_assets, self.old_url.value)
 
-    def _get_latest_commit(self):
+    def _fetch_latest_commit(self):
         """Checks upstream and gets the latest commit to master."""
 
         url = 'https://api.github.com/repos/{}/{}/commits/master'.format(
@@ -126,9 +126,13 @@ class GithubArchiveUpdater():
         self.new_url = 'https://github.com/{}/{}/archive/{}.zip'.format(
             self.owner, self.repo, self.new_version)
 
-    def _get_current_version(self):
+    def get_current_version(self):
         """Returns the latest version name recorded in METADATA."""
         return self.metadata.third_party.version
+
+    def get_latest_version(self):
+        """Returns the latest version name in upstream."""
+        return self.new_version
 
     def _write_metadata(self, url, path):
         updated_metadata = metadata_pb2.MetaData()
@@ -144,14 +148,13 @@ class GithubArchiveUpdater():
 
         Returns True if a new version is available.
         """
-        current = self._get_current_version()
+        current = self.get_current_version()
         if git_utils.is_commit(current):
-            self._get_latest_commit()
+            self._fetch_latest_commit()
         else:
-            self._get_latest_version()
+            self._fetch_latest_version()
         print('Current version: {}. Latest version: {}'.format(
             current, self.new_version), end='')
-        return current != self.new_version
 
     def update(self):
         """Updates the package.

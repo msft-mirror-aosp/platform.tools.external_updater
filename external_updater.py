@@ -19,8 +19,10 @@ updater.sh update kotlinc
 """
 
 import argparse
+import json
 import os
 import subprocess
+import time
 
 from google.protobuf import text_format    # pylint: disable=import-error
 
@@ -72,6 +74,11 @@ def build_updater(proj_path):
     return updater
 
 
+def has_new_version(updater):
+    """Whether an updater found a new version."""
+    return updater.get_current_version() != updater.get_latest_version()
+
+
 def check_update(proj_path):
     """Checks updates for a project. Prints result on console.
 
@@ -84,56 +91,78 @@ def check_update(proj_path):
         end='')
     updater = build_updater(proj_path)
     if updater is None:
-        return (None, None)
+        return (None, 'Failed to create updater')
     try:
-        new_version = updater.check()
-        if new_version:
+        updater.check()
+        if has_new_version(updater):
             print(color_string(' Out of date!', 'STALE'))
         else:
             print(color_string(' Up to date.', 'FRESH'))
-        return (updater, new_version)
+        return (updater, None)
     except (IOError, ValueError) as err:
         print('{} {}.'.format(color_string('Failed.', 'ERROR'),
                               err))
-        return (None, None)
+        return (updater, str(err))
     except subprocess.CalledProcessError as err:
-        print(
-            '{} {}\nstdout: {}\nstderr: {}.'.format(
-                color_string(
-                    'Failed.',
-                    'ERROR'),
-                err,
-                err.stdout,
-                err.stderr))
-        return (None, None)
+        msg = 'stdout: {}\nstderr: {}.'.format(
+            err.stdout,
+            err.stderr)
+        print('{} {}.'.format(color_string('Failed.', 'ERROR'),
+                              msg))
+        return (updater, msg)
+
+
+def _process_update_result(path):
+    res = {}
+    updater, err = check_update(path)
+    if err is not None:
+        res['error'] = str(err)
+    else:
+        res['current'] = updater.get_current_version()
+        res['latest'] = updater.get_latest_version()
+    return res
+
+
+def _check_some(paths, delay):
+    results = {}
+    for path in paths:
+        results[path] = _process_update_result(path)
+        time.sleep(delay)
+    return results
+
+
+def _check_all(delay):
+    results = {}
+    for path, dirs, files in os.walk(args.path):
+        dirs.sort(key=lambda d: d.lower())
+        if fileutils.METADATA_FILENAME in files:
+            # Skip sub directories.
+            dirs[:] = []
+            results[path] = _process_update_result(path)
+        time.sleep(delay)
+    return results
 
 
 def check(args):
     """Handler for check command."""
+    if args.all:
+        results = _check_all(args.delay)
+    else:
+        results = _check_some(args.paths, args.delay)
 
-    check_update(args.path)
+    if args.json_output is not None:
+        with open(args.json_output, 'w') as f:
+            json.dump(results, f, sort_keys=True, indent=4)
 
 
 def update(args):
     """Handler for update command."""
 
-    updater, new_version = check_update(args.path)
+    updater, err = check_update(args.path)
     if updater is None:
         return
-    if not new_version and not args.force:
-        return
-
-    updater.update()
-
-
-def checkall(args):
-    """Handler for checkall command."""
-    for root, dirs, files in os.walk(args.path):
-        dirs.sort(key=lambda d: d.lower())
-        if fileutils.METADATA_FILENAME in files:
-            # Skip sub directories.
-            dirs[:] = []
-            check_update(root)
+    if has_new_version(updater) or args.force:
+        updater.update()
 
 
 def parse_args():
@@ -148,19 +177,19 @@ def parse_args():
     check_parser = subparsers.add_parser(
         'check', help='Check update for one project.')
     check_parser.add_argument(
-        'path',
-        help='Path of the project. '
+        'paths', nargs='*',
+        help='Paths of the project. '
         'Relative paths will be resolved from external/.')
+    check_parser.add_argument(
+        '--json_output',
+        help='Path of a json file to write result to.')
+    check_parser.add_argument(
+        '--all',
+        help='If set, check updates for all supported projects.')
+    check_parser.add_argument(
+        '--delay', default=0, type=int,
+        help='Time in seconds to wait between checking two projects.')
     check_parser.set_defaults(func=check)
-
-    # Creates parser for checkall command.
-    checkall_parser = subparsers.add_parser(
-        'checkall', help='Check update for all projects.')
-    checkall_parser.add_argument(
-        '--path',
-        default=fileutils.EXTERNAL_PATH,
-        help='Starting path for all projects. Default to external/.')
-    checkall_parser.set_defaults(func=checkall)
 
     # Creates parser for update command.
     update_parser = subparsers.add_parser('update', help='Update one project.')
