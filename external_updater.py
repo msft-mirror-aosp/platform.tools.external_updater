@@ -26,9 +26,10 @@ import time
 
 from google.protobuf import text_format    # pylint: disable=import-error
 
-import fileutils
 from git_updater import GitUpdater
 from github_archive_updater import GithubArchiveUpdater
+import fileutils
+import git_utils
 import updater_utils
 
 
@@ -79,6 +80,11 @@ def has_new_version(updater):
     return updater.get_current_version() != updater.get_latest_version()
 
 
+def _message_for_calledprocesserror(error):
+    return '\n'.join([error.stdout.decode('utf-8'),
+                      error.stderr.decode('utf-8')])
+
+
 def check_update(proj_path):
     """Checks updates for a project. Prints result on console.
 
@@ -104,11 +110,8 @@ def check_update(proj_path):
                               err))
         return (updater, str(err))
     except subprocess.CalledProcessError as err:
-        msg = 'stdout: {}\nstderr: {}.'.format(
-            err.stdout,
-            err.stderr)
-        print('{} {}.'.format(color_string('Failed.', 'ERROR'),
-                              msg))
+        msg = _message_for_calledprocesserror(err)
+        print('{}\n{}'.format(msg, color_string('Failed.', 'ERROR')))
         return (updater, msg)
 
 
@@ -157,12 +160,42 @@ def check(args):
 
 def update(args):
     """Handler for update command."""
+    try:
+        _do_update(args)
+    except subprocess.CalledProcessError as err:
+        msg = _message_for_calledprocesserror(err)
+        print('{}\n{}'.format(msg, color_string('Failed to upgrade.', 'ERROR')))
 
+
+TMP_BRANCH_NAME = 'tmp_auto_upgrade'
+
+
+def _do_update(args):
     updater, err = check_update(args.path)
     if updater is None:
         return
-    if has_new_version(updater) or args.force:
-        updater.update()
+    if not has_new_version(updater) and not args.force:
+        return
+
+    full_path = fileutils.get_absolute_project_path(args.path)
+    if args.branch_and_commit:
+        git_utils.checkout(full_path, args.remote_name + '/master')
+        try:
+            git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
+        except subprocess.CalledProcessError as err:
+            # Still continue if the branch doesn't exist.
+            pass
+        git_utils.start_branch(full_path, TMP_BRANCH_NAME)
+
+    updater.update()
+
+    if args.branch_and_commit:
+        msg = 'Upgrade {} to {}\n\nTest: None'.format(
+            args.path, updater.get_latest_version())
+        git_utils.commit(full_path, msg)
+
+    if args.push_change:
+        git_utils.push(full_path, args.remote_name)
 
 
 def parse_args():
@@ -201,6 +234,15 @@ def parse_args():
         '--force',
         help='Run update even if there\'s no new version.',
         action='store_true')
+    update_parser.add_argument(
+        '--branch_and_commit', action='store_true',
+        help='Starts a new branch and commit changes.')
+    update_parser.add_argument(
+        '--push_change', action='store_true',
+        help='Pushes change to Gerrit.')
+    update_parser.add_argument(
+        '--remote_name', default='aosp', required=False,
+        help='Upstream remote name.')
     update_parser.set_defaults(func=update)
 
     return parser.parse_args()
