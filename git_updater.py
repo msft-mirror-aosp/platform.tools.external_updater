@@ -135,7 +135,8 @@ class GitUpdater():
             print('{} is {} commits behind of {}.'.format(
                 self.merge_from, len(commits), upstream_branch))
 
-        self._write_metadata(self.proj_path)
         print("Running `git merge {merge_branch}`..."
               .format(merge_branch=self.merge_from))
         git_utils.merge(self.proj_path, self.merge_from)
+        self._write_metadata(self.proj_path)
+        git_utils.add_file(self.proj_path, 'METADATA')
