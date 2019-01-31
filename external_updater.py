@@ -164,7 +164,12 @@ def update(args):
         _do_update(args)
     except subprocess.CalledProcessError as err:
         msg = _message_for_calledprocesserror(err)
-        print('{}\n{}'.format(msg, color_string('Failed to upgrade.', 'ERROR')))
+        print(
+            '{}\n{}'.format(
+                msg,
+                color_string(
+                    'Failed to upgrade.',
+                    'ERROR')))
 
 
 TMP_BRANCH_NAME = 'tmp_auto_upgrade'
@@ -192,10 +197,14 @@ def _do_update(args):
     if args.branch_and_commit:
         msg = 'Upgrade {} to {}\n\nTest: None'.format(
             args.path, updater.get_latest_version())
+        git_utils.add_file(full_path, '*')
         git_utils.commit(full_path, msg)
 
     if args.push_change:
         git_utils.push(full_path, args.remote_name)
+
+    if args.branch_and_commit:
+        git_utils.checkout(full_path, 'aosp/master')
 
 
 def parse_args():
