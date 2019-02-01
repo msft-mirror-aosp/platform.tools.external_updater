@@ -142,7 +142,7 @@ def _check_all(delay):
             # Skip sub directories.
             dirs[:] = []
             results[path] = _process_update_result(path)
-        time.sleep(delay)
+            time.sleep(delay)
     return results
 
 
