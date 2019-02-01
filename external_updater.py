@@ -136,7 +136,7 @@ def _check_some(paths, delay):
 
 def _check_all(delay):
     results = {}
-    for path, dirs, files in os.walk(args.path):
+    for path, dirs, files in os.walk(fileutils.EXTERNAL_PATH):
         dirs.sort(key=lambda d: d.lower())
         if fileutils.METADATA_FILENAME in files:
             # Skip sub directories.
@@ -226,7 +226,7 @@ def parse_args():
         '--json_output',
         help='Path of a json file to write result to.')
     check_parser.add_argument(
-        '--all',
+        '--all', action='store_true',
         help='If set, check updates for all supported projects.')
     check_parser.add_argument(
         '--delay', default=0, type=int,
