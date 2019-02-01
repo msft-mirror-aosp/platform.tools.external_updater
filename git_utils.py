@@ -18,9 +18,10 @@ import re
 import subprocess
 
 
-def _run(cmd, cwd):
+def _run(cmd, cwd, redirect=True):
     """Runs a command with stdout and stderr redirected."""
-    return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    out = subprocess.PIPE if redirect else None
+    return subprocess.run(cmd, stdout=out, stderr=out,
                           check=True, cwd=cwd)
 
 
@@ -113,3 +114,45 @@ COMMIT_RE = re.compile(COMMIT_PATTERN)
 def is_commit(commit):
     """Whether a string looks like a SHA1 hash."""
     return bool(COMMIT_RE.match(commit))
+
+
+def merge(proj_path, branch):
+    """Merges a branch."""
+    try:
+        out = _run(['git', 'merge', branch, '--no-commit'],
+                   cwd=proj_path)
+    except subprocess.CalledProcessError:
+        # Merge failed. Error is already written to console.
+        subprocess.run(['git', 'merge', '--abort'], cwd=proj_path)
+        raise
+
+
+def add_file(proj_path, file_name):
+    """Stages a file."""
+    _run(['git', 'add', file_name], cwd=proj_path)
+
+
+def delete_branch(proj_path, branch_name):
+    """Force delete a branch."""
+    _run(['git', 'branch', '-D', branch_name], cwd=proj_path)
+
+
+def start_branch(proj_path, branch_name):
+    """Starts a new repo branch."""
+    _run(['repo', 'start', branch_name], cwd=proj_path)
+
+
+def commit(proj_path, message):
+    """Commits changes."""
+    _run(['git', 'commit', '-m', message], cwd=proj_path)
+
+
+def checkout(proj_path, branch_name):
+    """Checkouts a branch."""
+    _run(['git', 'checkout', branch_name], cwd=proj_path)
+
+
+def push(proj_path, remote_name):
+    """Pushes change to remote."""
+    return _run(['git', 'push', remote_name, 'HEAD:refs/for/master'],
+                cwd=proj_path, redirect=False)

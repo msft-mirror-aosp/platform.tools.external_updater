@@ -60,21 +60,28 @@ class GitUpdater():
         self._setup_remote()
         if git_utils.is_commit(self.metadata.third_party.version):
             # Update to remote head.
-            return self._check_head()
+            self._check_head()
+        else:
+            # Update to latest version tag.
+            self._check_tag()
 
-        # Update to latest version tag.
-        return self._check_tag()
+    def get_current_version(self):
+        """Returns the latest version name recorded in METADATA."""
+        return self.metadata.third_party.version
+
+    def get_latest_version(self):
+        """Returns the latest version name in upstream."""
+        return self.new_version
 
     def _check_tag(self):
         tags = git_utils.list_remote_tags(self.proj_path,
                                           self.upstream_remote_name)
-        current_ver = self.metadata.third_party.version
+        current_ver = self.get_current_version()
         self.new_version = updater_utils.get_latest_version(
             current_ver, tags)
         self.merge_from = self.new_version
         print('Current version: {}. Latest version: {}'.format(
             current_ver, self.new_version), end='')
-        return self.new_version != current_ver
 
     def _check_head(self):
         commits = git_utils.get_commits_ahead(
@@ -82,7 +89,8 @@ class GitUpdater():
             self.android_remote_name + '/master')
 
         if not commits:
-            return False
+            self.new_version = self.get_current_version()
+            return
 
         self.new_version = commits[0]
 
@@ -101,7 +109,6 @@ class GitUpdater():
         time_behind = datetime.datetime.now() - commit_time
         print('{} commits ({} days) behind.'.format(
             len(commits), time_behind.days), end='')
-        return True
 
     def _write_metadata(self, path):
         updated_metadata = metadata_pb2.MetaData()
@@ -128,11 +135,8 @@ class GitUpdater():
             print('{} is {} commits behind of {}.'.format(
                 self.merge_from, len(commits), upstream_branch))
 
+        print("Running `git merge {merge_branch}`..."
+              .format(merge_branch=self.merge_from))
+        git_utils.merge(self.proj_path, self.merge_from)
         self._write_metadata(self.proj_path)
-        print("""
-This tool only updates METADATA. Run the following command to update:
-    git merge {merge_branch}
-
-To check all local changes:
-    git diff {merge_branch} HEAD
-""".format(merge_branch=self.merge_from))
+        git_utils.add_file(self.proj_path, 'METADATA')
