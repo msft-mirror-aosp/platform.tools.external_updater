@@ -160,7 +160,7 @@ def _upgrade(proj):
 def _check_updates(args):
     params = ['out/soong/host/linux-x86/bin/external_updater',
               'check', '--json_output', RESULT_FILE_PATH,
-              '--delay', '0']
+              '--delay', '30']
     if args.all:
         params.append('--all')
     else:
