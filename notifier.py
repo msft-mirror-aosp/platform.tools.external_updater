@@ -50,6 +50,9 @@ def parse_args():
     parser.add_argument(
         'paths', nargs='*',
         help='Paths of the project.')
+    parser.add_argument(
+        '--all', action='store_true',
+        help='Checks all projects.')
 
     return parser.parse_args()
 
@@ -155,11 +158,15 @@ def _upgrade(proj):
 
 
 def _check_updates(args):
-    subprocess.run(['out/soong/host/linux-x86/bin/external_updater',
-                    'check',
-                    '--json_output', RESULT_FILE_PATH,
-                    '--delay', '0'] + args.paths,
-                   cwd=os.environ['ANDROID_BUILD_TOP'])
+    params = ['out/soong/host/linux-x86/bin/external_updater',
+              'check', '--json_output', RESULT_FILE_PATH,
+              '--delay', '0']
+    if args.all:
+        params.append('--all')
+    else:
+        params += args.paths
+
+    subprocess.run(params, cwd=os.environ['ANDROID_BUILD_TOP'])
 
 
 def main():
