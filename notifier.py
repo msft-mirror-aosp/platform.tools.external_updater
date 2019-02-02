@@ -134,7 +134,7 @@ def send_notification(args):
     _process_results(args, history, results)
 
     with open(args.history, 'w') as f:
-        json.dump(history, f, sort_keys=True)
+        json.dump(history, f, sort_keys=True, indent=4)
 
 
 def _upgrade(proj):
