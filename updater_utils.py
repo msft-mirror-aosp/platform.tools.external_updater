@@ -80,10 +80,9 @@ def _match_and_get_version(prefix, suffix, version):
     except ValueError:
         return []
 
-    if version_prefix != prefix or version_suffix != suffix:
-        return []
+    right_format = (version_prefix == prefix and version_suffix == suffix)
 
-    return [int(v) for v in version.split('.')]
+    return [right_format] + [int(v) for v in version.split('.')]
 
 
 def get_latest_version(current_version, version_list):
