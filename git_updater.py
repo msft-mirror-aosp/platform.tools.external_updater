@@ -34,7 +34,6 @@ class GitUpdater():
         self.upstream_remote_name = None
         self.android_remote_name = None
         self.new_version = None
-        self.merge_from = None
 
     def _setup_remote(self):
         remotes = git_utils.list_remotes(self.proj_path)
@@ -79,7 +78,6 @@ class GitUpdater():
         current_ver = self.get_current_version()
         self.new_version = updater_utils.get_latest_version(
             current_ver, tags)
-        self.merge_from = self.new_version
         print('Current version: {}. Latest version: {}'.format(
             current_ver, self.new_version), end='')
 
@@ -93,17 +91,6 @@ class GitUpdater():
             return
 
         self.new_version = commits[0]
-
-        # See whether we have a local upstream.
-        branches = git_utils.list_remote_branches(
-            self.proj_path, self.android_remote_name)
-        upstreams = [
-            branch for branch in branches if branch.startswith('upstream-')]
-        if upstreams:
-            self.merge_from = '{}/{}'.format(
-                self.android_remote_name, upstreams[0])
-        else:
-            self.merge_from = 'update_origin/master'
 
         commit_time = git_utils.get_commit_time(self.proj_path, commits[-1])
         time_behind = datetime.datetime.now() - commit_time
@@ -123,20 +110,8 @@ class GitUpdater():
         """
         upstream_branch = self.upstream_remote_name + '/master'
 
-        commits = git_utils.get_commits_ahead(
-            self.proj_path, self.merge_from, upstream_branch)
-        if commits:
-            print('{} is {} commits ahead of {}. {}'.format(
-                self.merge_from, len(commits), upstream_branch, commits))
-
-        commits = git_utils.get_commits_ahead(
-            self.proj_path, upstream_branch, self.merge_from)
-        if commits:
-            print('{} is {} commits behind of {}.'.format(
-                self.merge_from, len(commits), upstream_branch))
-
         print("Running `git merge {merge_branch}`..."
-              .format(merge_branch=self.merge_from))
-        git_utils.merge(self.proj_path, self.merge_from)
+              .format(merge_branch=self.new_version))
+        git_utils.merge(self.proj_path, self.new_version)
         self._write_metadata(self.proj_path)
         git_utils.add_file(self.proj_path, 'METADATA')
