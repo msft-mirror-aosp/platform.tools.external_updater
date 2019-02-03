@@ -27,6 +27,7 @@ python_binary_host {
     name: "external_updater_notifier",
     main: "notifier.py",
     srcs: [
+        "git_utils.py",
         "notifier.py",
     ],
 }

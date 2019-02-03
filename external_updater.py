@@ -129,20 +129,22 @@ def _process_update_result(path):
 def _check_some(paths, delay):
     results = {}
     for path in paths:
-        results[path] = _process_update_result(path)
+        relative_path = fileutils.get_relative_project_path(path)
+        results[relative_path] = _process_update_result(path)
         time.sleep(delay)
     return results
 
 
 def _check_all(delay):
     results = {}
-    for path, dirs, files in os.walk(args.path):
+    for path, dirs, files in os.walk(fileutils.EXTERNAL_PATH):
         dirs.sort(key=lambda d: d.lower())
         if fileutils.METADATA_FILENAME in files:
             # Skip sub directories.
             dirs[:] = []
-            results[path] = _process_update_result(path)
-        time.sleep(delay)
+            relative_path = fileutils.get_relative_project_path(path)
+            results[relative_path] = _process_update_result(path)
+            time.sleep(delay)
     return results
 
 
@@ -204,7 +206,7 @@ def _do_update(args):
         git_utils.push(full_path, args.remote_name)
 
     if args.branch_and_commit:
-        git_utils.checkout(full_path, 'aosp/master')
+        git_utils.checkout(full_path, args.remote_name + '/master')
 
 
 def parse_args():
@@ -226,7 +228,7 @@ def parse_args():
         '--json_output',
         help='Path of a json file to write result to.')
     check_parser.add_argument(
-        '--all',
+        '--all', action='store_true',
         help='If set, check updates for all supported projects.')
     check_parser.add_argument(
         '--delay', default=0, type=int,

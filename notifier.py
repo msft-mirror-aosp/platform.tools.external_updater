@@ -21,6 +21,7 @@ external_updater_notifier \
     googletest
 """
 
+from datetime import timedelta, datetime
 import argparse
 import json
 import os
@@ -28,6 +29,7 @@ import re
 import subprocess
 import time
 
+import git_utils
 
 def parse_args():
     """Parses commandline arguments."""
@@ -48,6 +50,9 @@ def parse_args():
     parser.add_argument(
         'paths', nargs='*',
         help='Paths of the project.')
+    parser.add_argument(
+        '--all', action='store_true',
+        help='Checks all projects.')
 
     return parser.parse_args()
 
@@ -73,6 +78,22 @@ def _send_email(proj, latest_ver, recipient, upgrade_log):
                    input=msg, encoding='ascii')
 
 
+NOTIFIED_TIME_KEY_NAME = 'latest_notified_time'
+
+
+def _should_notify(latest_ver, proj_history):
+    if latest_ver in proj_history:
+        # Processed this version before.
+        return False
+
+    timestamp = proj_history.get(NOTIFIED_TIME_KEY_NAME, 0)
+    time_diff = datetime.today() - datetime.fromtimestamp(timestamp)
+    if git_utils.is_commit(latest_ver) and time_diff <= timedelta(days=30):
+        return False
+
+    return True
+
+
 def _process_results(args, history, results):
     for proj, res in results.items():
         if 'latest' not in res:
@@ -82,11 +103,12 @@ def _process_results(args, history, results):
         if latest_ver == current_ver:
             continue
         proj_history = history.setdefault(proj, {})
-        if latest_ver not in proj_history:
+        if _should_notify(latest_ver, proj_history):
             upgrade_log = _upgrade(proj) if args.generate_change else ""
             try:
                 _send_email(proj, latest_ver, args.recipients, upgrade_log)
                 proj_history[latest_ver] = int(time.time())
+                proj_history[NOTIFIED_TIME_KEY_NAME] = int(time.time())
             except subprocess.CalledProcessError as err:
                 msg = """Failed to send email for {} ({}).
 stdout: {}
@@ -112,7 +134,7 @@ def send_notification(args):
     _process_results(args, history, results)
 
     with open(args.history, 'w') as f:
-        json.dump(history, f, sort_keys=True)
+        json.dump(history, f, sort_keys=True, indent=4)
 
 
 def _upgrade(proj):
@@ -136,11 +158,15 @@ def _upgrade(proj):
 
 
 def _check_updates(args):
-    subprocess.run(['out/soong/host/linux-x86/bin/external_updater',
-                    'check',
-                    '--json_output', RESULT_FILE_PATH,
-                    '--delay', '0'] + args.paths,
-                   cwd=os.environ['ANDROID_BUILD_TOP'])
+    params = ['out/soong/host/linux-x86/bin/external_updater',
+              'check', '--json_output', RESULT_FILE_PATH,
+              '--delay', '30']
+    if args.all:
+        params.append('--all')
+    else:
+        params += args.paths
+
+    subprocess.run(params, cwd=os.environ['ANDROID_BUILD_TOP'])
 
 
 def main():
