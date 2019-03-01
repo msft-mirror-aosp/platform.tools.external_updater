@@ -57,11 +57,12 @@ def replace_package(source_dir, target_dir):
         'update_package.sh')
     subprocess.check_call(['bash', script_path, source_dir, target_dir])
 
-
+VERSION_SPLITTER_PATTERN = r'[\.\-_]'
 VERSION_PATTERN = (r'^(?P<prefix>[^\d]*)' +
-                   r'(?P<version>\d+(\.\d+)*)' +
+                   r'(?P<version>\d+(' + VERSION_SPLITTER_PATTERN + r'\d+)*)' +
                    r'(?P<suffix>.*)$')
 VERSION_RE = re.compile(VERSION_PATTERN)
+VERSION_SPLITTER_RE = re.compile(VERSION_SPLITTER_PATTERN)
 
 
 def _parse_version(version):
@@ -82,7 +83,7 @@ def _match_and_get_version(prefix, suffix, version):
 
     right_format = (version_prefix == prefix and version_suffix == suffix)
 
-    return [right_format] + [int(v) for v in version.split('.')]
+    return [right_format] + [int(v) for v in VERSION_SPLITTER_RE.split(version)]
 
 
 def get_latest_version(current_version, version_list):
