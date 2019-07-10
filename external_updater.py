@@ -182,7 +182,7 @@ TMP_BRANCH_NAME = 'tmp_auto_upgrade'
 
 
 def _do_update(args):
-    updater, err = check_update(args.path)
+    updater, _ = check_update(args.path)
     if updater is None:
         return
     if not has_new_version(updater) and not args.force:
@@ -193,7 +193,7 @@ def _do_update(args):
         git_utils.checkout(full_path, args.remote_name + '/master')
         try:
             git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
-        except subprocess.CalledProcessError as err:
+        except subprocess.CalledProcessError:
             # Still continue if the branch doesn't exist.
             pass
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
