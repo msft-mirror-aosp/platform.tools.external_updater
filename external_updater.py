@@ -21,6 +21,7 @@ updater.sh update kotlinc
 import argparse
 import json
 import os
+import sys
 import subprocess
 import time
 
@@ -35,9 +36,12 @@ import updater_utils
 
 UPDATERS = [GithubArchiveUpdater, GitUpdater]
 
+USE_COLOR = sys.stdout.isatty()
 
 def color_string(string, color):
     """Changes the color of a string when print to terminal."""
+    if not USE_COLOR:
+        return string
     colors = {
         'FRESH': '\x1b[32m',
         'STALE': '\x1b[31;1m',
