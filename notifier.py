@@ -57,8 +57,21 @@ def parse_args():
     return parser.parse_args()
 
 
+ANDROID_TOP = os.path.normpath(os.path.join(__file__, '../../..'))
+def _get_android_top():
+    return ANDROID_TOP
+
+
 CHANGE_URL_PATTERN = r'(https:\/\/[^\s]*android-review[^\s]*) Upgrade'
 CHANGE_URL_RE = re.compile(CHANGE_URL_PATTERN)
+
+
+def _read_owner_file(proj):
+    owner_file = os.path.join(_get_android_top(), 'external', proj, 'OWNERS')
+    if not os.path.isfile(owner_file):
+        return None
+    with open(owner_file, 'r') as f:
+        return f.read().strip()
 
 
 def _send_email(proj, latest_ver, recipient, upgrade_log):
@@ -68,6 +81,11 @@ def _send_email(proj, latest_ver, recipient, upgrade_log):
     if match is not None:
         msg += '\n\nAn upgrade change is generated at:\n{}'.format(
             match.group(1))
+
+    owners = _read_owner_file(proj)
+    if owners:
+        msg += '\n\nOWNERS file: \n'
+        msg += owners
 
     msg += '\n\n'
     msg += upgrade_log
@@ -142,7 +160,7 @@ def _upgrade(proj):
                           'update', '--branch_and_commit', '--push_change',
                           proj],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                         cwd=os.environ['ANDROID_BUILD_TOP'])
+                         cwd=_get_android_top())
     stdout = out.stdout.decode('utf-8')
     stderr = out.stderr.decode('utf-8')
     return """
@@ -166,7 +184,7 @@ def _check_updates(args):
     else:
         params += args.paths
 
-    subprocess.run(params, cwd=os.environ['ANDROID_BUILD_TOP'])
+    subprocess.run(params, cwd=_get_android_top())
 
 
 def main():
