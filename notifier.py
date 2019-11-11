@@ -57,9 +57,8 @@ def parse_args():
     return parser.parse_args()
 
 
-ANDROID_TOP = os.path.normpath(os.path.join(__file__, '../../..'))
 def _get_android_top():
-    return ANDROID_TOP
+    return os.environ['ANDROID_BUILD_TOP']
 
 
 CHANGE_URL_PATTERN = r'(https:\/\/[^\s]*android-review[^\s]*) Upgrade'
@@ -184,6 +183,7 @@ def _check_updates(args):
     else:
         params += args.paths
 
+    print(_get_android_top())
     subprocess.run(params, cwd=_get_android_top())
 
 
