@@ -27,6 +27,7 @@ import time
 
 from google.protobuf import text_format    # pylint: disable=import-error
 
+from crates_updater import CratesUpdater
 from git_updater import GitUpdater
 from github_archive_updater import GithubArchiveUpdater
 import fileutils
@@ -34,7 +35,7 @@ import git_utils
 import updater_utils
 
 
-UPDATERS = [GithubArchiveUpdater, GitUpdater]
+UPDATERS = [CratesUpdater, GithubArchiveUpdater, GitUpdater]
 
 USE_COLOR = sys.stdout.isatty()
 
