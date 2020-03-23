@@ -89,6 +89,10 @@ def get_extract_func(url):
     for ext, func in ARCHIVE_TYPES.items():
         if filename.endswith(ext):
             return func
+    # crates.io download url does not have file suffix
+    # e.g., https://crates.io/api/v1/crates/syn/1.0.16/download
+    if url.find('/crates.io/api/') > 0:
+        return untar
     return None
 
 

@@ -36,6 +36,7 @@ python_library_host {
     name: "external_updater_lib",
     srcs: [
         "archive_utils.py",
+        "crates_updater.py",
         "fileutils.py",
         "git_updater.py",
         "git_utils.py",
