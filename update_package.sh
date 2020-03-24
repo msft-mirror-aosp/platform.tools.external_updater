@@ -39,6 +39,7 @@ CopyIfPresent "LICENSE"
 CopyIfPresent "NOTICE"
 cp -a -f -n $external_dir/MODULE_LICENSE_* .
 CopyIfPresent "METADATA"
+CopyIfPresent "TEST_MAPPING"
 CopyIfPresent ".git"
 CopyIfPresent ".gitignore"
 CopyIfPresent "patches"
@@ -62,5 +63,8 @@ fi
 echo "Swapping old and new..."
 rm -rf $external_dir
 mv $tmp_dir $external_dir
+
+cd $external_dir
+git add .
 
 exit 0
