@@ -70,20 +70,23 @@ def _parse_version(version):
     if match is None:
         raise ValueError('Invalid version.')
     try:
-        return match.group('prefix', 'version', 'suffix')
+        prefix, version, suffix =  match.group('prefix', 'version', 'suffix')
+        version = [int(v) for v in VERSION_SPLITTER_RE.split(version)]
+        return (version, prefix, suffix)
     except IndexError:
         raise ValueError('Invalid version.')
 
 
-def _match_and_get_version(prefix, suffix, version):
+def _match_and_get_version(old_ver, version):
     try:
-        version_prefix, version, version_suffix = _parse_version(version)
+        new_ver = _parse_version(version)
     except ValueError:
         return []
 
-    right_format = (version_prefix == prefix and version_suffix == suffix)
+    right_format = (new_ver[1:] == old_ver[1:])
+    right_length = len(new_ver[0]) == len(old_ver[0])
 
-    return [right_format] + [int(v) for v in VERSION_SPLITTER_RE.split(version)]
+    return [right_format, right_length, new_ver[0]]
 
 
 def get_latest_version(current_version, version_list):
@@ -92,11 +95,11 @@ def get_latest_version(current_version, version_list):
     The new version must have the same prefix and suffix with old version.
     If no matched version is newer, current version name will be returned.
     """
-    prefix, _, suffix = _parse_version(current_version)
+    parsed_current_ver = _parse_version(current_version)
 
     latest = max(version_list,
                  key=lambda ver: _match_and_get_version(
-                     prefix, suffix, ver),
+                     parsed_current_ver, ver),
                  default=[])
     if not latest:
         raise ValueError('No matching version.')
