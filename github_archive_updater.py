@@ -16,6 +16,7 @@
 
 import json
 import re
+import time
 import urllib.request
 
 import archive_utils
@@ -92,28 +93,50 @@ class GithubArchiveUpdater():
         except IndexError:
             raise ValueError('Url format is not supported.')
 
-    def _fetch_latest_version(self):
-        """Checks upstream and gets the latest release tag."""
-
+    def _fetch_latest_release(self):
         url = 'https://api.github.com/repos/{}/{}/releases/latest'.format(
             self.owner, self.repo)
-        with urllib.request.urlopen(url) as request:
-            data = json.loads(request.read().decode())
-        self.new_version = data[self.VERSION_FIELD]
-
+        try:
+            with urllib.request.urlopen(url) as request:
+                data = json.loads(request.read().decode())
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return None
+            raise
         supported_assets = [
             a['browser_download_url'] for a in data['assets']
             if archive_utils.is_supported_archive(a['browser_download_url'])]
+        return (data[self.VERSION_FIELD], supported_assets)
+
+    def _fetch_latest_tag(self):
+        page = 1
+        tags = []
+        # fetches at most 20 pages.
+        for page in range(1, 21):
+            # Sleeps 10s to avoid rate limit.
+            time.sleep(10)
+            url = 'https://api.github.com/repos/{}/{}/tags?page={}'.format(
+                self.owner, self.repo, page)
+            with urllib.request.urlopen(url) as request:
+                data = json.loads(request.read().decode())
+            if len(data) == 0:
+                break
+            tags.extend(d['name'] for d in data)
+        return (updater_utils.get_latest_version(self.get_current_version(), tags), [])
+
+    def _fetch_latest_version(self):
+        """Checks upstream and gets the latest release tag."""
+        self.new_version, urls = self._fetch_latest_release() or self._fetch_latest_tag()
 
         # Adds source code urls.
-        supported_assets.append(
+        urls.append(
             'https://github.com/{}/{}/archive/{}.tar.gz'.format(
-                self.owner, self.repo, data.get('tag_name')))
-        supported_assets.append(
+                self.owner, self.repo, self.new_version))
+        urls.append(
             'https://github.com/{}/{}/archive/{}.zip'.format(
-                self.owner, self.repo, data.get('tag_name')))
+                self.owner, self.repo, self.new_version))
 
-        self.new_url = choose_best_url(supported_assets, self.old_url.value)
+        self.new_url = choose_best_url(urls, self.old_url.value)
 
     def _fetch_latest_commit(self):
         """Checks upstream and gets the latest commit to master."""
