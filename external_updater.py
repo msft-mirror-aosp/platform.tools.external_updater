@@ -21,7 +21,6 @@ updater.sh update kotlinc
 import argparse
 import json
 import os
-import sys
 import subprocess
 import time
 
@@ -36,12 +35,9 @@ import updater_utils
 
 UPDATERS = [GithubArchiveUpdater, GitUpdater]
 
-USE_COLOR = sys.stdout.isatty()
 
 def color_string(string, color):
     """Changes the color of a string when print to terminal."""
-    if not USE_COLOR:
-        return string
     colors = {
         'FRESH': '\x1b[32m',
         'STALE': '\x1b[31;1m',
@@ -182,7 +178,7 @@ TMP_BRANCH_NAME = 'tmp_auto_upgrade'
 
 
 def _do_update(args):
-    updater, _ = check_update(args.path)
+    updater, err = check_update(args.path)
     if updater is None:
         return
     if not has_new_version(updater) and not args.force:
@@ -193,7 +189,7 @@ def _do_update(args):
         git_utils.checkout(full_path, args.remote_name + '/master')
         try:
             git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as err:
             # Still continue if the branch doesn't exist.
             pass
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
