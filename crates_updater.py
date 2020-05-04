@@ -28,10 +28,6 @@ CRATES_IO_URL_PATTERN = (r'^https:\/\/crates.io\/crates\/([-\w]+)')
 
 CRATES_IO_URL_RE = re.compile(CRATES_IO_URL_PATTERN)
 
-VERSION_PATTERN = r'([0-9]+)\.([0-9]+)\.([0-9]+)'
-
-VERSION_MATCHER = re.compile(VERSION_PATTERN)
-
 
 class CratesUpdater():
     """Updater for crates.io packages."""
@@ -49,30 +45,16 @@ class CratesUpdater():
         self.new_version = None
         self.dl_path = None
 
-    def _get_version_numbers(self, version):
-        match = VERSION_MATCHER.match(version)
-        if match is not None:
-            return tuple(int(match.group(i)) for i in range(1, 4))
-        return (0, 0, 0)
-
-    def _is_newer_version(self, prev_version, prev_id, check_version, check_id):
-        """Return true if check_version+id is newer than prev_version+id."""
-        return ((self._get_version_numbers(check_version), check_id) >
-                (self._get_version_numbers(prev_version), prev_id))
-
     def check(self):
         """Checks crates.io and returns whether a new version is available."""
-        url = 'https://crates.io/api/v1/crates/{}/versions'.format(self.package)
+        url = "https://crates.io/api/v1/crates/" + self.package
         with urllib.request.urlopen(url) as request:
             data = json.loads(request.read().decode())
-        last_id = 0
-        self.new_version = ''
-        for v in data['versions']:
-            if not v['yanked'] and self._is_newer_version(
-                self.new_version, last_id, v['num'], int(v['id'])):
-                last_id = int(v['id'])
-                self.new_version = v['num']
-                self.dl_path = v['dl_path']
+            self.new_version = data["crate"]["max_version"]
+        url = url + "/" + self.new_version
+        with urllib.request.urlopen(url) as request:
+            data = json.loads(request.read().decode())
+            self.dl_path = data["version"]["dl_path"]
         print('Current version: {}. Latest version: {}'.format(
             self.get_current_version(), self.new_version), end='')
 
