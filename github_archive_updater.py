@@ -102,9 +102,9 @@ class GithubArchiveUpdater(Updater):
         ]
         return (data[self.VERSION_FIELD], supported_assets)
 
-    def _fetch_latest_tag(self):
+    def _fetch_latest_tag(self) -> Tuple[str, List[str]]:
         page = 1
-        tags = []
+        tags: List[str] = []
         # fetches at most 20 pages.
         for page in range(1, 21):
             # Sleeps 10s to avoid rate limit.
@@ -119,8 +119,8 @@ class GithubArchiveUpdater(Updater):
 
     def _fetch_latest_version(self) -> None:
         """Checks upstream and gets the latest release tag."""
-        self._new_ver, urls = self._fetch_latest_release(
-        ) or self._fetch_latest_tag()
+        self._new_ver, urls = (self._fetch_latest_release()
+                               or self._fetch_latest_tag())
 
         # Adds source code urls.
         urls.append('https://github.com/{}/{}/archive/{}.tar.gz'.format(
@@ -137,9 +137,11 @@ class GithubArchiveUpdater(Updater):
         with urllib.request.urlopen(url) as request:
             data = json.loads(request.read().decode())
         self._new_ver = data['sha']
-        self._new_url.value = f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.zip'
+        self._new_url.value = (
+            f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.zip'
+        )
 
-    def check(self):
+    def check(self) -> None:
         """Checks update for package.
 
         Returns True if a new version is available.
@@ -149,14 +151,15 @@ class GithubArchiveUpdater(Updater):
         else:
             self._fetch_latest_version()
 
-    def update(self):
+    def update(self) -> None:
         """Updates the package.
 
         Has to call check() before this function.
         """
         temporary_dir = None
         try:
-            temporary_dir = archive_utils.download_and_extract(self._new_url.value)
+            temporary_dir = archive_utils.download_and_extract(
+                self._new_url.value)
             package_dir = archive_utils.find_archive_root(temporary_dir)
             updater_utils.replace_package(package_dir, self._proj_path)
         finally:
