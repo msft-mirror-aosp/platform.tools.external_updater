@@ -15,38 +15,39 @@
 
 import datetime
 import os
+from pathlib import Path
 
-from google.protobuf import text_format    # pylint: disable=import-error
+# pylint: disable=import-error
+from google.protobuf import text_format  # type: ignore
 
-import metadata_pb2    # pylint: disable=import-error
+# pylint: disable=import-error
+import metadata_pb2  # type: ignore
 
-ANDROID_TOP = os.environ.get('ANDROID_BUILD_TOP', os.getcwd())
-EXTERNAL_PATH = os.path.join(ANDROID_TOP, 'external/')
+ANDROID_TOP = Path(os.environ.get('ANDROID_BUILD_TOP', os.getcwd()))
+EXTERNAL_PATH = ANDROID_TOP / 'external'
 
 METADATA_FILENAME = 'METADATA'
 
 
-def get_absolute_project_path(project_path):
+def get_absolute_project_path(project_path) -> Path:
     """Gets absolute path of a project.
 
     Path resolution starts from external/.
     """
-    return os.path.join(EXTERNAL_PATH, project_path)
+    return EXTERNAL_PATH / project_path
 
 
-def get_metadata_path(project_path):
+def get_metadata_path(project_path) -> Path:
     """Gets the absolute path of METADATA for a project."""
-    return os.path.join(
-        get_absolute_project_path(project_path), METADATA_FILENAME)
+    return get_absolute_project_path(project_path) / METADATA_FILENAME
 
 
-def get_relative_project_path(project_path):
+def get_relative_project_path(project_path) -> Path:
     """Gets the relative path of a project starting from external/."""
-    project_path = get_absolute_project_path(project_path)
-    return os.path.relpath(project_path, EXTERNAL_PATH)
+    return get_absolute_project_path(project_path).relative_to(EXTERNAL_PATH)
 
 
-def read_metadata(proj_path):
+def read_metadata(proj_path) -> metadata_pb2.MetaData:
     """Reads and parses METADATA file for a project.
 
     Args:
@@ -60,12 +61,12 @@ def read_metadata(proj_path):
       FileNotFoundError: Occurred when METADATA file is not found.
     """
 
-    with open(get_metadata_path(proj_path), 'r') as metadata_file:
+    with get_metadata_path(proj_path).open('r') as metadata_file:
         metadata = metadata_file.read()
         return text_format.Parse(metadata, metadata_pb2.MetaData())
 
 
-def write_metadata(proj_path, metadata):
+def write_metadata(proj_path, metadata) -> None:
     """Writes updated METADATA file for a project.
 
     This function updates last_upgrade_date in metadata and write to the project
@@ -82,5 +83,5 @@ def write_metadata(proj_path, metadata):
     date.month = now.month
     date.day = now.day
     text_metadata = text_format.MessageToString(metadata)
-    with open(get_metadata_path(proj_path), 'w') as metadata_file:
+    with get_metadata_path(proj_path).open('w') as metadata_file:
         metadata_file.write(text_metadata)
