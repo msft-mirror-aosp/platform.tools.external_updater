@@ -17,9 +17,15 @@ import os
 import re
 import subprocess
 import sys
+from pathlib import Path
+from typing import List, Tuple, Type
+
+from base_updater import Updater
+import metadata_pb2  # type: ignore
 
 
-def create_updater(metadata, proj_path, updaters):
+def create_updater(metadata: metadata_pb2.MetaData, proj_path: Path,
+                   updaters: List[Type[Updater]]) -> Updater:
     """Creates corresponding updater object for a project.
 
     Args:
@@ -55,38 +61,42 @@ def replace_package(source_dir, target_dir) -> None:
     subprocess.check_call(['bash', script_path, source_dir, target_dir])
 
 
-VERSION_SPLITTER_PATTERN = r'[\.\-_]'
-VERSION_PATTERN = (r'^(?P<prefix>[^\d]*)' + r'(?P<version>\d+(' +
-                   VERSION_SPLITTER_PATTERN + r'\d+)*)' + r'(?P<suffix>.*)$')
-VERSION_RE = re.compile(VERSION_PATTERN)
-VERSION_SPLITTER_RE = re.compile(VERSION_SPLITTER_PATTERN)
+VERSION_SPLITTER_PATTERN: str = r'[\.\-_]'
+VERSION_PATTERN: str = (r'^(?P<prefix>[^\d]*)' + r'(?P<version>\d+(' +
+                        VERSION_SPLITTER_PATTERN + r'\d+)*)' +
+                        r'(?P<suffix>.*)$')
+VERSION_RE: re.Pattern = re.compile(VERSION_PATTERN)
+VERSION_SPLITTER_RE: re.Pattern = re.compile(VERSION_SPLITTER_PATTERN)
+
+ParsedVersion = Tuple[List[int], str, str]
 
 
-def _parse_version(version):
+def _parse_version(version: str) -> ParsedVersion:
     match = VERSION_RE.match(version)
     if match is None:
         raise ValueError('Invalid version.')
     try:
         prefix, version, suffix = match.group('prefix', 'version', 'suffix')
-        version = [int(v) for v in VERSION_SPLITTER_RE.split(version)]
-        return (version, prefix, suffix)
+        versions = [int(v) for v in VERSION_SPLITTER_RE.split(version)]
+        return (versions, str(prefix), str(suffix))
     except IndexError:
         raise ValueError('Invalid version.')
 
 
-def _match_and_get_version(old_ver, version):
+def _match_and_get_version(old_ver: ParsedVersion,
+                           version: str) -> Tuple[bool, bool, List[int]]:
     try:
         new_ver = _parse_version(version)
     except ValueError:
-        return []
+        return (False, False, [])
 
     right_format = (new_ver[1:] == old_ver[1:])
     right_length = len(new_ver[0]) == len(old_ver[0])
 
-    return [right_format, right_length, new_ver[0]]
+    return (right_format, right_length, new_ver[0])
 
 
-def get_latest_version(current_version, version_list):
+def get_latest_version(current_version: str, version_list: List[str]) -> str:
     """Gets the latest version name from a list of versions.
 
     The new version must have the same prefix and suffix with old version.
@@ -97,7 +107,7 @@ def get_latest_version(current_version, version_list):
     latest = max(
         version_list,
         key=lambda ver: _match_and_get_version(parsed_current_ver, ver),
-        default=[])
+        default=None)
     if not latest:
         raise ValueError('No matching version.')
     return latest

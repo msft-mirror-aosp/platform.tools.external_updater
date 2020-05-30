@@ -31,28 +31,27 @@ import time
 
 import git_utils
 
+
 def parse_args():
     """Parses commandline arguments."""
 
     parser = argparse.ArgumentParser(
         description='Check updates for third party projects in external/.')
-    parser.add_argument(
-        '--history',
-        help='Path of history file. If doesn'
-        't exist, a new one will be created.')
+    parser.add_argument('--history',
+                        help='Path of history file. If doesn'
+                        't exist, a new one will be created.')
     parser.add_argument(
         '--recipients',
         help='Comma separated recipients of notification email.')
     parser.add_argument(
         '--generate_change',
         help='If set, an upgrade change will be uploaded to Gerrit.',
-        action='store_true', required=False)
-    parser.add_argument(
-        'paths', nargs='*',
-        help='Paths of the project.')
-    parser.add_argument(
-        '--all', action='store_true',
-        help='Checks all projects.')
+        action='store_true',
+        required=False)
+    parser.add_argument('paths', nargs='*', help='Paths of the project.')
+    parser.add_argument('--all',
+                        action='store_true',
+                        help='Checks all projects.')
 
     return parser.parse_args()
 
@@ -89,10 +88,12 @@ def _send_email(proj, latest_ver, recipient, upgrade_log):
     msg += '\n\n'
     msg += upgrade_log
 
-    subprocess.run(['sendgmr', '--to=' + recipient,
-                    '--subject=' + proj], check=True,
-                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                   input=msg, encoding='ascii')
+    subprocess.run(['sendgmr', '--to=' + recipient, '--subject=' + proj],
+                   check=True,
+                   stdout=subprocess.PIPE,
+                   stderr=subprocess.PIPE,
+                   input=msg,
+                   encoding='ascii')
 
 
 NOTIFIED_TIME_KEY_NAME = 'latest_notified_time'
@@ -155,10 +156,12 @@ def send_notification(args):
 
 
 def _upgrade(proj):
-    out = subprocess.run(['out/soong/host/linux-x86/bin/external_updater',
-                          'update', '--branch_and_commit', '--push_change',
-                          proj],
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    out = subprocess.run([
+        'out/soong/host/linux-x86/bin/external_updater', 'update',
+        '--branch_and_commit', '--push_change', proj
+    ],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
                          cwd=_get_android_top())
     stdout = out.stdout.decode('utf-8')
     stderr = out.stderr.decode('utf-8')
@@ -175,9 +178,10 @@ def _upgrade(proj):
 
 
 def _check_updates(args):
-    params = ['out/soong/host/linux-x86/bin/external_updater',
-              'check', '--json_output', RESULT_FILE_PATH,
-              '--delay', '30']
+    params = [
+        'out/soong/host/linux-x86/bin/external_updater', 'check',
+        '--json_output', RESULT_FILE_PATH, '--delay', '30'
+    ]
     if args.all:
         params.append('--all')
     else:

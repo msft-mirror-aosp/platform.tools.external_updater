@@ -29,8 +29,6 @@ import time
 from typing import Dict, Iterator, List, Union, Tuple, Type
 from pathlib import Path
 
-from google.protobuf import text_format  # type: ignore
-
 from base_updater import Updater
 from crates_updater import CratesUpdater
 from git_updater import GitUpdater
@@ -61,7 +59,7 @@ class Color(enum.Enum):
 END_COLOR = '\033[0m'
 
 
-def color_string(string: str, color: Color):
+def color_string(string: str, color: Color) -> str:
     """Changes the color of a string when print to terminal."""
     if not USE_COLOR:
         return string
@@ -185,7 +183,7 @@ def _list_all_metadata() -> Iterator[str]:
         dirs.sort(key=lambda d: d.lower())
 
 
-def check(args: argparse.Namespace):
+def check(args: argparse.Namespace) -> None:
     """Handler for check command."""
     paths = _list_all_metadata() if args.all else args.paths
     results = _check_path(args, paths, args.delay)
@@ -254,7 +252,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     """The main entry."""
 
     args = parse_args()

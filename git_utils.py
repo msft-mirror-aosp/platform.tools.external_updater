@@ -46,6 +46,11 @@ def add_remote(proj_path: Path, name: str, url: str) -> None:
     _run(['git', 'remote', 'add', name, url], cwd=proj_path)
 
 
+def remove_remote(proj_path: Path, name: str) -> None:
+    """Removes a git remote."""
+    _run(['git', 'remote', 'remove', name], cwd=proj_path)
+
+
 def list_remotes(proj_path: Path) -> Dict[str, str]:
     """Lists all Git remotes.
 
