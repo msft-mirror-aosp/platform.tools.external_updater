@@ -29,25 +29,25 @@ EXTERNAL_PATH = ANDROID_TOP / 'external'
 METADATA_FILENAME = 'METADATA'
 
 
-def get_absolute_project_path(project_path) -> Path:
+def get_absolute_project_path(proj_path: Path) -> Path:
     """Gets absolute path of a project.
 
     Path resolution starts from external/.
     """
-    return EXTERNAL_PATH / project_path
+    return EXTERNAL_PATH / proj_path
 
 
-def get_metadata_path(project_path) -> Path:
+def get_metadata_path(proj_path: Path) -> Path:
     """Gets the absolute path of METADATA for a project."""
-    return get_absolute_project_path(project_path) / METADATA_FILENAME
+    return get_absolute_project_path(proj_path) / METADATA_FILENAME
 
 
-def get_relative_project_path(project_path) -> Path:
+def get_relative_project_path(proj_path: Path) -> Path:
     """Gets the relative path of a project starting from external/."""
-    return get_absolute_project_path(project_path).relative_to(EXTERNAL_PATH)
+    return get_absolute_project_path(proj_path).relative_to(EXTERNAL_PATH)
 
 
-def read_metadata(proj_path) -> metadata_pb2.MetaData:
+def read_metadata(proj_path: Path) -> metadata_pb2.MetaData:
     """Reads and parses METADATA file for a project.
 
     Args:
@@ -66,7 +66,7 @@ def read_metadata(proj_path) -> metadata_pb2.MetaData:
         return text_format.Parse(metadata, metadata_pb2.MetaData())
 
 
-def write_metadata(proj_path, metadata) -> None:
+def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData) -> None:
     """Writes updated METADATA file for a project.
 
     This function updates last_upgrade_date in metadata and write to the project
