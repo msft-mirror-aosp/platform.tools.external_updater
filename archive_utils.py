@@ -25,7 +25,6 @@ class ZipFileWithPermission(zipfile.ZipFile):
 
     See https://bugs.python.org/issue15795
     """
-
     def _extract_member(self, member, targetpath, pwd):
         ret_val = super()._extract_member(member, targetpath, pwd)
 
