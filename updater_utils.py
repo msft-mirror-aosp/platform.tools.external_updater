@@ -33,16 +33,15 @@ def create_updater(metadata, proj_path, updaters):
       ValueError: Occurred when there's no updater for all urls.
     """
     for url in metadata.third_party.url:
-        for updater in updaters:
-            try:
-                return updater(url, proj_path, metadata)
-            except ValueError:
-                pass
+        for updater_cls in updaters:
+            updater = updater_cls(proj_path, url, metadata.third_party.version)
+            if updater.is_supported_url():
+                return updater
 
     raise ValueError('No supported URL.')
 
 
-def replace_package(source_dir, target_dir):
+def replace_package(source_dir, target_dir) -> None:
     """Invokes a shell script to prepare and update a project.
 
     Args:
@@ -51,16 +50,14 @@ def replace_package(source_dir, target_dir):
     """
 
     print('Updating {} using {}.'.format(target_dir, source_dir))
-    script_path = os.path.join(
-        os.path.dirname(
-            sys.argv[0]),
-        'update_package.sh')
+    script_path = os.path.join(os.path.dirname(sys.argv[0]),
+                               'update_package.sh')
     subprocess.check_call(['bash', script_path, source_dir, target_dir])
 
+
 VERSION_SPLITTER_PATTERN = r'[\.\-_]'
-VERSION_PATTERN = (r'^(?P<prefix>[^\d]*)' +
-                   r'(?P<version>\d+(' + VERSION_SPLITTER_PATTERN + r'\d+)*)' +
-                   r'(?P<suffix>.*)$')
+VERSION_PATTERN = (r'^(?P<prefix>[^\d]*)' + r'(?P<version>\d+(' +
+                   VERSION_SPLITTER_PATTERN + r'\d+)*)' + r'(?P<suffix>.*)$')
 VERSION_RE = re.compile(VERSION_PATTERN)
 VERSION_SPLITTER_RE = re.compile(VERSION_SPLITTER_PATTERN)
 
@@ -70,7 +67,7 @@ def _parse_version(version):
     if match is None:
         raise ValueError('Invalid version.')
     try:
-        prefix, version, suffix =  match.group('prefix', 'version', 'suffix')
+        prefix, version, suffix = match.group('prefix', 'version', 'suffix')
         version = [int(v) for v in VERSION_SPLITTER_RE.split(version)]
         return (version, prefix, suffix)
     except IndexError:
@@ -97,10 +94,10 @@ def get_latest_version(current_version, version_list):
     """
     parsed_current_ver = _parse_version(current_version)
 
-    latest = max(version_list,
-                 key=lambda ver: _match_and_get_version(
-                     parsed_current_ver, ver),
-                 default=[])
+    latest = max(
+        version_list,
+        key=lambda ver: _match_and_get_version(parsed_current_ver, ver),
+        default=[])
     if not latest:
         raise ValueError('No matching version.')
     return latest
