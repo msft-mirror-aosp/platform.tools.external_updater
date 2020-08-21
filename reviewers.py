@@ -14,17 +14,27 @@
 """Find main reviewers for git push command."""
 
 import random
+from typing import List, Mapping, Set, Union
+
+# Note that for randomly-pick-one reviewers, we put them in a List[str]
+# to work with random.choice efficiently.
+# For pick-all reviewers, use a Set[str] to distinguish with List[str].
+
+# A ProjMapping maps a project path string to
+# (1) a single reviewer email address as a string
+# (2) multiple reviewer email addresses in a List; one to be randomly picked
+# (3) multiple reviewer email addresses in a Set; all to be picked
+ProjMapping = Mapping[str, Union[str, List[str], Set[str]]]
 
 # Project specific reviewers.
-PROJ_REVIEWER = {
+PROJ_REVIEWERS: ProjMapping = {
     'rust/crates/aho-corasick': 'chh@google.com',
     'rust/crates/anyhow': 'mmaurer@google.com',
-    'rust/crates/async-trait': 'qwandor@google.com',
     # more could be added later
 }
 
 # Reviewers for external/rust/crates projects not found in PROJ_REVIEWER.
-RUST_REVIEWERS = [
+RUST_REVIEWERS: List[str] = [
     'chh@google.com',
     'ivanlozano@google.com',
     'jeffv@google.com',
@@ -34,15 +44,21 @@ RUST_REVIEWERS = [
 ]
 
 
-def find_reviewer(proj_path: str) -> str:
-    """Returns an empty string or a reviewer parameter for git push."""
+def find_reviewers(proj_path: str) -> str:
+    """Returns an empty string or a reviewer parameter(s) for git push."""
     index = proj_path.find('/external/')
     if index >= 0:  # full path
         proj_path = proj_path[(index + len('/external/')):]
     elif proj_path.startswith('external/'):  # relative path
         proj_path = proj_path[len('external/'):]
-    if proj_path in PROJ_REVIEWER:
-        return PROJ_REVIEWER[proj_path]
+    if proj_path in PROJ_REVIEWERS:
+        reviewers = PROJ_REVIEWERS[proj_path]
+        if isinstance(reviewers, List):  # pick any one reviewer
+            return 'r=' + random.choice(reviewers)
+        if isinstance(reviewers, Set):  # add all reviewers
+            return ','.join(map(lambda x: 'r=' + x, reviewers))
+        # reviewers must be a string
+        return 'r=' + reviewers
     if proj_path.startswith('rust/crates/'):
-        return random.choice(RUST_REVIEWERS)
+        return 'r=' + random.choice(RUST_REVIEWERS)
     return ''
