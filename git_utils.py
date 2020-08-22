@@ -162,8 +162,8 @@ def checkout(proj_path: Path, branch_name: str) -> None:
 
 def push(proj_path: Path, remote_name: str) -> None:
     """Pushes change to remote."""
-    reviewer = reviewers.find_reviewer(str(proj_path))
-    if reviewer:  # no '%r=' parameter if there is no reviewer found
-      reviewer = '%r=' + reviewer
-    _run(['git', 'push', remote_name, 'HEAD:refs/for/master' + reviewer],
+    r_params = reviewers.find_reviewers(str(proj_path))
+    if r_params:  # no '%' parameter if there is no reviewer found
+        r_params = '%' + r_params
+    _run(['git', 'push', remote_name, 'HEAD:refs/for/master' + r_params],
          cwd=proj_path)
