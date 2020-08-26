@@ -29,6 +29,7 @@ python_binary_host {
     srcs: [
         "git_utils.py",
         "notifier.py",
+        "reviewers.py",
     ],
 }
 
@@ -43,6 +44,7 @@ python_library_host {
         "git_utils.py",
         "github_archive_updater.py",
         "metadata.proto",
+        "reviewers.py",
         "updater_utils.py",
     ],
     libs: [
@@ -67,13 +69,37 @@ python_library_host {
     },
 }
 
+python_defaults {
+    name: "external_updater_defaults",
+    libs: [
+        "external_updater_lib",
+    ],
+    version: {
+        py2: {
+            enabled: false,
+        },
+        py3: {
+            enabled: true,
+        },
+    },
+}
+
 python_test_host {
     name: "external_updater_test",
+    defaults: ["external_updater_defaults"],
     main: "external_updater_test.py",
     srcs: [
         "external_updater_test.py",
     ],
-    libs: [
-        "external_updater_lib",
+    test_suites: ["general-tests"],
+}
+
+python_test_host {
+    name: "external_updater_reviewers_test",
+    defaults: ["external_updater_defaults"],
+    main: "external_updater_reviewers_test.py",
+    srcs: [
+        "external_updater_reviewers_test.py",
     ],
+    test_suites: ["general-tests"],
 }

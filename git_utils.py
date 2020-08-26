@@ -19,6 +19,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+import reviewers
 
 def _run(cmd: List[str], cwd: Path) -> str:
     """Runs a command and returns its output."""
@@ -161,4 +162,8 @@ def checkout(proj_path: Path, branch_name: str) -> None:
 
 def push(proj_path: Path, remote_name: str) -> None:
     """Pushes change to remote."""
-    _run(['git', 'push', remote_name, 'HEAD:refs/for/master'], cwd=proj_path)
+    r_params = reviewers.find_reviewers(str(proj_path))
+    if r_params:  # no '%' parameter if there is no reviewer found
+        r_params = '%' + r_params
+    _run(['git', 'push', remote_name, 'HEAD:refs/for/master' + r_params],
+         cwd=proj_path)

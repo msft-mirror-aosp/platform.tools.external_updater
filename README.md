@@ -19,7 +19,7 @@ tools/external_updater/updater.sh check --all
 Update a library:
 
 ```shell
-tools/external_updater/updater.sh check ${LIBNAME}
+tools/external_updater/updater.sh update ${LIBNAME}
 ```
 
 LIBNAME can be the path to a library under external/. E.g. kotlinc, or

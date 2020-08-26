@@ -109,7 +109,8 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     git_utils.add_file(full_path, 'METADATA')
 
     if args.branch_and_commit:
-        msg = 'Upgrade {} to {}\n'.format(args.path, updater.latest_version)
+        msg = 'Upgrade {} to {}\n\nTest: make\n'.format(
+            args.path, updater.latest_version)
         git_utils.add_file(full_path, '*')
         git_utils.commit(full_path, msg)
 
