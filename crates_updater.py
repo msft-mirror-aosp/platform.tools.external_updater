@@ -22,7 +22,7 @@ from base_updater import Updater
 import metadata_pb2  # type: ignore
 import updater_utils
 
-CRATES_IO_URL_PATTERN: str = (r'^https:\/\/crates.io\/crates\/([-\w]+)')
+CRATES_IO_URL_PATTERN: str = (r"^https:\/\/crates.io\/crates\/([-\w]+)")
 
 CRATES_IO_URL_RE: re.Pattern = re.compile(CRATES_IO_URL_PATTERN)
 
@@ -59,9 +59,24 @@ class CratesUpdater(Updater):
         Has to call check() before this function.
         """
         try:
-            url = 'https://crates.io' + self.dl_path
+            url = "https://crates.io" + self.dl_path
             temporary_dir = archive_utils.download_and_extract(url)
             package_dir = archive_utils.find_archive_root(temporary_dir)
             updater_utils.replace_package(package_dir, self._proj_path)
         finally:
             urllib.request.urlcleanup()
+
+    def update_metadata(self, metadata: metadata_pb2.MetaData) -> None:
+        """Updates METADATA content."""
+        # copy only HOMEPAGE url, and then add new ARCHIVE url.
+        new_url_list = []
+        for url in metadata.third_party.url:
+            if url.type == metadata_pb2.URL.HOMEPAGE:
+                new_url_list.append(url)
+        new_url = metadata_pb2.URL()
+        new_url.type = metadata_pb2.URL.ARCHIVE
+        new_url.value = "https://static.crates.io/crates/{}/{}-{}.crate".format(
+            metadata.name, metadata.name, metadata.third_party.version)
+        new_url_list.append(new_url)
+        del metadata.third_party.url[:]
+        metadata.third_party.url.extend(new_url_list)
