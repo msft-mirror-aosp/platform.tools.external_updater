@@ -22,6 +22,9 @@ set -e
 tmp_dir=$1
 external_dir=$2
 
+# root of Android source tree
+root_dir=`pwd`
+
 echo "Entering $tmp_dir..."
 cd $tmp_dir
 
@@ -46,6 +49,13 @@ CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
 CopyIfPresent "OWNERS"
 CopyIfPresent "README.android"
+
+if [ -f $tmp_dir/Cargo.toml -a -f $tmp_dir/Android.bp ]
+then
+  # regenerate Android.bp before local patches, so it is
+  # possible to patch the generated Android.bp after this.
+  /bin/bash `dirname $0`/regen_bp.sh $root_dir $external_dir
+fi
 
 echo "Applying patches..."
 for p in $tmp_dir/patches/*.diff
