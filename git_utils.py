@@ -104,11 +104,9 @@ def list_remote_branches(proj_path: Path, remote_name: str) -> List[str]:
 
 def list_remote_tags(proj_path: Path, remote_name: str) -> List[str]:
     """Lists all tags for a remote."""
+    regex = re.compile(r".*refs/tags/(?P<tag>[^\^]*).*")
     def parse_remote_tag(line: str) -> str:
-        tag_prefix = 'refs/tags/'
-        tag_suffix = '^{}'
-        line = line[line.index(tag_prefix):]
-        return line.lstrip(tag_prefix).rstrip(tag_suffix)
+        return regex.match(line).group("tag")
 
     lines = _run(['git', "ls-remote", "--tags", remote_name],
                  cwd=proj_path).splitlines()
