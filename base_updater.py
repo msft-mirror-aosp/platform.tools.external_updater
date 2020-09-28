@@ -16,6 +16,7 @@
 from pathlib import Path
 
 import fileutils
+# pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
 

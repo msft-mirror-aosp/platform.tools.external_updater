@@ -20,4 +20,3 @@ def find_hashtag(proj_path: Path) -> str:
     if str(proj_path).find('/external/rust/') != -1:
         return 'external_updater_rust'
     return 'external_updater'
-
