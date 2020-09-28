@@ -26,6 +26,14 @@ CRATES_IO_URL_PATTERN: str = (r"^https:\/\/crates.io\/crates\/([-\w]+)")
 
 CRATES_IO_URL_RE: re.Pattern = re.compile(CRATES_IO_URL_PATTERN)
 
+ALPHA_BETA_PATTERN: str = (r"^.*[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta).*")
+
+ALPHA_BETA_RE: re.Pattern = re.compile(ALPHA_BETA_PATTERN)
+
+VERSION_PATTERN: str = (r"([0-9]+)\.([0-9]+)\.([0-9]+)")
+
+VERSION_MATCHER: re.Pattern = re.compile(VERSION_PATTERN)
+
 
 class CratesUpdater(Updater):
     """Updater for crates.io packages."""
@@ -42,16 +50,49 @@ class CratesUpdater(Updater):
         self.package = match.group(1)
         return True
 
+    def _get_version_numbers(self, version: str) -> (int, int, int):
+        match = VERSION_MATCHER.match(version)
+        if match is not None:
+            return tuple(int(match.group(i)) for i in range(1, 4))
+        return (0, 0, 0)
+
+    def _is_newer_version(self, prev_version: str, prev_id: int,
+                          check_version: str, check_id: int):
+        """Return true if check_version+id is newer than prev_version+id."""
+        return ((self._get_version_numbers(check_version), check_id) >
+                (self._get_version_numbers(prev_version), prev_id))
+
+    def _find_latest_non_test_version(self) -> None:
+        url = "https://crates.io/api/v1/crates/{}/versions".format(self.package)
+        with urllib.request.urlopen(url) as request:
+            data = json.loads(request.read().decode())
+        last_id = 0
+        self._new_ver = ""
+        for v in data["versions"]:
+            version = v["num"]
+            if (not v["yanked"] and not ALPHA_BETA_RE.match(version) and
+                self._is_newer_version(
+                    self._new_ver, last_id, version, int(v["id"]))):
+                last_id = int(v["id"])
+                self._new_ver = version
+                self.dl_path = v["dl_path"]
+
     def check(self) -> None:
         """Checks crates.io and returns whether a new version is available."""
         url = "https://crates.io/api/v1/crates/" + self.package
         with urllib.request.urlopen(url) as request:
             data = json.loads(request.read().decode())
             self._new_ver = data["crate"]["max_version"]
-        url = url + "/" + self._new_ver
-        with urllib.request.urlopen(url) as request:
-            data = json.loads(request.read().decode())
-            self.dl_path = data["version"]["dl_path"]
+        # Skip d.d.d-{alpha,beta}* versions
+        if ALPHA_BETA_RE.match(self._new_ver):
+            print("Ignore alpha or beta release: {}-{}."
+                  .format(self.package, self._new_ver))
+            self._find_latest_non_test_version()
+        else:
+            url = url + "/" + self._new_ver
+            with urllib.request.urlopen(url) as request:
+                data = json.loads(request.read().decode())
+                self.dl_path = data["version"]["dl_path"]
 
     def update(self) -> None:
         """Updates the package.
