@@ -19,6 +19,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+import hashtags
 import reviewers
 
 def _run(cmd: List[str], cwd: Path) -> str:
@@ -160,8 +161,9 @@ def checkout(proj_path: Path, branch_name: str) -> None:
 
 def push(proj_path: Path, remote_name: str) -> None:
     """Pushes change to remote."""
-    r_params = reviewers.find_reviewers(str(proj_path))
-    if r_params:  # no '%' parameter if there is no reviewer found
-        r_params = '%' + r_params
-    _run(['git', 'push', remote_name, 'HEAD:refs/for/master' + r_params],
-         cwd=proj_path)
+    cmd = ['git', 'push', remote_name, 'HEAD:refs/for/master']
+    if revs := reviewers.find_reviewers(str(proj_path)):
+        cmd.extend(['-o', revs])
+    if tag := hashtags.find_hashtag(proj_path):
+        cmd.extend(['-o', 't=' + tag])
+    _run(cmd, cwd=proj_path)
