@@ -29,6 +29,7 @@ import re
 import subprocess
 import time
 
+# pylint: disable=invalid-name
 
 def parse_args():
     """Parses commandline arguments."""
@@ -163,6 +164,7 @@ def send_notification(args):
 
 
 def _upgrade(proj):
+    # pylint: disable=subprocess-run-check
     out = subprocess.run([
         'out/soong/host/linux-x86/bin/external_updater', 'update',
         '--branch_and_commit', '--push_change', proj
@@ -195,6 +197,7 @@ def _check_updates(args):
         params += args.paths
 
     print(_get_android_top())
+    # pylint: disable=subprocess-run-check
     subprocess.run(params, cwd=_get_android_top())
 
 
