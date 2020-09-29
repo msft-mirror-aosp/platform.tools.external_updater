@@ -35,6 +35,7 @@ from git_updater import GitUpdater
 from github_archive_updater import GithubArchiveUpdater
 import fileutils
 import git_utils
+# pylint: disable=import-error
 import metadata_pb2  # type: ignore
 import updater_utils
 
@@ -156,6 +157,7 @@ def check_and_update(args: argparse.Namespace,
         if update_lib and (has_new_version or args.force):
             _do_update(args, updater, metadata)
         return updater
+    # pylint: disable=broad-except
     except Exception as err:
         print('{} {}.'.format(color_string('Failed.', Color.ERROR), err))
         return str(err)

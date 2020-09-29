@@ -23,6 +23,7 @@ from typing import List, Optional, Tuple
 import archive_utils
 from base_updater import Updater
 import git_utils
+# pylint: disable=import-error
 import metadata_pb2  # type: ignore
 import updater_utils
 
@@ -88,6 +89,7 @@ class GithubArchiveUpdater(Updater):
         return True
 
     def _fetch_latest_release(self) -> Optional[Tuple[str, List[str]]]:
+        # pylint: disable=line-too-long
         url = f'https://api.github.com/repos/{self.owner}/{self.repo}/releases/latest'
         try:
             with urllib.request.urlopen(url) as request:
@@ -109,6 +111,7 @@ class GithubArchiveUpdater(Updater):
         for page in range(1, 21):
             # Sleeps 10s to avoid rate limit.
             time.sleep(10)
+            # pylint: disable=line-too-long
             url = f'https://api.github.com/repos/{self.owner}/{self.repo}/tags?page={page}'
             with urllib.request.urlopen(url) as request:
                 data = json.loads(request.read().decode())
@@ -133,11 +136,13 @@ class GithubArchiveUpdater(Updater):
     def _fetch_latest_commit(self) -> None:
         """Checks upstream and gets the latest commit to master."""
 
+        # pylint: disable=line-too-long
         url = f'https://api.github.com/repos/{self.owner}/{self.repo}/commits/master'
         with urllib.request.urlopen(url) as request:
             data = json.loads(request.read().decode())
         self._new_ver = data['sha']
         self._new_url.value = (
+            # pylint: disable=line-too-long
             f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.zip'
         )
 
