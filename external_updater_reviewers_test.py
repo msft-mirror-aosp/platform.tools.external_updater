@@ -40,6 +40,7 @@ class ExternalUpdaterReviewersTest(unittest.TestCase):
         reviewers.NUM_RUST_PROJECTS = self.saved_num_rust_projects
         reviewers.RUST_CRATE_OWNERS = self.saved_rust_crate_owners
 
+    # pylint: disable=no-self-use
     def _collect_reviewers(self, num_runs, proj_path):
         counters = {}
         for _ in range(num_runs):
@@ -51,21 +52,26 @@ class ExternalUpdaterReviewersTest(unittest.TestCase):
         return counters
 
     def test_reviewers_types(self):
+        """Check the types of PROJ_REVIEWERS and RUST_REVIEWERS."""
         # Check type of PROJ_REVIEWERS
         self.assertIsInstance(reviewers.PROJ_REVIEWERS, Mapping)
         for key, value in reviewers.PROJ_REVIEWERS.items():
             self.assertIsInstance(key, str)
-            if isinstance(value, Set) or isinstance(value, List):
-                map(lambda x: self.assertIsInstance(x, str), value)
+            # pylint: disable=isinstance-second-argument-not-valid-type
+            # https://github.com/PyCQA/pylint/issues/3507
+            if isinstance(value, (List, Set)):
+                for x in value:
+                    self.assertIsInstance(x, str)
             else:
                 self.assertIsInstance(value, str)
         # Check element types of the reviewers list and map.
         self.assertIsInstance(reviewers.RUST_REVIEWERS, Mapping)
-        for (x, n) in reviewers.RUST_REVIEWERS.items():
-            self.assertIsInstance(x, str)
-            self.assertIsInstance(n, int)
+        for (name, quota) in reviewers.RUST_REVIEWERS.items():
+            self.assertIsInstance(name, str)
+            self.assertIsInstance(quota, int)
 
     def test_reviewers_constants(self):
+        """Check the constants associated to the reviewers."""
         # There should be enough people in the reviewers pool.
         self.assertGreaterEqual(len(reviewers.RUST_REVIEWERS), 3)
         # The NUM_RUST_PROJECTS should not be too small.
@@ -84,7 +90,7 @@ class ExternalUpdaterReviewersTest(unittest.TestCase):
         self.assertGreaterEqual(sum_projects, reviewers.NUM_RUST_PROJECTS)
 
     def test_reviewers_randomness(self):
-        # Check random selection of reviewers.
+        """Check random selection of reviewers."""
         # This might fail when the random.choice function is extremely unfair.
         # With N * 20 tries, each reviewer should be picked at least twice.
         # Assume no project reviewers and recreate RUST_REVIEWER_LIST
@@ -93,11 +99,12 @@ class ExternalUpdaterReviewersTest(unittest.TestCase):
         num_tries = len(reviewers.RUST_REVIEWERS) * 20
         counters = self._collect_reviewers(num_tries, "rust/crates/libc")
         self.assertEqual(len(counters), len(reviewers.RUST_REVIEWERS))
-        map(lambda n: self.assertGreaterEqual(n, 10), counters.values())
+        for n in counters.values():
+            self.assertGreaterEqual(n, 10)
         self.assertEqual(sum(counters.values()), num_tries)
 
     def test_project_reviewers(self):
-        # For specific projects, select only the specified reviewers.
+        """For specific projects, select only the specified reviewers."""
         reviewers.PROJ_REVIEWERS = {
             "rust/crates/p1": "x@g.com",
             "rust/crates/p_any": ["x@g.com", "y@g.com"],
@@ -116,7 +123,7 @@ class ExternalUpdaterReviewersTest(unittest.TestCase):
         self.assertEqual(counters["r=x@g.com,r=y@g.com,r=z@g"], 20)
 
     def test_weighted_reviewers(self):
-        # Test create_rust_reviewer_list
+        """Test create_rust_reviewer_list."""
         reviewers.PROJ_REVIEWERS = {
             "any_p1": "x@g",  # 1 for x@g
             "any_p2": {"xyz", "x@g"},  # 1 for x@g, xyz is not a rust reviewer
