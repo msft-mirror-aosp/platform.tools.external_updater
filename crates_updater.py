@@ -19,6 +19,7 @@ import urllib.request
 
 import archive_utils
 from base_updater import Updater
+# pylint: disable=import-error
 import metadata_pb2  # type: ignore
 import updater_utils
 
@@ -107,6 +108,7 @@ class CratesUpdater(Updater):
         finally:
             urllib.request.urlcleanup()
 
+    # pylint: disable=no-self-use
     def update_metadata(self, metadata: metadata_pb2.MetaData) -> None:
         """Updates METADATA content."""
         # copy only HOMEPAGE url, and then add new ARCHIVE url.
