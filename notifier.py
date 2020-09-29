@@ -29,8 +29,6 @@ import re
 import subprocess
 import time
 
-import git_utils
-
 
 def parse_args():
     """Parses commandline arguments."""
@@ -96,6 +94,15 @@ def _send_email(proj, latest_ver, recipient, upgrade_log):
                    encoding='ascii')
 
 
+COMMIT_PATTERN = r'^[a-f0-9]{40}$'
+COMMIT_RE = re.compile(COMMIT_PATTERN)
+
+
+def is_commit(commit: str) -> bool:
+    """Whether a string looks like a SHA1 hash."""
+    return bool(COMMIT_RE.match(commit))
+
+
 NOTIFIED_TIME_KEY_NAME = 'latest_notified_time'
 
 
@@ -106,7 +113,7 @@ def _should_notify(latest_ver, proj_history):
 
     timestamp = proj_history.get(NOTIFIED_TIME_KEY_NAME, 0)
     time_diff = datetime.today() - datetime.fromtimestamp(timestamp)
-    if git_utils.is_commit(latest_ver) and time_diff <= timedelta(days=30):
+    if is_commit(latest_ver) and time_diff <= timedelta(days=30):
         return False
 
     return True
