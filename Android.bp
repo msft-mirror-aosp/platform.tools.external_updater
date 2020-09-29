@@ -27,9 +27,7 @@ python_binary_host {
     name: "external_updater_notifier",
     main: "notifier.py",
     srcs: [
-        "git_utils.py",
         "notifier.py",
-        "reviewers.py",
     ],
 }
 
@@ -43,6 +41,7 @@ python_library_host {
         "git_updater.py",
         "git_utils.py",
         "github_archive_updater.py",
+        "hashtags.py",
         "metadata.proto",
         "reviewers.py",
         "updater_utils.py",
