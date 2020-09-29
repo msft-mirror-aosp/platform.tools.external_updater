@@ -66,7 +66,7 @@ def read_metadata(proj_path: Path) -> metadata_pb2.MetaData:
         return text_format.Parse(metadata, metadata_pb2.MetaData())
 
 
-def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData) -> None:
+def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: bool) -> None:
     """Writes updated METADATA file for a project.
 
     This function updates last_upgrade_date in metadata and write to the project
@@ -75,13 +75,15 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData) -> None:
     Args:
       proj_path: Path to the project.
       metadata: The MetaData proto to write.
+      keep_date: Do not change date.
     """
 
-    date = metadata.third_party.last_upgrade_date
-    now = datetime.datetime.now()
-    date.year = now.year
-    date.month = now.month
-    date.day = now.day
+    if not keep_date:
+        date = metadata.third_party.last_upgrade_date
+        now = datetime.datetime.now()
+        date.year = now.year
+        date.month = now.month
+        date.day = now.day
     text_metadata = text_format.MessageToString(metadata)
     with get_metadata_path(proj_path).open('w') as metadata_file:
         metadata_file.write(text_metadata)

@@ -17,6 +17,7 @@
 Example usage:
 updater.sh checkall
 updater.sh update kotlinc
+updater.sh update --refresh --keep_date rust/crates/libc
 """
 
 import argparse
@@ -109,7 +110,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     # For Rust crates, replace GIT url with ARCHIVE url
     if isinstance(updater, CratesUpdater):
         updater.update_metadata(updated_metadata)
-    fileutils.write_metadata(full_path, updated_metadata)
+    fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
     git_utils.add_file(full_path, 'METADATA')
 
     if args.branch_and_commit:
@@ -154,7 +155,10 @@ def check_and_update(args: argparse.Namespace,
         else:
             print(color_string(' Up to date.', Color.FRESH))
 
-        if update_lib and (has_new_version or args.force):
+        if update_lib and args.refresh:
+            print('Refreshing the current version')
+            updater.use_current_as_latest()
+        if update_lib and (has_new_version or args.force or args.refresh):
             _do_update(args, updater, metadata)
         return updater
     # pylint: disable=broad-except
@@ -242,6 +246,14 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument(
         '--force',
         help='Run update even if there\'s no new version.',
+        action='store_true')
+    update_parser.add_argument(
+        '--refresh',
+        help='Run update and refresh to the current version.',
+        action='store_true')
+    update_parser.add_argument(
+        '--keep_date',
+        help='Run update and do not change date in METADATA.',
         action='store_true')
     update_parser.add_argument('--branch_and_commit',
                                action='store_true',
