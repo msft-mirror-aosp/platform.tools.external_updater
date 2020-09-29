@@ -95,6 +95,7 @@ RUST_REVIEWERS: Mapping[str, int] = {
     'jgalenson@google.com': 15,
     'mmaurer@google.com': 15,
     'srhines@google.com': 15,
+    'tweek@google.com': 15,
     # If a Rust reviewer needs to take a vacation, comment out the line,
     # and distribute the quota to other reviewers.
 }
