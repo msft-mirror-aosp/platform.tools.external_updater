@@ -39,7 +39,7 @@ VERSION_MATCHER: re.Pattern = re.compile(VERSION_PATTERN)
 class CratesUpdater(Updater):
     """Updater for crates.io packages."""
 
-    dl_path: str
+    download_url: str
     package: str
 
     def is_supported_url(self) -> bool:
@@ -76,7 +76,7 @@ class CratesUpdater(Updater):
                     self._new_ver, last_id, version, int(v["id"]))):
                 last_id = int(v["id"])
                 self._new_ver = version
-                self.dl_path = v["dl_path"]
+                self.download_url = "https://crates.io" + v["dl_path"]
 
     def check(self) -> None:
         """Checks crates.io and returns whether a new version is available."""
@@ -93,7 +93,13 @@ class CratesUpdater(Updater):
             url = url + "/" + self._new_ver
             with urllib.request.urlopen(url) as request:
                 data = json.loads(request.read().decode())
-                self.dl_path = data["version"]["dl_path"]
+                self.download_url = "https://crates.io" + data["version"]["dl_path"]
+
+    def use_current_as_latest(self):
+        Updater.use_current_as_latest(self)
+        # A shortcut to use the static download path.
+        self.download_url = "https://static.crates.io/crates/{}/{}-{}.crate".format(
+            self.package, self.package, self._new_ver)
 
     def update(self) -> None:
         """Updates the package.
@@ -101,8 +107,7 @@ class CratesUpdater(Updater):
         Has to call check() before this function.
         """
         try:
-            url = "https://crates.io" + self.dl_path
-            temporary_dir = archive_utils.download_and_extract(url)
+            temporary_dir = archive_utils.download_and_extract(self.download_url)
             package_dir = archive_utils.find_archive_root(temporary_dir)
             updater_utils.replace_package(package_dir, self._proj_path)
         finally:

@@ -71,3 +71,8 @@ class Updater:
     def latest_url(self) -> metadata_pb2.URL:
         """Gets URL for latest version."""
         return self._new_url
+
+    def use_current_as_latest(self):
+        """Uses current version/url as the latest to refresh project."""
+        self._new_ver = self._old_ver
+        self._new_url = self._old_url
