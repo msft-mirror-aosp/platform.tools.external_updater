@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import List, Tuple, Type
 
 from base_updater import Updater
+# pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
 
@@ -80,6 +81,7 @@ def _parse_version(version: str) -> ParsedVersion:
         versions = [int(v) for v in VERSION_SPLITTER_RE.split(version)]
         return (versions, str(prefix), str(suffix))
     except IndexError:
+        # pylint: disable=raise-missing-from
         raise ValueError('Invalid version.')
 
 
