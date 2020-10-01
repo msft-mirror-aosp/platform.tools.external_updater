@@ -20,6 +20,7 @@ import github_archive_updater
 
 class ExternalUpdaterTest(unittest.TestCase):
     """Unit tests for external updater."""
+
     def test_url_selection(self):
         """Tests that GithubArchiveUpdater can choose the right url."""
         prefix = "https://github.com/author/project/"
@@ -43,5 +44,5 @@ class ExternalUpdaterTest(unittest.TestCase):
         self.assertEqual(url, expected_url)
 
 
-if __name__ == '__main__':
-    unittest.main()
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

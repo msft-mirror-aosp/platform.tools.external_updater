@@ -17,6 +17,7 @@
 Example usage:
 updater.sh checkall
 updater.sh update kotlinc
+updater.sh update --refresh --keep_date rust/crates/libc
 """
 
 import argparse
@@ -35,6 +36,7 @@ from git_updater import GitUpdater
 from github_archive_updater import GithubArchiveUpdater
 import fileutils
 import git_utils
+# pylint: disable=import-error
 import metadata_pb2  # type: ignore
 import updater_utils
 
@@ -105,11 +107,15 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     for metadata_url in updated_metadata.third_party.url:
         if metadata_url == updater.current_url:
             metadata_url.CopyFrom(updater.latest_url)
-    fileutils.write_metadata(full_path, updated_metadata)
+    # For Rust crates, replace GIT url with ARCHIVE url
+    if isinstance(updater, CratesUpdater):
+        updater.update_metadata(updated_metadata)
+    fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
     git_utils.add_file(full_path, 'METADATA')
 
     if args.branch_and_commit:
-        msg = 'Upgrade {} to {}\n'.format(args.path, updater.latest_version)
+        msg = 'Upgrade {} to {}\n\nTest: make\n'.format(
+            args.path, updater.latest_version)
         git_utils.add_file(full_path, '*')
         git_utils.commit(full_path, msg)
 
@@ -149,9 +155,13 @@ def check_and_update(args: argparse.Namespace,
         else:
             print(color_string(' Up to date.', Color.FRESH))
 
-        if update_lib and (has_new_version or args.force):
+        if update_lib and args.refresh:
+            print('Refreshing the current version')
+            updater.use_current_as_latest()
+        if update_lib and (has_new_version or args.force or args.refresh):
             _do_update(args, updater, metadata)
         return updater
+    # pylint: disable=broad-except
     except Exception as err:
         print('{} {}.'.format(color_string('Failed.', Color.ERROR), err))
         return str(err)
@@ -236,6 +246,14 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument(
         '--force',
         help='Run update even if there\'s no new version.',
+        action='store_true')
+    update_parser.add_argument(
+        '--refresh',
+        help='Run update and refresh to the current version.',
+        action='store_true')
+    update_parser.add_argument(
+        '--keep_date',
+        help='Run update and do not change date in METADATA.',
         action='store_true')
     update_parser.add_argument('--branch_and_commit',
                                action='store_true',
