@@ -73,10 +73,10 @@ if [ -f Cargo.lock.saved ]; then
   mv Cargo.lock.saved Cargo.lock
 fi
 
-# Some .bp files have manual changes.
+# Some .bp files have manual changes that cannot be fixed by post_update.sh.
 # Add a note to force a manual edit.
 case $external_dir in
-  */libloading|*/libsqlite3-sys|*/serde|*/unicode-xid)
+  */libloading|*/libsqlite3-sys|*/unicode-xid)
     echo "FIXME: Copy manual changes from old version!" >> Android.bp
 esac
 
