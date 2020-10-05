@@ -58,7 +58,8 @@ if [ -d $2/out ]; then
   for f in $2/out/*
   do
     OUTF=`basename $f`
-    SRC=`ls ./target.tmp/debug/build/$PKGNAME-*/out/$OUTF || true`
+    SRC=`ls ./target.tmp/x86_64-unknown-linux-gnu/debug/build/$PKGNAME-*/out/$OUTF ||
+         ls ./target.tmp/debug/build/$PKGNAME-*/out/$OUTF || true`
     if [ "$SRC" != "" ]; then
       echo "Copying $SRC to out/$OUTF"
       mkdir -p out
