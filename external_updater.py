@@ -109,7 +109,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             metadata_url.CopyFrom(updater.latest_url)
     # For Rust crates, replace GIT url with ARCHIVE url
     if isinstance(updater, CratesUpdater):
-        updater.update_metadata(updated_metadata)
+        updater.update_metadata(updated_metadata, full_path)
     fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
     git_utils.add_file(full_path, 'METADATA')
 
