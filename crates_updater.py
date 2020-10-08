@@ -14,6 +14,9 @@
 """Module to check updates from crates.io."""
 
 import json
+import os
+# pylint: disable=g-importing-member
+from pathlib import Path
 import re
 import urllib.request
 
@@ -34,6 +37,10 @@ ALPHA_BETA_RE: re.Pattern = re.compile(ALPHA_BETA_PATTERN)
 VERSION_PATTERN: str = (r"([0-9]+)\.([0-9]+)\.([0-9]+)")
 
 VERSION_MATCHER: re.Pattern = re.compile(VERSION_PATTERN)
+
+DESCRIPTION_PATTERN: str = (r"^description *= *(\".+\")")
+
+DESCRIPTION_MATCHER: re.Pattern = re.compile(DESCRIPTION_PATTERN)
 
 
 class CratesUpdater(Updater):
@@ -114,7 +121,8 @@ class CratesUpdater(Updater):
             urllib.request.urlcleanup()
 
     # pylint: disable=no-self-use
-    def update_metadata(self, metadata: metadata_pb2.MetaData) -> None:
+    def update_metadata(self, metadata: metadata_pb2.MetaData,
+                        full_path: Path) -> None:
         """Updates METADATA content."""
         # copy only HOMEPAGE url, and then add new ARCHIVE url.
         new_url_list = []
@@ -128,3 +136,30 @@ class CratesUpdater(Updater):
         new_url_list.append(new_url)
         del metadata.third_party.url[:]
         metadata.third_party.url.extend(new_url_list)
+        # copy description from Cargo.toml to METADATA
+        cargo_toml = os.path.join(full_path, "Cargo.toml")
+        description = self._get_cargo_description(cargo_toml)
+        if description and description != metadata.description:
+            print("New METADATA description:", description)
+            metadata.description = description
+
+    def _toml2str(self, line: str) -> str:
+        """Convert a quoted toml string to a Python str without quotes."""
+        if line.startswith("\"\"\""):
+            return ""  # cannot handle broken multi-line description
+        # TOML string escapes: \b \t \n \f \r \" \\ (no unicode escape)
+        line = line[1:-1].replace("\\\\", "\n").replace("\\b", "")
+        line = line.replace("\\t", " ").replace("\\n", " ").replace("\\f", " ")
+        line = line.replace("\\r", "").replace("\\\"", "\"").replace("\n", "\\")
+        # replace a unicode quotation mark, used in the libloading crate
+        return line.replace("’", "'").strip()
+
+    def _get_cargo_description(self, cargo_toml: str) -> str:
+        """Return the description in Cargo.toml or empty string."""
+        if os.path.isfile(cargo_toml) and os.access(cargo_toml, os.R_OK):
+            with open(cargo_toml, "r") as toml_file:
+                for line in toml_file:
+                    match = DESCRIPTION_MATCHER.match(line)
+                    if match:
+                        return self._toml2str(match.group(1))
+        return ""
