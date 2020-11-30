@@ -19,6 +19,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+import hashtags
 import reviewers
 
 def _run(cmd: List[str], cwd: Path) -> str:
@@ -85,6 +86,7 @@ def get_commits_ahead(proj_path: Path, branch: str,
     return out.splitlines()
 
 
+# pylint: disable=redefined-outer-name
 def get_commit_time(proj_path: Path, commit: str) -> datetime.datetime:
     """Gets commit time of one commit."""
     out = _run(['git', 'show', '-s', '--format=%ct', commit], cwd=proj_path)
@@ -118,6 +120,7 @@ COMMIT_PATTERN = r'^[a-f0-9]{40}$'
 COMMIT_RE = re.compile(COMMIT_PATTERN)
 
 
+# pylint: disable=redefined-outer-name
 def is_commit(commit: str) -> bool:
     """Whether a string looks like a SHA1 hash."""
     return bool(COMMIT_RE.match(commit))
@@ -160,8 +163,9 @@ def checkout(proj_path: Path, branch_name: str) -> None:
 
 def push(proj_path: Path, remote_name: str) -> None:
     """Pushes change to remote."""
-    r_params = reviewers.find_reviewers(str(proj_path))
-    if r_params:  # no '%' parameter if there is no reviewer found
-        r_params = '%' + r_params
-    _run(['git', 'push', remote_name, 'HEAD:refs/for/master' + r_params],
-         cwd=proj_path)
+    cmd = ['git', 'push', remote_name, 'HEAD:refs/for/master']
+    if revs := reviewers.find_reviewers(str(proj_path)):
+        cmd.extend(['-o', revs])
+    if tag := hashtags.find_hashtag(proj_path):
+        cmd.extend(['-o', 't=' + tag])
+    _run(cmd, cwd=proj_path)
