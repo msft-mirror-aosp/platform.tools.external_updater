@@ -27,47 +27,9 @@ from typing import List, Mapping, Set, Union
 # (3) a Set of multiple reviewers to be all added.
 ProjMapping = Mapping[str, Union[str, List[str], Set[str]]]
 
-# Upgrades of Rust futures-* crates should be reviewed/tested together,
-# not split to radomly different people. In additional to one rust-dev
-# reviewer, we need one crosvm-dev reviewer to check the impact to crosvm.
-RUST_FUTURES_REVIEWERS: Set[str] = {'chh@google.com', 'natsu@google.com'}
-
 # Rust crate owners (reviewers).
 RUST_CRATE_OWNERS: ProjMapping = {
-    'rust/crates/aho-corasick': 'chh@google.com',
     'rust/crates/anyhow': 'mmaurer@google.com',
-    'rust/crates/bindgen': 'chh@google.com',
-    'rust/crates/bytes': 'chh@google.com',
-    'rust/crates/cexpr': 'chh@google.com',
-    'rust/crates/cfg-if': 'chh@google.com',
-    'rust/crates/clang-sys': 'chh@google.com',
-    'rust/crates/futures': RUST_FUTURES_REVIEWERS,
-    'rust/crates/futures-channel': RUST_FUTURES_REVIEWERS,
-    'rust/crates/futures-core': RUST_FUTURES_REVIEWERS,
-    'rust/crates/futures-executor': RUST_FUTURES_REVIEWERS,
-    'rust/crates/futures-io': RUST_FUTURES_REVIEWERS,
-    'rust/crates/futures-macro': RUST_FUTURES_REVIEWERS,
-    'rust/crates/futures-sink': RUST_FUTURES_REVIEWERS,
-    'rust/crates/futures-task': RUST_FUTURES_REVIEWERS,
-    'rust/crates/futures-util': RUST_FUTURES_REVIEWERS,
-    'rust/crates/glob': 'chh@google.com',
-    'rust/crates/lazycell': 'chh@google.com',
-    'rust/crates/lazy_static': 'chh@google.com',
-    'rust/crates/libloading': 'chh@google.com',
-    'rust/crates/log': 'chh@google.com',
-    'rust/crates/nom': 'chh@google.com',
-    'rust/crates/once_cell': 'chh@google.com',
-    'rust/crates/peeking_take_while': 'chh@google.com',
-    'rust/crates/pin-project': 'chh@google.com',
-    'rust/crates/pin-project-internal': 'chh@google.com',
-    'rust/crates/protobuf': 'chh@google.com',
-    'rust/crates/protobuf-codegen': 'chh@google.com',
-    'rust/crates/regex': 'chh@google.com',
-    'rust/crates/regex-syntax': 'chh@google.com',
-    'rust/crates/rustc-hash': 'chh@google.com',
-    'rust/crates/shlex': 'chh@google.com',
-    'rust/crates/thread_local': 'chh@google.com',
-    'rust/crates/which': 'chh@google.com',
     # more rust crate owners could be added later
 }
 
@@ -82,20 +44,19 @@ PROJ_REVIEWERS.update(RUST_CRATE_OWNERS)
 # It is only used to make random distribution "fair" among RUST_REVIEWERS.
 # It should not be too small, to spread nicely to multiple reviewers.
 # It should be larger or equal to len(RUST_CRATES_OWNERS).
-NUM_RUST_PROJECTS = 90
+NUM_RUST_PROJECTS = 120
 
 # Reviewers for external/rust/crates projects not found in PROJ_REVIEWER.
 # Each person has a quota, the number of projects to review.
 # Sum of these numbers should be greater or equal to NUM_RUST_PROJECTS
 # to avoid error cases in the creation of RUST_REVIEWER_LIST.
 RUST_REVIEWERS: Mapping[str, int] = {
-    'chh@google.com': 15,
-    'ivanlozano@google.com': 15,
-    'jeffv@google.com': 15,
-    'jgalenson@google.com': 15,
-    'mmaurer@google.com': 15,
-    'srhines@google.com': 15,
-    'tweek@google.com': 15,
+    'ivanlozano@google.com': 20,
+    'jeffv@google.com': 20,
+    'jgalenson@google.com': 20,
+    'mmaurer@google.com': 20,
+    'srhines@google.com': 20,
+    'tweek@google.com': 20,
     # If a Rust reviewer needs to take a vacation, comment out the line,
     # and distribute the quota to other reviewers.
 }
