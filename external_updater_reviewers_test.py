@@ -78,10 +78,6 @@ class ExternalUpdaterReviewersTest(unittest.TestCase):
         self.assertGreaterEqual(reviewers.NUM_RUST_PROJECTS, 50)
         self.assertGreaterEqual(reviewers.NUM_RUST_PROJECTS,
                                 len(reviewers.RUST_CRATE_OWNERS))
-        # chh@ should be in many projects and not in RUST_REVIEWER_LIST
-        self.assertGreaterEqual(len(reviewers.RUST_REVIEWER_LIST), 3)
-        self.assertNotIn("chh@google.com", reviewers.RUST_REVIEWER_LIST)
-        self.assertIn("chh@google.com", reviewers.RUST_REVIEWERS)
         # Assume no project reviewers and recreate RUST_REVIEWER_LIST
         reviewers.PROJ_REVIEWERS = {}
         reviewers.RUST_REVIEWER_LIST = reviewers.create_rust_reviewer_list()
