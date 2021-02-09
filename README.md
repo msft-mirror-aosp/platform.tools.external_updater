@@ -121,6 +121,8 @@ cd /src/aosp
 while true
 do
         repo abandon tmp_auto_upgrade
+        repo forall -c git checkout .
+        repo forall -c git clean -xdf
         repo sync -c
         source build/envsetup.sh
         lunch aosp_arm-eng
