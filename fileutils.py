@@ -16,6 +16,7 @@
 import datetime
 import os
 from pathlib import Path
+import textwrap
 
 # pylint: disable=import-error
 from google.protobuf import text_format  # type: ignore
@@ -86,4 +87,10 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
         date.day = now.day
     text_metadata = text_format.MessageToString(metadata)
     with get_metadata_path(proj_path).open('w') as metadata_file:
+        if metadata.third_party.license_type == metadata_pb2.LicenseType.BY_EXCEPTION_ONLY:
+           metadata_file.write(textwrap.dedent("""\
+            # *** THIS PACKAGE HAS SPECIAL LICENSING CONDITIONS.  PLEASE
+            #     CONSULT THE OWNERS AND opensource-licensing@google.com BEFORE
+            #     DEPENDING ON IT IN YOUR PROJECT. ***
+            """))
         metadata_file.write(text_metadata)
