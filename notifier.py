@@ -157,7 +157,7 @@ def send_notification(args):
     try:
         with open(args.history, 'r') as f:
             history = json.load(f)
-    except FileNotFoundError, json.decoder.JSONDecodeError:
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
         pass
 
     _process_results(args, history, results)
