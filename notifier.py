@@ -73,15 +73,17 @@ def _read_owner_file(proj):
 
 def _send_email(proj, latest_ver, recipient, upgrade_log):
     print('Sending email for {}: {}'.format(proj, latest_ver))
-    msg = "New version: {}".format(latest_ver)
+    msg = ""
     match = CHANGE_URL_RE.search(upgrade_log)
     if match is not None:
-        subject = f"[Succeeded] {proj}"
-        msg += '\n\nAn upgrade change is generated at:\n{}'.format(
+        subject = "[Succeeded]"
+        msg = 'An upgrade change is generated at:\n{}'.format(
             match.group(1))
     else:
-        subject = f"[Failed] {proj}"
+        subject = "[Failed]"
+        msg = 'Failed to generate upgrade change. See logs below for details.'
 
+    subject += f" {proj} {latest_ver}"
     owners = _read_owner_file(proj)
     if owners:
         msg += '\n\nOWNERS file: \n'
