@@ -76,8 +76,11 @@ def _send_email(proj, latest_ver, recipient, upgrade_log):
     msg = "New version: {}".format(latest_ver)
     match = CHANGE_URL_RE.search(upgrade_log)
     if match is not None:
+        subject = f"[Succeeded] {proj}"
         msg += '\n\nAn upgrade change is generated at:\n{}'.format(
             match.group(1))
+    else:
+        subject = f"[Failed] {proj}"
 
     owners = _read_owner_file(proj)
     if owners:
@@ -87,7 +90,7 @@ def _send_email(proj, latest_ver, recipient, upgrade_log):
     msg += '\n\n'
     msg += upgrade_log
 
-    subprocess.run(['sendgmr', '--to=' + recipient, '--subject=' + proj],
+    subprocess.run(['sendgmr', '--to=' + recipient, f'--subject={subject}'],
                    check=True,
                    stdout=subprocess.PIPE,
                    stderr=subprocess.PIPE,
@@ -154,7 +157,7 @@ def send_notification(args):
     try:
         with open(args.history, 'r') as f:
             history = json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
         pass
 
     _process_results(args, history, results)
