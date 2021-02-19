@@ -73,12 +73,17 @@ def _read_owner_file(proj):
 
 def _send_email(proj, latest_ver, recipient, upgrade_log):
     print('Sending email for {}: {}'.format(proj, latest_ver))
-    msg = "New version: {}".format(latest_ver)
+    msg = ""
     match = CHANGE_URL_RE.search(upgrade_log)
     if match is not None:
-        msg += '\n\nAn upgrade change is generated at:\n{}'.format(
+        subject = "[Succeeded]"
+        msg = 'An upgrade change is generated at:\n{}'.format(
             match.group(1))
+    else:
+        subject = "[Failed]"
+        msg = 'Failed to generate upgrade change. See logs below for details.'
 
+    subject += f" {proj} {latest_ver}"
     owners = _read_owner_file(proj)
     if owners:
         msg += '\n\nOWNERS file: \n'
@@ -87,7 +92,7 @@ def _send_email(proj, latest_ver, recipient, upgrade_log):
     msg += '\n\n'
     msg += upgrade_log
 
-    subprocess.run(['sendgmr', '--to=' + recipient, '--subject=' + proj],
+    subprocess.run(['sendgmr', '--to=' + recipient, f'--subject={subject}'],
                    check=True,
                    stdout=subprocess.PIPE,
                    stderr=subprocess.PIPE,
@@ -154,7 +159,7 @@ def send_notification(args):
     try:
         with open(args.history, 'r') as f:
             history = json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
         pass
 
     _process_results(args, history, results)
