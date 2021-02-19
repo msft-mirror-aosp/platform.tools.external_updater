@@ -34,7 +34,7 @@ def fetch(proj_path: Path, remote_names: List[str]) -> None:
         proj_path: Path to Git repository.
         remote_names: Array of string to specify remote names.
     """
-    _run(['git', 'fetch', '--multiple'] + remote_names, cwd=proj_path)
+    _run(['git', 'fetch', '--tags', '--multiple'] + remote_names, cwd=proj_path)
 
 
 def add_remote(proj_path: Path, name: str, url: str) -> None:
