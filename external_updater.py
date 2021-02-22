@@ -92,11 +92,6 @@ def _do_update(args: argparse.Namespace, updater: Updater,
 
     if args.branch_and_commit:
         git_utils.checkout(full_path, args.remote_name + '/master')
-        try:
-            git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
-        except subprocess.CalledProcessError:
-            # Still continue if the branch doesn't exist.
-            pass
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     updater.update()
