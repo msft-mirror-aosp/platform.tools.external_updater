@@ -92,7 +92,17 @@ def _send_email(proj, latest_ver, recipient, upgrade_log):
     msg += '\n\n'
     msg += upgrade_log
 
-    subprocess.run(['sendgmr', '--to=' + recipient, f'--subject={subject}'],
+    cc_recipient = ''
+    for line in owners.splitlines():
+        line = line.strip()
+        if line.endswith('@google.com'):
+            cc_recipient += line
+            cc_recipient += ','
+
+    subprocess.run(['sendgmr',
+                    f'--to={recipient}',
+                    f'--cc={cc_recipient}',
+                    f'--subject={subject}'],
                    check=True,
                    stdout=subprocess.PIPE,
                    stderr=subprocess.PIPE,
