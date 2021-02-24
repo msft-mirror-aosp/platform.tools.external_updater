@@ -75,6 +75,11 @@ echo "Swapping old and new..."
 rm -rf $external_dir
 mv $tmp_dir $external_dir
 
+echo "Updating TEST_MAPPING..."
+UCT="$root_dir/development/scripts/update_crate_tests.py"
+[ -f "$UCT" ] || abort "ERROR: cannot find $UCT"
+$UCT $external_dir
+
 cd $external_dir
 git add .
 
