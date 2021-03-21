@@ -16,27 +16,40 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+python_defaults {
+    name: "external_updater_defaults",
+    version: {
+        py2: {
+            enabled: false,
+            embedded_launcher: false,
+        },
+        py3: {
+            enabled: true,
+            // Error if enable:
+            // certificate verify failed: unable to get local issuer certificate
+            embedded_launcher: false,
+        },
+    },
+}
+
 python_binary_host {
     name: "external_updater",
+    defaults: ["external_updater_defaults"],
     main: "external_updater.py",
-    srcs: [
-        "external_updater.py",
-    ],
-    libs: [
-        "external_updater_lib",
-    ],
+    srcs: ["external_updater.py"],
+    libs: ["external_updater_lib"],
 }
 
 python_binary_host {
     name: "external_updater_notifier",
+    defaults: ["external_updater_defaults"],
     main: "notifier.py",
-    srcs: [
-        "notifier.py",
-    ],
+    srcs: ["notifier.py"],
 }
 
 python_library_host {
     name: "external_updater_lib",
+    defaults: ["external_updater_defaults"],
     srcs: [
         "archive_utils.py",
         "base_updater.py",
@@ -61,49 +74,32 @@ python_library_host {
         "update_package.sh",
         "regen_bp.sh",
     ],
-    version: {
-        py2: {
-            enabled: false,
-            embedded_launcher: false,
-        },
-        py3: {
-            enabled: true,
-            embedded_launcher: false,
-        },
-    },
 }
 
 python_defaults {
-    name: "external_updater_defaults",
-    libs: [
-        "external_updater_lib",
-    ],
+    name: "external_updater_test_defaults",
+    defaults: ["external_updater_defaults"],
     version: {
-        py2: {
-            enabled: false,
-        },
         py3: {
-            enabled: true,
+            embedded_launcher: true,
         },
     },
 }
 
 python_test_host {
     name: "external_updater_test",
-    defaults: ["external_updater_defaults"],
+    defaults: ["external_updater_test_defaults"],
     main: "external_updater_test.py",
-    srcs: [
-        "external_updater_test.py",
-    ],
+    srcs: ["external_updater_test.py"],
+    libs: ["external_updater_lib"],
     test_suites: ["general-tests"],
 }
 
 python_test_host {
     name: "external_updater_reviewers_test",
-    defaults: ["external_updater_defaults"],
+    defaults: ["external_updater_test_defaults"],
     main: "external_updater_reviewers_test.py",
-    srcs: [
-        "external_updater_reviewers_test.py",
-    ],
+    srcs: ["external_updater_reviewers_test.py"],
+    libs: ["external_updater_lib"],
     test_suites: ["general-tests"],
 }
