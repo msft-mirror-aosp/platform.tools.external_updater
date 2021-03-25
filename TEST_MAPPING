@@ -1,9 +1,0 @@
-{
-  "presubmit": [
-    // "external_updater_test" runs alone but not with atest
-    {
-      "name": "external_updater_reviewers_test",
-      "host": true
-    }
-  ]
-}
