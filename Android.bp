@@ -92,7 +92,9 @@ python_test_host {
     main: "external_updater_test.py",
     srcs: ["external_updater_test.py"],
     libs: ["external_updater_lib"],
-    test_suites: ["general-tests"],
+    test_options: {
+        unit_test: true,
+    },
 }
 
 python_test_host {
@@ -101,5 +103,7 @@ python_test_host {
     main: "external_updater_reviewers_test.py",
     srcs: ["external_updater_reviewers_test.py"],
     libs: ["external_updater_lib"],
-    test_suites: ["general-tests"],
+    test_options: {
+        unit_test: true,
+    },
 }
