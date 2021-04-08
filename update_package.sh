@@ -62,7 +62,7 @@ for p in $tmp_dir/patches/*.diff
 do
   [ -e "$p" ] || continue
   echo "Applying $p..."
-  patch -p1 -d $tmp_dir < $p;
+  patch -p1 -d $tmp_dir --no-backup-if-mismatch < $p;
 done
 
 if [ -f $tmp_dir/post_update.sh ]
