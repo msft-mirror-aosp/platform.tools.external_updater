@@ -69,7 +69,7 @@ do
       [ "$(basename $p)" != "Android.bp.patch" ] || continue
   fi
   echo "Applying $p..."
-  patch -p1 -d $tmp_dir < $p;
+  patch -p1 -d $tmp_dir --no-backup-if-mismatch < $p;
 done
 
 if [ -f $tmp_dir/Cargo.toml -a -f $tmp_dir/Android.bp ]
