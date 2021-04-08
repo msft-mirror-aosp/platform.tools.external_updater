@@ -115,7 +115,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.commit(full_path, msg)
 
     if args.push_change:
-        git_utils.push(full_path, args.remote_name)
+        git_utils.push(full_path, args.remote_name, updater.has_errors)
 
     if args.branch_and_commit:
         git_utils.checkout(full_path, args.remote_name + '/master')
