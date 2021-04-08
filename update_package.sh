@@ -58,12 +58,26 @@ then
 fi
 
 echo "Applying patches..."
-for p in $tmp_dir/patches/*.diff
+for p in $tmp_dir/patches/*.{diff,patch}
 do
   [ -e "$p" ] || continue
+  # Do not patch the Android.bp file, as we assume it will
+  # patch itself.
+  if [ -f $tmp_dir/Cargo.toml ]
+  then
+      [ "$(basename $p)" != "Android.bp.diff" ] || continue
+      [ "$(basename $p)" != "Android.bp.patch" ] || continue
+  fi
   echo "Applying $p..."
   patch -p1 -d $tmp_dir < $p;
 done
+
+if [ -f $tmp_dir/Cargo.toml -a -f $tmp_dir/Android.bp ]
+then
+    # regenerate Android.bp after local patches, as they may
+    # have deleted files that it uses.
+  /bin/bash `dirname $0`/regen_bp.sh $root_dir $external_dir
+fi
 
 if [ -f $tmp_dir/post_update.sh ]
 then
