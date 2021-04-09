@@ -117,6 +117,7 @@ class CratesUpdater(Updater):
             temporary_dir = archive_utils.download_and_extract(self.download_url)
             package_dir = archive_utils.find_archive_root(temporary_dir)
             updater_utils.replace_package(package_dir, self._proj_path)
+            self.check_for_errors()
         finally:
             urllib.request.urlcleanup()
 
@@ -142,6 +143,24 @@ class CratesUpdater(Updater):
         if description and description != metadata.description:
             print("New METADATA description:", description)
             metadata.description = description
+
+    def check_for_errors(self) -> None:
+        # Check for .rej patches from failing to apply patches.
+        # If this has too many false positives, we could either
+        # check if the files are modified by patches or somehow
+        # track which files existed before the patching.
+        rejects = list(self._proj_path.glob('**/*.rej'))
+        if len(rejects) > 0:
+            print("Error: Found patch reject files: %s" % str(rejects))
+            self._has_errors = True
+        # Check for Cargo errors embedded in Android.bp.
+        # Note that this should stay in sync with cargo2android.py.
+        with open('%s/Android.bp' % self._proj_path, 'r') as bp_file:
+            for line in bp_file:
+                if line.strip() == "Errors in cargo.out:":
+                    print("Error: Found Cargo errors in Android.bp")
+                    self._has_errors = True
+                    return
 
     def _toml2str(self, line: str) -> str:
         """Convert a quoted toml string to a Python str without quotes."""
