@@ -161,11 +161,13 @@ def checkout(proj_path: Path, branch_name: str) -> None:
     _run(['git', 'checkout', branch_name], cwd=proj_path)
 
 
-def push(proj_path: Path, remote_name: str) -> None:
+def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
     """Pushes change to remote."""
     cmd = ['git', 'push', remote_name, 'HEAD:refs/for/master']
     if revs := reviewers.find_reviewers(str(proj_path)):
         cmd.extend(['-o', revs])
     if tag := hashtags.find_hashtag(proj_path):
         cmd.extend(['-o', 't=' + tag])
+    if has_errors:
+        cmd.extend(['-o', 'l=Verified-1'])
     _run(cmd, cwd=proj_path)
