@@ -96,7 +96,7 @@ class ExternalUpdaterReviewersTest(unittest.TestCase):
         counters = self._collect_reviewers(num_tries, "rust/crates/libc")
         self.assertEqual(len(counters), len(reviewers.RUST_REVIEWERS))
         for n in counters.values():
-            self.assertGreaterEqual(n, 10)
+            self.assertGreaterEqual(n, 5)
         self.assertEqual(sum(counters.values()), num_tries)
 
     def test_project_reviewers(self):
