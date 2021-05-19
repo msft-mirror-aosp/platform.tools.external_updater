@@ -22,6 +22,7 @@ updater.sh update --refresh --keep_date rust/crates/libc
 
 import argparse
 import enum
+import glob
 import json
 import os
 import sys
@@ -109,8 +110,9 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     git_utils.add_file(full_path, 'METADATA')
 
     if args.branch_and_commit:
+        rel_proj_path = fileutils.get_relative_project_path(full_path)
         msg = 'Upgrade {} to {}\n\nTest: make\n'.format(
-            args.path, updater.latest_version)
+            rel_proj_path, updater.latest_version)
         git_utils.add_file(full_path, '*')
         git_utils.commit(full_path, msg)
 
@@ -162,12 +164,13 @@ def check_and_update(args: argparse.Namespace,
         return str(err)
 
 
-def _check_path(args: argparse.Namespace, paths: Iterator[str],
-                delay: int) -> Dict[str, Dict[str, str]]:
+def check_and_update_path(args: argparse.Namespace, paths: Iterator[str],
+                          update_lib: bool,
+                          delay: int) -> Dict[str, Dict[str, str]]:
     results = {}
     for path in paths:
         res = {}
-        updater = check_and_update(args, Path(path))
+        updater = check_and_update(args, Path(path), update_lib)
         if isinstance(updater, str):
             res['error'] = updater
         else:
@@ -191,7 +194,7 @@ def _list_all_metadata() -> Iterator[str]:
 def check(args: argparse.Namespace) -> None:
     """Handler for check command."""
     paths = _list_all_metadata() if args.all else args.paths
-    results = _check_path(args, paths, args.delay)
+    results = check_and_update_path(args, paths, False, args.delay)
 
     if args.json_output is not None:
         with Path(args.json_output).open('w') as res_file:
@@ -200,7 +203,17 @@ def check(args: argparse.Namespace) -> None:
 
 def update(args: argparse.Namespace) -> None:
     """Handler for update command."""
-    check_and_update(args, args.path, update_lib=True)
+    # We want to use glob to get all the paths, so we first convert to absolute.
+    abs_paths = [fileutils.get_absolute_project_path(Path(path))
+                 for path in args.paths]
+    all_paths = sorted([path for abs_path in abs_paths
+                        for path in glob.glob(str(abs_path))])
+    # Now we can update each path.
+    results = check_and_update_path(args, all_paths, True, 0)
+
+    if args.json_output is not None:
+        with Path(args.json_output).open('w') as res_file:
+            json.dump(results, res_file, sort_keys=True, indent=4)
 
 
 def parse_args() -> argparse.Namespace:
@@ -235,9 +248,12 @@ def parse_args() -> argparse.Namespace:
     # Creates parser for update command.
     update_parser = subparsers.add_parser('update', help='Update one project.')
     update_parser.add_argument(
-        'path',
-        help='Path of the project. '
+        'paths',
+        nargs='*',
+        help='Paths of the project as globs. '
         'Relative paths will be resolved from external/.')
+    update_parser.add_argument('--json_output',
+                               help='Path of a json file to write result to.')
     update_parser.add_argument(
         '--force',
         help='Run update even if there\'s no new version.',
