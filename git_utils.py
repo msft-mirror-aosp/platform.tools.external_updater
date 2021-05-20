@@ -99,7 +99,7 @@ def list_remote_branches(proj_path: Path, remote_name: str) -> List[str]:
     stripped = [line.strip() for line in lines]
     remote_path = remote_name + '/'
     return [
-        line.lstrip(remote_path) for line in stripped
+        line[len(remote_path):] for line in stripped
         if line.startswith(remote_path)
     ]
 
@@ -114,6 +114,18 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> List[str]:
                  cwd=proj_path).splitlines()
     tags = [parse_remote_tag(line) for line in lines]
     return list(set(tags))
+
+
+def get_default_branch(proj_path: Path, remote_name: str) -> str:
+    """Gets the name of the upstream branch to use."""
+    branches_to_try = ['master', 'main']
+    remote_branches = list_remote_branches(proj_path, remote_name)
+    for branch in branches_to_try:
+        if branch in remote_branches:
+            return branch
+    # We couldn't find any of the branches we expected.
+    # Default to 'master', although nothing will work well.
+    return 'master'
 
 
 COMMIT_PATTERN = r'^[a-f0-9]{40}$'
