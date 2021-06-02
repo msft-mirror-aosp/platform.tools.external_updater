@@ -208,8 +208,12 @@ def update(args: argparse.Namespace) -> None:
                  for path in args.paths]
     all_paths = sorted([path for abs_path in abs_paths
                         for path in glob.glob(str(abs_path))])
+    # Remove excluded paths.
+    excludes = set() if args.exclude is None else set(args.exclude)
+    filtered_paths = [path for path in all_paths
+                      if not Path(path).name in excludes]
     # Now we can update each path.
-    results = check_and_update_path(args, all_paths, True, 0)
+    results = check_and_update_path(args, filtered_paths, True, 0)
 
     if args.json_output is not None:
         with Path(args.json_output).open('w') as res_file:
@@ -276,6 +280,11 @@ def parse_args() -> argparse.Namespace:
                                default='aosp',
                                required=False,
                                help='Upstream remote name.')
+    update_parser.add_argument('--exclude',
+                               action='append',
+                               help='Names of projects to exclude. '
+                               'These are just the final part of the path '
+                               'with no directories.')
     update_parser.set_defaults(func=update)
 
     return parser.parse_args()
