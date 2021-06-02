@@ -21,6 +21,7 @@ set -e
 
 tmp_dir=$1
 external_dir=$2
+tmp_file=$3
 
 # root of Android source tree
 root_dir=`pwd`
@@ -80,8 +81,15 @@ then
 fi
 
 echo "Swapping old and new..."
-rm -rf $external_dir
+second_tmp_dir=`mktemp -d`
+mv $external_dir $second_tmp_dir
 mv $tmp_dir $external_dir
+mv $second_tmp_dir/* $tmp_dir
+rm -rf $second_tmp_dir
+if [ -n "$tmp_file" ]; then
+    # Write to the temporary file to show we have swapped.
+    echo "Swapping" > $tmp_file
+fi
 
 echo "Updating TEST_MAPPING..."
 UCT="$root_dir/development/scripts/update_crate_tests.py"
