@@ -46,7 +46,9 @@ CopyIfPresent "METADATA"
 CopyIfPresent "TEST_MAPPING"
 CopyIfPresent ".git"
 CopyIfPresent ".gitignore"
-CopyIfPresent "cargo2android.json"
+if compgen -G "$external_dir/cargo2android*"; then
+    cp -a -f -n $external_dir/cargo2android* .
+fi
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
 CopyIfPresent "OWNERS"
