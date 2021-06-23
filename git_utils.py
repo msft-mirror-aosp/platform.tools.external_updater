@@ -142,8 +142,9 @@ def merge(proj_path: Path, branch: str) -> None:
     """Merges a branch."""
     try:
         _run(['git', 'merge', branch, '--no-commit'], cwd=proj_path)
-    except subprocess.CalledProcessError:
-        # Merge failed. Error is already written to console.
+    except subprocess.CalledProcessError as err:
+        if hasattr(err, "output"):
+            print(err.output)
         _run(['git', 'merge', '--abort'], cwd=proj_path)
         raise
 
