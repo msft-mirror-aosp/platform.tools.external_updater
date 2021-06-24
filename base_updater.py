@@ -32,6 +32,8 @@ class Updater:
         self._new_url.CopyFrom(old_url)
         self._new_ver = old_ver
 
+        self._has_errors = False
+
     def is_supported_url(self) -> bool:
         """Returns whether the url is supported."""
         raise NotImplementedError()
@@ -46,6 +48,13 @@ class Updater:
         Has to call check() before this function.
         """
         raise NotImplementedError()
+
+    def rollback(self) -> bool:
+        """Rolls the current update back.
+
+        This is an optional operation.  Returns whether the rollback succeeded.
+        """
+        return False
 
     @property
     def project_path(self) -> Path:
@@ -71,6 +80,11 @@ class Updater:
     def latest_url(self) -> metadata_pb2.URL:
         """Gets URL for latest version."""
         return self._new_url
+
+    @property
+    def has_errors(self) -> bool:
+        """Gets whether this update had an error."""
+        return self._has_errors
 
     def use_current_as_latest(self):
         """Uses current version/url as the latest to refresh project."""

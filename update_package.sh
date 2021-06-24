@@ -21,6 +21,7 @@ set -e
 
 tmp_dir=$1
 external_dir=$2
+tmp_file=$3
 
 # root of Android source tree
 root_dir=`pwd`
@@ -45,25 +46,35 @@ CopyIfPresent "METADATA"
 CopyIfPresent "TEST_MAPPING"
 CopyIfPresent ".git"
 CopyIfPresent ".gitignore"
+if compgen -G "$external_dir/cargo2android*"; then
+    cp -a -f -n $external_dir/cargo2android* .
+fi
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
 CopyIfPresent "OWNERS"
 CopyIfPresent "README.android"
 
-if [ -f $tmp_dir/Cargo.toml -a -f $tmp_dir/Android.bp ]
-then
-  # regenerate Android.bp before local patches, so it is
-  # possible to patch the generated Android.bp after this.
-  /bin/bash `dirname $0`/regen_bp.sh $root_dir $external_dir
-fi
-
 echo "Applying patches..."
-for p in $tmp_dir/patches/*.diff
+for p in $tmp_dir/patches/*.{diff,patch}
 do
   [ -e "$p" ] || continue
+  # Do not patch the Android.bp file, as we assume it will
+  # patch itself.
+  if [ -f $tmp_dir/Cargo.toml ]
+  then
+      [ "$(basename $p)" != "Android.bp.diff" ] || continue
+      [ "$(basename $p)" != "Android.bp.patch" ] || continue
+  fi
   echo "Applying $p..."
-  patch -p1 -d $tmp_dir < $p;
+  patch -p1 -d $tmp_dir --no-backup-if-mismatch < $p;
 done
+
+if [ -f $tmp_dir/Cargo.toml -a -f $tmp_dir/Android.bp ]
+then
+    # regenerate Android.bp after local patches, as they may
+    # have deleted files that it uses.
+  /bin/bash `dirname $0`/regen_bp.sh $root_dir $external_dir
+fi
 
 if [ -f $tmp_dir/post_update.sh ]
 then
@@ -72,13 +83,23 @@ then
 fi
 
 echo "Swapping old and new..."
-rm -rf $external_dir
+second_tmp_dir=`mktemp -d`
+mv $external_dir $second_tmp_dir
 mv $tmp_dir $external_dir
+mv $second_tmp_dir/* $tmp_dir
+rm -rf $second_tmp_dir
+if [ -n "$tmp_file" ]; then
+    # Write to the temporary file to show we have swapped.
+    echo "Swapping" > $tmp_file
+fi
 
-echo "Updating TEST_MAPPING..."
-UCT="$root_dir/development/scripts/update_crate_tests.py"
-[ -f "$UCT" ] || abort "ERROR: cannot find $UCT"
-$UCT $external_dir
+if [ -f $tmp_dir/Cargo.toml -a -f $tmp_dir/Android.bp ]
+then
+    echo "Updating TEST_MAPPING..."
+    UCT="$root_dir/development/scripts/update_crate_tests.py"
+    [ -f "$UCT" ] || abort "ERROR: cannot find $UCT"
+    $UCT $external_dir
+fi
 
 cd $external_dir
 git add .

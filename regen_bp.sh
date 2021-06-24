@@ -24,13 +24,17 @@
 
 set -e
 
+# Wrapper around cargo2android.
+C2A_WRAPPER="/google/bin/releases/android-rust/cargo2android/sandbox.par"
+C2A_WRAPPER_FLAGS="--updater"
+
 function main() {
   check_files $*
   update_files_with_cargo_pkg_vars
   # Save Cargo.lock if it existed before this update.
   [ ! -f Cargo.lock ] || mv Cargo.lock Cargo.lock.saved
-  echo "Updating Android.bp: $C2A $FLAGS"
-  $C2A $FLAGS
+  echo "Updating Android.bp: $C2A_WRAPPER $C2A_WRAPPER_FLAGS -- $FLAGS"
+  $C2A_WRAPPER $C2A_WRAPPER_FLAGS -- $FLAGS
   copy_cargo_out_files $*
   rm -rf target.tmp cargo.out Cargo.lock
   # Restore Cargo.lock if it existed before this update.
@@ -45,13 +49,10 @@ function abort() {
 function check_files() {
   if [ "$1" == "" ]; then
     EXTERNAL_DIR=`pwd`
-    C2A=`which cargo2android.py ||
-         abort "ERROR: cannot find cargo2android.py in PATH"`
   else
     EXTERNAL_DIR="$2"  # e.g. rust/crates/bytes
-    C2A="$1/development/scripts/cargo2android.py"
-    [ -f "$C2A" ] || abort "ERROR: cannot find $C2A"
   fi
+  [ -f "$C2A_WRAPPER" ] || abort "ERROR: cannot find $C2A_WRAPPER"
   LINE1=`head -1 Android.bp || abort "ERROR: cannot find Android.bp"`
   if [[ ! "$LINE1" =~ ^.*cargo2android.py.*$ ]]; then
     echo 'Android.bp header does not contain "cargo2android.py"; skip regen_bp'

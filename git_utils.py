@@ -99,7 +99,7 @@ def list_remote_branches(proj_path: Path, remote_name: str) -> List[str]:
     stripped = [line.strip() for line in lines]
     remote_path = remote_name + '/'
     return [
-        line.lstrip(remote_path) for line in stripped
+        line[len(remote_path):] for line in stripped
         if line.startswith(remote_path)
     ]
 
@@ -116,6 +116,18 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> List[str]:
     return list(set(tags))
 
 
+def get_default_branch(proj_path: Path, remote_name: str) -> str:
+    """Gets the name of the upstream branch to use."""
+    branches_to_try = ['master', 'main']
+    remote_branches = list_remote_branches(proj_path, remote_name)
+    for branch in branches_to_try:
+        if branch in remote_branches:
+            return branch
+    # We couldn't find any of the branches we expected.
+    # Default to 'master', although nothing will work well.
+    return 'master'
+
+
 COMMIT_PATTERN = r'^[a-f0-9]{40}$'
 COMMIT_RE = re.compile(COMMIT_PATTERN)
 
@@ -130,8 +142,9 @@ def merge(proj_path: Path, branch: str) -> None:
     """Merges a branch."""
     try:
         _run(['git', 'merge', branch, '--no-commit'], cwd=proj_path)
-    except subprocess.CalledProcessError:
-        # Merge failed. Error is already written to console.
+    except subprocess.CalledProcessError as err:
+        if hasattr(err, "output"):
+            print(err.output)
         _run(['git', 'merge', '--abort'], cwd=proj_path)
         raise
 
@@ -161,11 +174,13 @@ def checkout(proj_path: Path, branch_name: str) -> None:
     _run(['git', 'checkout', branch_name], cwd=proj_path)
 
 
-def push(proj_path: Path, remote_name: str) -> None:
+def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
     """Pushes change to remote."""
     cmd = ['git', 'push', remote_name, 'HEAD:refs/for/master']
     if revs := reviewers.find_reviewers(str(proj_path)):
         cmd.extend(['-o', revs])
     if tag := hashtags.find_hashtag(proj_path):
         cmd.extend(['-o', 't=' + tag])
+    if has_errors:
+        cmd.extend(['-o', 'l=Verified-1'])
     _run(cmd, cwd=proj_path)
