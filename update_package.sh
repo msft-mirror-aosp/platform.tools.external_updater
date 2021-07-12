@@ -93,14 +93,6 @@ if [ -n "$tmp_file" ]; then
     echo "Swapping" > $tmp_file
 fi
 
-if [ -f $tmp_dir/Cargo.toml -a -f $tmp_dir/Android.bp ]
-then
-    echo "Updating TEST_MAPPING..."
-    UCT="$root_dir/development/scripts/update_crate_tests.py"
-    [ -f "$UCT" ] || abort "ERROR: cannot find $UCT"
-    $UCT $external_dir
-fi
-
 cd $external_dir
 git add .
 
