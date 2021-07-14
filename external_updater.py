@@ -114,6 +114,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             rel_proj_path = fileutils.get_relative_project_path(full_path)
             msg = 'Upgrade {} to {}\n\nTest: make\n'.format(
                 rel_proj_path, updater.latest_version)
+            git_utils.remove_gitmodules(full_path)
             git_utils.add_file(full_path, '*')
             git_utils.commit(full_path, msg)
     except Exception as err:
