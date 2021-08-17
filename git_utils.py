@@ -154,6 +154,11 @@ def add_file(proj_path: Path, file_name: str) -> None:
     _run(['git', 'add', file_name], cwd=proj_path)
 
 
+def remove_gitmodules(proj_path: Path) -> None:
+    """Deletes .gitmodules files."""
+    _run(['find', '.', '-name', '.gitmodules', '-delete'], cwd=proj_path)
+
+
 def delete_branch(proj_path: Path, branch_name: str) -> None:
     """Force delete a branch."""
     _run(['git', 'branch', '-D', branch_name], cwd=proj_path)
