@@ -197,23 +197,33 @@ def _list_all_metadata() -> Iterator[str]:
         dirs.sort(key=lambda d: d.lower())
 
 
+def get_paths(paths: List[str]) -> List[str]:
+    """Expand paths via globs."""
+    # We want to use glob to get all the paths, so we first convert to absolute.
+    abs_paths = [fileutils.get_absolute_project_path(Path(path))
+                 for path in paths]
+    return [path for abs_path in abs_paths
+            for path in sorted(glob.glob(str(abs_path)))]
+
+
+def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> List[str]:
+    """Output a JSON report."""
+    with Path(json_file).open('w') as res_file:
+        json.dump(results, res_file, sort_keys=True, indent=4)
+
+
 def check(args: argparse.Namespace) -> None:
     """Handler for check command."""
-    paths = _list_all_metadata() if args.all else args.paths
+    paths = _list_all_metadata() if args.all else get_paths(args.paths)
     results = check_and_update_path(args, paths, False, args.delay)
 
     if args.json_output is not None:
-        with Path(args.json_output).open('w') as res_file:
-            json.dump(results, res_file, sort_keys=True, indent=4)
+        write_json(args.json_output, results)
 
 
 def update(args: argparse.Namespace) -> None:
     """Handler for update command."""
-    # We want to use glob to get all the paths, so we first convert to absolute.
-    abs_paths = [fileutils.get_absolute_project_path(Path(path))
-                 for path in args.paths]
-    all_paths = sorted([path for abs_path in abs_paths
-                        for path in glob.glob(str(abs_path))])
+    all_paths = get_paths(args.paths)
     # Remove excluded paths.
     excludes = set() if args.exclude is None else set(args.exclude)
     filtered_paths = [path for path in all_paths
@@ -222,8 +232,7 @@ def update(args: argparse.Namespace) -> None:
     results = check_and_update_path(args, filtered_paths, True, 0)
 
     if args.json_output is not None:
-        with Path(args.json_output).open('w') as res_file:
-            json.dump(results, res_file, sort_keys=True, indent=4)
+        write_json(args.json_output, results)
 
 
 def parse_args() -> argparse.Namespace:
