@@ -202,8 +202,11 @@ def get_paths(paths: List[str]) -> List[str]:
     # We want to use glob to get all the paths, so we first convert to absolute.
     abs_paths = [fileutils.get_absolute_project_path(Path(path))
                  for path in paths]
-    return [path for abs_path in abs_paths
-            for path in sorted(glob.glob(str(abs_path)))]
+    result = [path for abs_path in abs_paths
+              for path in sorted(glob.glob(str(abs_path)))]
+    if paths and not result:
+        print('Could not find any valid paths in %s' % str(paths))
+    return result
 
 
 def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> List[str]:
