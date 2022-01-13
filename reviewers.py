@@ -49,7 +49,6 @@ PROJ_REVIEWERS.update(RUST_CRATE_OWNERS)
 RUST_REVIEWERS: Mapping[str, int] = {
     'ivanlozano@google.com': 20,
     'jeffv@google.com': 20,
-    'jgalenson@google.com': 20,
     'mmaurer@google.com': 20,
     'srhines@google.com': 20,
     'tweek@google.com': 20,
