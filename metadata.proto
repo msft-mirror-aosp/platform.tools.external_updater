@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// copyright (C) 2018 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,17 +17,14 @@
 // This proto will only contain fields and values the updater cares about.
 // It is not intended to be the formal definition of METADATA file.
 
-// See google3/third_party/metadata.proto if you need to add more stuff to match
-// upstream.
-
-syntax = "proto2"; // As long as upstream is proto2...
+syntax = "proto3";
 
 package external_updater;
 
 message MetaData {
-  optional string name = 1;
-  optional string description = 3;
-  optional ThirdPartyMetaData third_party = 13;
+  string name = 1;
+  string description = 3;
+  ThirdPartyMetaData third_party = 13;
 }
 
 enum LicenseType {
@@ -43,11 +40,10 @@ enum LicenseType {
 
 message ThirdPartyMetaData {
   repeated URL url = 1;
-  optional string version = 2;
-  optional LicenseType license_type = 4;
-  optional string license_note = 5;
-  optional Security security = 7;
-  optional Date last_upgrade_date = 10;
+  string version = 2;
+  LicenseType license_type = 4;
+  string license_note = 5;
+  Date last_upgrade_date = 10;
 }
 
 message URL {
@@ -62,26 +58,13 @@ message URL {
     OTHER = 11;
   }
 
-  optional Type type = 1;
+  Type type = 1;
 
-  optional string value = 2;
+  string value = 2;
 }
 
 message Date {
-  optional int32 year = 1;
-  optional int32 month = 2;
-  optional int32 day = 3;
-}
-
-message Security {
-  enum Category {
-    SANDBOXED_ONLY = 1;
-    TRUSTED_DATA_ONLY = 2;
-    REVIEWED_AND_SECURE = 3;
-  }
-
-  optional Category category = 1;
-  optional string note = 2;
-  repeated string tag = 3;
-  repeated string mitigated_security_patch = 5;
+  int32 year = 1;
+  int32 month = 2;
+  int32 day = 3;
 }
