@@ -21,7 +21,6 @@ set -e
 
 tmp_dir=$1
 external_dir=$2
-tmp_file=$3
 
 # root of Android source tree
 root_dir=`pwd`
@@ -46,13 +45,18 @@ CopyIfPresent "METADATA"
 CopyIfPresent "TEST_MAPPING"
 CopyIfPresent ".git"
 CopyIfPresent ".gitignore"
-if compgen -G "$external_dir/cargo2android*"; then
-    cp -a -f -n $external_dir/cargo2android* .
-fi
+CopyIfPresent "cargo2android.json"
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
 CopyIfPresent "OWNERS"
 CopyIfPresent "README.android"
+
+if [ -f $tmp_dir/Cargo.toml -a -f $tmp_dir/Android.bp ]
+then
+  # regenerate Android.bp before local patches, so it is
+  # possible to patch the generated Android.bp after this.
+  /bin/bash `dirname $0`/regen_bp.sh $root_dir $external_dir
+fi
 
 echo "Applying patches..."
 for p in $tmp_dir/patches/*.{diff,patch}
@@ -83,15 +87,13 @@ then
 fi
 
 echo "Swapping old and new..."
-second_tmp_dir=`mktemp -d`
-mv $external_dir $second_tmp_dir
+rm -rf $external_dir
 mv $tmp_dir $external_dir
-mv $second_tmp_dir/* $tmp_dir
-rm -rf $second_tmp_dir
-if [ -n "$tmp_file" ]; then
-    # Write to the temporary file to show we have swapped.
-    echo "Swapping" > $tmp_file
-fi
+
+echo "Updating TEST_MAPPING..."
+UCT="$root_dir/development/scripts/update_crate_tests.py"
+[ -f "$UCT" ] || abort "ERROR: cannot find $UCT"
+$UCT $external_dir
 
 cd $external_dir
 git add .
