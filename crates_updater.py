@@ -18,8 +18,6 @@ import os
 # pylint: disable=g-importing-member
 from pathlib import Path
 import re
-import shutil
-import tempfile
 import urllib.request
 
 import archive_utils
@@ -50,8 +48,6 @@ class CratesUpdater(Updater):
 
     download_url: str
     package: str
-    package_dir: str
-    temp_file: tempfile.NamedTemporaryFile
 
     def is_supported_url(self) -> bool:
         if self._old_url.type != metadata_pb2.URL.HOMEPAGE:
@@ -119,24 +115,11 @@ class CratesUpdater(Updater):
         """
         try:
             temporary_dir = archive_utils.download_and_extract(self.download_url)
-            self.package_dir = archive_utils.find_archive_root(temporary_dir)
-            self.temp_file = tempfile.NamedTemporaryFile()
-            updater_utils.replace_package(self.package_dir, self._proj_path,
-                                          self.temp_file.name)
+            package_dir = archive_utils.find_archive_root(temporary_dir)
+            updater_utils.replace_package(package_dir, self._proj_path)
             self.check_for_errors()
         finally:
             urllib.request.urlcleanup()
-
-    def rollback(self) -> bool:
-        # Only rollback if we have already swapped,
-        # which we denote by writing to this file.
-        if os.fstat(self.temp_file.fileno()).st_size > 0:
-            tmp_dir = tempfile.TemporaryDirectory()
-            shutil.move(self._proj_path, tmp_dir.name)
-            shutil.move(self.package_dir, self._proj_path)
-            shutil.move(Path(tmp_dir.name) / self.package, self.package_dir)
-            return True
-        return False
 
     # pylint: disable=no-self-use
     def update_metadata(self, metadata: metadata_pb2.MetaData,
