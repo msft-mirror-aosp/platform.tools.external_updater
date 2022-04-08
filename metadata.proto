@@ -42,7 +42,6 @@ message ThirdPartyMetaData {
   repeated URL url = 1;
   string version = 2;
   LicenseType license_type = 4;
-  string license_note = 5;
   Date last_upgrade_date = 10;
 }
 
