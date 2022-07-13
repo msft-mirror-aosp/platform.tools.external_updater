@@ -56,6 +56,7 @@ message URL {
     HOMEPAGE = 1;
     ARCHIVE = 2;
     GIT = 3;
+    PIPER = 5;
     SVN = 7;
     HG = 8;
     DARCS = 9;
