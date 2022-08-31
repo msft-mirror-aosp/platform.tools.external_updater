@@ -22,9 +22,9 @@ from typing import Dict, List, Tuple
 import hashtags
 import reviewers
 
-def _run(cmd: List[str], cwd, stdin=None) -> subprocess.Popen:
+def _run(cmd: List[str], cwd: Path) -> str:
     """Runs a command and returns its output."""
-    return subprocess.Popen(cmd, cwd=cwd, stdin=stdin, stdout=subprocess.PIPE, text=True)
+    return subprocess.check_output(cmd, text=True, cwd=cwd)
 
 
 def fetch(proj_path: Path, remote_names: List[str]) -> None:
@@ -66,38 +66,36 @@ def list_remotes(proj_path: Path) -> Dict[str, str]:
         split = line.split()
         return (split[0], split[1])
 
-    out, error = _run(['git', 'remote', '-v'], cwd=proj_path).communicate()
+    out = _run(['git', 'remote', '-v'], proj_path)
     lines = out.splitlines()
     return dict([parse_remote(line) for line in lines])
 
 
 def get_sha_for_branch(proj_path: Path, branch: str):
     """Gets the hash SHA for a branch."""
-    out, error = _run(['git', 'rev-parse', branch], cwd=proj_path).communicate()
-    return out.strip()
+    return _run(['git', 'rev-parse', branch], proj_path).strip()
 
 
 def get_commits_ahead(proj_path: Path, branch: str,
                       base_branch: str) -> List[str]:
     """Lists commits in `branch` but not `base_branch`."""
-    out, error = _run([
+    out = _run([
         'git', 'rev-list', '--left-only', '--ancestry-path', '{}...{}'.format(
             branch, base_branch)
-    ], cwd=proj_path).communicate()
+    ], proj_path)
     return out.splitlines()
 
 
 # pylint: disable=redefined-outer-name
 def get_commit_time(proj_path: Path, commit: str) -> datetime.datetime:
     """Gets commit time of one commit."""
-    out, error = _run(['git', 'show', '-s', '--format=%ct', commit], cwd=proj_path).communicate()
+    out = _run(['git', 'show', '-s', '--format=%ct', commit], cwd=proj_path)
     return datetime.datetime.fromtimestamp(int(out.strip()))
 
 
 def list_remote_branches(proj_path: Path, remote_name: str) -> List[str]:
     """Lists all branches for a remote."""
-    out, error = _run(['git', 'branch', '-r'], cwd=proj_path).communicate()
-    lines = out.splitlines()
+    lines = _run(['git', 'branch', '-r'], cwd=proj_path).splitlines()
     stripped = [line.strip() for line in lines]
     remote_path = remote_name + '/'
     return [
@@ -112,8 +110,8 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> List[str]:
     def parse_remote_tag(line: str) -> str:
         return regex.match(line).group("tag")
 
-    out, error = _run(['git', "ls-remote", "--tags", remote_name], cwd=proj_path).communicate()
-    lines = out.splitlines()
+    lines = _run(['git', "ls-remote", "--tags", remote_name],
+                 cwd=proj_path).splitlines()
     tags = [parse_remote_tag(line) for line in lines]
     return list(set(tags))
 
