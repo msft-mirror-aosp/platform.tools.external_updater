@@ -16,10 +16,16 @@ Check updates for all libraries in external/:
 tools/external_updater/updater.sh check --all
 ```
 
-Update a library:
+Update a library, commit, and upload the change to Gerrit:
 
 ```shell
 tools/external_updater/updater.sh update ${LIBNAME}
+```
+
+Update a library without committing and uploading:
+
+```shell
+tools/external_updater/updater.sh update --stop_after_merge ${LIBNAME}
 ```
 
 LIBNAME can be the path to a library under external/. E.g. kotlinc, or

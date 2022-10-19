@@ -181,8 +181,7 @@ def send_notification(args):
 def _upgrade(proj):
     # pylint: disable=subprocess-run-check
     out = subprocess.run([
-        'out/soong/host/linux-x86/bin/external_updater', 'update',
-        '--branch_and_commit', '--push_change', proj
+        'out/soong/host/linux-x86/bin/external_updater', 'update', proj
     ],
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
