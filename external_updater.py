@@ -26,7 +26,7 @@ import glob
 import json
 import os
 import sys
-import subprocess
+import textwrap
 import time
 from typing import Dict, Iterator, List, Union, Tuple, Type
 from pathlib import Path
@@ -113,8 +113,14 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             return
 
         rel_proj_path = fileutils.get_relative_project_path(full_path)
-        msg = 'Upgrade {} to {}\n\nTest: make\n'.format(
-            rel_proj_path, updater.latest_version)
+        msg = textwrap.dedent(f"""\
+        Upgrade {rel_proj_path} to {updater.latest_version}
+
+        This project was upgraded with external_updater.
+        Usage: tools/external_updater/updater.sh update {rel_proj_path}
+        For more info, check https://cs.android.com/android/platform/superproject/+/master:tools/external_updater/README.md
+
+        Test: TreeHugger""")
         git_utils.remove_gitmodules(full_path)
         git_utils.add_file(full_path, '*')
         git_utils.commit(full_path, msg)
