@@ -17,17 +17,16 @@ import datetime
 import re
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 import hashtags
 import reviewers
 
-def _run(cmd: List[str], cwd: Path) -> str:
+def _run(cmd: list[str], cwd: Path) -> str:
     """Runs a command and returns its output."""
     return subprocess.check_output(cmd, text=True, cwd=cwd)
 
 
-def fetch(proj_path: Path, remote_names: List[str]) -> None:
+def fetch(proj_path: Path, remote_names: list[str]) -> None:
     """Runs git fetch.
 
     Args:
@@ -53,7 +52,7 @@ def remove_remote(proj_path: Path, name: str) -> None:
     _run(['git', 'remote', 'remove', name], cwd=proj_path)
 
 
-def list_remotes(proj_path: Path) -> Dict[str, str]:
+def list_remotes(proj_path: Path) -> dict[str, str]:
     """Lists all Git remotes.
 
     Args:
@@ -62,7 +61,7 @@ def list_remotes(proj_path: Path) -> Dict[str, str]:
     Returns:
         A dict from remote name to remote url.
     """
-    def parse_remote(line: str) -> Tuple[str, str]:
+    def parse_remote(line: str) -> tuple[str, str]:
         split = line.split()
         return (split[0], split[1])
 
@@ -77,7 +76,7 @@ def get_sha_for_branch(proj_path: Path, branch: str):
 
 
 def get_commits_ahead(proj_path: Path, branch: str,
-                      base_branch: str) -> List[str]:
+                      base_branch: str) -> list[str]:
     """Lists commits in `branch` but not `base_branch`."""
     out = _run([
         'git', 'rev-list', '--left-only', '--ancestry-path', '{}...{}'.format(
@@ -93,7 +92,7 @@ def get_commit_time(proj_path: Path, commit: str) -> datetime.datetime:
     return datetime.datetime.fromtimestamp(int(out.strip()))
 
 
-def list_remote_branches(proj_path: Path, remote_name: str) -> List[str]:
+def list_remote_branches(proj_path: Path, remote_name: str) -> list[str]:
     """Lists all branches for a remote."""
     lines = _run(['git', 'branch', '-r'], cwd=proj_path).splitlines()
     stripped = [line.strip() for line in lines]
@@ -104,7 +103,14 @@ def list_remote_branches(proj_path: Path, remote_name: str) -> List[str]:
     ]
 
 
-def list_remote_tags(proj_path: Path, remote_name: str) -> List[str]:
+def list_local_branches(proj_path: Path) -> list[str]:
+    """Lists all local branches."""
+    lines = _run(['git', 'branch', '--format=%(refname:short)'],
+                 cwd=proj_path).splitlines()
+    return lines
+
+
+def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
     """Lists all tags for a remote."""
     regex = re.compile(r".*refs/tags/(?P<tag>[^\^]*).*")
     def parse_remote_tag(line: str) -> str:
@@ -189,3 +195,13 @@ def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
     if has_errors:
         cmd.extend(['-o', 'l=Verified-1'])
     _run(cmd, cwd=proj_path)
+
+
+def reset_hard(proj_path: Path) -> None:
+    """Resets current HEAD and discards changes to tracked files."""
+    _run(['git', 'reset', '--hard'], cwd=proj_path)
+
+
+def clean(proj_path: Path) -> None:
+    """Removes untracked files and directories."""
+    _run(['git', 'clean', '-fdx'], cwd=proj_path)
