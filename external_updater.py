@@ -92,6 +92,10 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     full_path = updater.project_path
 
     git_utils.checkout(full_path, args.remote_name + '/master')
+    if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
+        git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
+        git_utils.reset_hard(full_path)
+        git_utils.clean(full_path)
     git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
@@ -130,7 +134,6 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         raise err
 
     git_utils.push(full_path, args.remote_name, updater.has_errors)
-    git_utils.checkout(full_path, args.remote_name + '/master')
 
 
 def check_and_update(args: argparse.Namespace,
