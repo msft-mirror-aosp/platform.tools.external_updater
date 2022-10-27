@@ -124,7 +124,7 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
 
 def get_default_branch(proj_path: Path, remote_name: str) -> str:
     """Gets the name of the upstream branch to use."""
-    branches_to_try = ['master', 'main']
+    branches_to_try = ['main', 'master']
     remote_branches = list_remote_branches(proj_path, remote_name)
     for branch in branches_to_try:
         if branch in remote_branches:
