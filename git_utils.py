@@ -70,6 +70,18 @@ def list_remotes(proj_path: Path) -> dict[str, str]:
     return dict([parse_remote(line) for line in lines])
 
 
+def detect_default_branch(proj_path: Path, remote_name: str) -> str:
+    """Gets the name of the upstream's default branch to use."""
+    out = _run(['git', 'remote', 'show', remote_name], proj_path)
+    lines = out.splitlines()
+    for line in lines:
+        if "HEAD branch" in line:
+            return line.split()[-1]
+    raise RuntimeError(
+        f"Could not find HEAD branch in 'git remote show {remote_name}'"
+    )
+
+
 def get_sha_for_branch(proj_path: Path, branch: str):
     """Gets the hash SHA for a branch."""
     return _run(['git', 'rev-parse', branch], proj_path).strip()
@@ -120,18 +132,6 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
                  cwd=proj_path).splitlines()
     tags = [parse_remote_tag(line) for line in lines]
     return list(set(tags))
-
-
-def get_default_branch(proj_path: Path, remote_name: str) -> str:
-    """Gets the name of the upstream branch to use."""
-    branches_to_try = ['main', 'master']
-    remote_branches = list_remote_branches(proj_path, remote_name)
-    for branch in branches_to_try:
-        if branch in remote_branches:
-            return branch
-    # We couldn't find any of the branches we expected.
-    # Default to 'master', although nothing will work well.
-    return 'master'
 
 
 COMMIT_PATTERN = r'^[a-f0-9]{40}$'
