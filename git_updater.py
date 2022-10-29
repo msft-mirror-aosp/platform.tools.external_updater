@@ -66,8 +66,8 @@ class GitUpdater(base_updater.Updater):
         self._new_ver = updater_utils.get_latest_version(self._old_ver, tags)
 
     def _check_head(self) -> None:
-        branch = git_utils.get_default_branch(self._proj_path,
-                                              self.UPSTREAM_REMOTE_NAME)
+        branch = git_utils.detect_default_branch(self._proj_path,
+                                                 self.UPSTREAM_REMOTE_NAME)
         self._new_ver = git_utils.get_sha_for_branch(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
