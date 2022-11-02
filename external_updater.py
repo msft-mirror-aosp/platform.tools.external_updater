@@ -118,7 +118,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
 
         rel_proj_path = fileutils.get_relative_project_path(full_path)
         msg = textwrap.dedent(f"""\
-        Upgrade {rel_proj_path} to {updater.latest_version}
+        Upgrade {metadata.name} to {updater.latest_version}
 
         This project was upgraded with external_updater.
         Usage: tools/external_updater/updater.sh update {rel_proj_path}

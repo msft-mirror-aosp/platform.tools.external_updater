@@ -85,9 +85,10 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
         date.year = now.year
         date.month = now.month
         date.day = now.day
+    rel_proj_path = get_relative_project_path(proj_path)
     usage_hint = textwrap.dedent(f"""\
     # This project was upgraded with external_updater.
-    # Usage: tools/external_updater/updater.sh update {metadata.name}
+    # Usage: tools/external_updater/updater.sh update {rel_proj_path}
     # For more info, check https://cs.android.com/android/platform/superproject/+/master:tools/external_updater/README.md
 
     """)
