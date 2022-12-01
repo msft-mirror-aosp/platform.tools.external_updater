@@ -111,8 +111,10 @@ If more files need to be reserved, a post_update.sh can be created to copy
 these files over.
 See [example](https://android.googlesource.com/platform/external/kotlinc/+/refs/heads/master/post_update.sh).
 
+#### Local patches
+
 Local patches can be kept as patches/*.diff. They will be applied after
-upgrade. [example](https://cs.corp.google.com/android/external/jsmn/patches/header.diff)
+upgrade. [example](https://cs.android.com/android/platform/superproject/+/master:external/jsmn/patches/header.diff)
 
 ## Email notification
 
