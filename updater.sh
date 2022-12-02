@@ -18,6 +18,9 @@ set -e
 
 cd $(dirname "$0")/../..
 source build/envsetup.sh
-lunch aosp_arm-eng
+if [ -z ${TARGET_PRODUCT} ] || [ -z ${TARGET_BUILD_VARIANT} ]
+then
+  lunch aosp_arm-eng
+fi
 mmma tools/external_updater
 out/host/linux-x86/bin/external_updater $@
