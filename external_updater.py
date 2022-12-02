@@ -26,7 +26,7 @@ import glob
 import json
 import os
 import sys
-import subprocess
+import textwrap
 import time
 from typing import Dict, Iterator, List, Union, Tuple, Type
 from pathlib import Path
@@ -91,9 +91,12 @@ def _do_update(args: argparse.Namespace, updater: Updater,
                metadata: metadata_pb2.MetaData) -> None:
     full_path = updater.project_path
 
-    if args.branch_and_commit:
-        git_utils.checkout(full_path, args.remote_name + '/master')
-        git_utils.start_branch(full_path, TMP_BRANCH_NAME)
+    git_utils.checkout(full_path, args.remote_name + '/master')
+    if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
+        git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
+        git_utils.reset_hard(full_path)
+        git_utils.clean(full_path)
+    git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
         updater.update()
@@ -110,23 +113,27 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
         git_utils.add_file(full_path, 'METADATA')
 
-        if args.branch_and_commit:
-            rel_proj_path = fileutils.get_relative_project_path(full_path)
-            msg = 'Upgrade {} to {}\n\nTest: make\n'.format(
-                rel_proj_path, updater.latest_version)
-            git_utils.remove_gitmodules(full_path)
-            git_utils.add_file(full_path, '*')
-            git_utils.commit(full_path, msg)
+        if args.stop_after_merge:
+            return
+
+        rel_proj_path = fileutils.get_relative_project_path(full_path)
+        msg = textwrap.dedent(f"""\
+        Upgrade {metadata.name} to {updater.latest_version}
+
+        This project was upgraded with external_updater.
+        Usage: tools/external_updater/updater.sh update {rel_proj_path}
+        For more info, check https://cs.android.com/android/platform/superproject/+/master:tools/external_updater/README.md
+
+        Test: TreeHugger""")
+        git_utils.remove_gitmodules(full_path)
+        git_utils.add_file(full_path, '*')
+        git_utils.commit(full_path, msg)
     except Exception as err:
         if updater.rollback():
             print('Rolled back.')
         raise err
 
-    if args.push_change:
-        git_utils.push(full_path, args.remote_name, updater.has_errors)
-
-    if args.branch_and_commit:
-        git_utils.checkout(full_path, args.remote_name + '/master')
+    git_utils.push(full_path, args.remote_name, updater.has_errors)
 
 
 def check_and_update(args: argparse.Namespace,
@@ -288,12 +295,9 @@ def parse_args() -> argparse.Namespace:
         '--keep_date',
         help='Run update and do not change date in METADATA.',
         action='store_true')
-    update_parser.add_argument('--branch_and_commit',
+    update_parser.add_argument('--stop_after_merge',
                                action='store_true',
-                               help='Starts a new branch and commit changes.')
-    update_parser.add_argument('--push_change',
-                               action='store_true',
-                               help='Pushes change to Gerrit.')
+                               help='Stops after merging new changes')
     update_parser.add_argument('--remote_name',
                                default='aosp',
                                required=False,
