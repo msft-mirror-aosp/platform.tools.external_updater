@@ -151,8 +151,14 @@ def merge(proj_path: Path, branch: str) -> None:
     except subprocess.CalledProcessError as err:
         if hasattr(err, "output"):
             print(err.output)
-        _run(['git', 'merge', '--abort'], cwd=proj_path)
-        raise
+        if not merge_conflict(proj_path):
+            raise
+
+
+def merge_conflict(proj_path: Path) -> bool:
+    """Checks if there was a merge conflict."""
+    out = _run(['git', 'ls-files', '--unmerged'], cwd=proj_path)
+    return bool(out)
 
 
 def add_file(proj_path: Path, file_name: str) -> None:
