@@ -126,7 +126,9 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
     """Lists all tags for a remote."""
     regex = re.compile(r".*refs/tags/(?P<tag>[^\^]*).*")
     def parse_remote_tag(line: str) -> str:
-        return regex.match(line).group("tag")
+        if (m := regex.match(line)) is not None:
+            return m.group("tag")
+        raise ValueError(f"Could not parse tag from {line}")
 
     lines = _run(['git', "ls-remote", "--tags", remote_name],
                  cwd=proj_path).splitlines()
