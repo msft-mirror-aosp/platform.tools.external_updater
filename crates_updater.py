@@ -21,6 +21,7 @@ import re
 import shutil
 import tempfile
 import urllib.request
+from typing import IO
 
 import archive_utils
 from base_updater import Updater
@@ -51,7 +52,7 @@ class CratesUpdater(Updater):
     download_url: str
     package: str
     package_dir: str
-    temp_file: tempfile.NamedTemporaryFile
+    temp_file: IO
 
     def is_supported_url(self) -> bool:
         if self._old_url.type != metadata_pb2.URL.HOMEPAGE:
@@ -62,10 +63,14 @@ class CratesUpdater(Updater):
         self.package = match.group(1)
         return True
 
-    def _get_version_numbers(self, version: str) -> (int, int, int):
+    def _get_version_numbers(self, version: str) -> tuple[int, int, int]:
         match = VERSION_MATCHER.match(version)
         if match is not None:
-            return tuple(int(match.group(i)) for i in range(1, 4))
+            return (
+                int(match.group(1)),
+                int(match.group(2)),
+                int(match.group(3)),
+            )
         return (0, 0, 0)
 
     def _is_newer_version(self, prev_version: str, prev_id: int,
