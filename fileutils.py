@@ -85,12 +85,20 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
         date.year = now.year
         date.month = now.month
         date.day = now.day
-    text_metadata = text_format.MessageToString(metadata)
+    rel_proj_path = get_relative_project_path(proj_path)
+    usage_hint = textwrap.dedent(f"""\
+    # This project was upgraded with external_updater.
+    # Usage: tools/external_updater/updater.sh update {rel_proj_path}
+    # For more info, check https://cs.android.com/android/platform/superproject/+/master:tools/external_updater/README.md
+
+    """)
+    text_metadata = usage_hint + text_format.MessageToString(metadata)
     with get_metadata_path(proj_path).open('w') as metadata_file:
         if metadata.third_party.license_type == metadata_pb2.LicenseType.BY_EXCEPTION_ONLY:
            metadata_file.write(textwrap.dedent("""\
-            # *** THIS PACKAGE HAS SPECIAL LICENSING CONDITIONS.  PLEASE
-            #     CONSULT THE OWNERS AND opensource-licensing@google.com BEFORE
-            #     DEPENDING ON IT IN YOUR PROJECT. ***
+            # THIS PACKAGE HAS SPECIAL LICENSING CONDITIONS. PLEASE
+            # CONSULT THE OWNERS AND opensource-licensing@google.com BEFORE
+            # DEPENDING ON IT IN YOUR PROJECT.
+
             """))
         metadata_file.write(text_metadata)
