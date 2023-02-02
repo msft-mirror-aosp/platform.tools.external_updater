@@ -21,6 +21,7 @@ updater.sh update --refresh --keep_date rust/crates/libc
 """
 
 import argparse
+from collections.abc import Iterable
 import enum
 import glob
 import json
@@ -177,7 +178,7 @@ def check_and_update(args: argparse.Namespace,
         return str(err)
 
 
-def check_and_update_path(args: argparse.Namespace, paths: Iterator[str],
+def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
                           update_lib: bool,
                           delay: int) -> Dict[str, Dict[str, str]]:
     results = {}
@@ -216,7 +217,7 @@ def get_paths(paths: List[str]) -> List[str]:
     return result
 
 
-def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> List[str]:
+def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
     """Output a JSON report."""
     with Path(json_file).open('w') as res_file:
         json.dump(results, res_file, sort_keys=True, indent=4)
