@@ -26,7 +26,7 @@ class GitUpdater(base_updater.Updater):
     android_remote_name: str
 
     def is_supported_url(self) -> bool:
-        return self._old_url.type == metadata_pb2.URL.GIT
+        return git_utils.is_valid_url(self._proj_path, self._old_url.value)
 
     def _setup_remote(self) -> None:
         remotes = git_utils.list_remotes(self._proj_path)
