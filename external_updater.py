@@ -92,13 +92,14 @@ def _do_update(args: argparse.Namespace, updater: Updater,
                metadata: metadata_pb2.MetaData) -> None:
     full_path = updater.project_path
 
-    git_utils.checkout(full_path, args.remote_name + '/master')
-    if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
-        git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
-        git_utils.reset_hard(full_path)
-        git_utils.clean(full_path)
-    git_utils.start_branch(full_path, TMP_BRANCH_NAME)
-
+    if not args.keep_local_changes:
+        git_utils.checkout(full_path, args.remote_name + '/master')
+        if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
+            git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
+            git_utils.reset_hard(full_path)
+            git_utils.clean(full_path)
+        git_utils.start_branch(full_path, TMP_BRANCH_NAME)
+    git_utils.branch(full_path)
     try:
         updater.update()
 
@@ -299,6 +300,9 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--stop_after_merge',
                                action='store_true',
                                help='Stops after merging new changes')
+    update_parser.add_argument('--keep_local_changes',
+                               action='store_true',
+                               help='Updates the current branch')
     update_parser.add_argument('--remote_name',
                                default='aosp',
                                required=False,
