@@ -99,7 +99,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             git_utils.reset_hard(full_path)
             git_utils.clean(full_path)
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
-    git_utils.branch(full_path)
+
     try:
         updater.update()
 
