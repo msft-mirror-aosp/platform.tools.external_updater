@@ -21,6 +21,7 @@ updater.sh update --refresh --keep_date rust/crates/libc
 """
 
 import argparse
+from collections.abc import Iterable
 import enum
 import glob
 import json
@@ -91,12 +92,13 @@ def _do_update(args: argparse.Namespace, updater: Updater,
                metadata: metadata_pb2.MetaData) -> None:
     full_path = updater.project_path
 
-    git_utils.checkout(full_path, args.remote_name + '/master')
-    if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
-        git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
-        git_utils.reset_hard(full_path)
-        git_utils.clean(full_path)
-    git_utils.start_branch(full_path, TMP_BRANCH_NAME)
+    if not args.keep_local_changes:
+        git_utils.checkout(full_path, args.remote_name + '/master')
+        if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
+            git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
+            git_utils.reset_hard(full_path)
+            git_utils.clean(full_path)
+        git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
         updater.update()
@@ -177,7 +179,7 @@ def check_and_update(args: argparse.Namespace,
         return str(err)
 
 
-def check_and_update_path(args: argparse.Namespace, paths: Iterator[str],
+def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
                           update_lib: bool,
                           delay: int) -> Dict[str, Dict[str, str]]:
     results = {}
@@ -216,7 +218,7 @@ def get_paths(paths: List[str]) -> List[str]:
     return result
 
 
-def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> List[str]:
+def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
     """Output a JSON report."""
     with Path(json_file).open('w') as res_file:
         json.dump(results, res_file, sort_keys=True, indent=4)
@@ -298,6 +300,9 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--stop_after_merge',
                                action='store_true',
                                help='Stops after merging new changes')
+    update_parser.add_argument('--keep_local_changes',
+                               action='store_true',
+                               help='Updates the current branch')
     update_parser.add_argument('--remote_name',
                                default='aosp',
                                required=False,
