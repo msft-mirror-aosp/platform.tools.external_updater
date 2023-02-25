@@ -40,10 +40,11 @@ def create_updater(metadata: metadata_pb2.MetaData, proj_path: Path,
       ValueError: Occurred when there's no updater for all urls.
     """
     for url in metadata.third_party.url:
-        for updater_cls in updaters:
-            updater = updater_cls(proj_path, url, metadata.third_party.version)
-            if updater.is_supported_url():
-                return updater
+        if url.type != metadata_pb2.URL.HOMEPAGE:
+            for updater_cls in updaters:
+                updater = updater_cls(proj_path, url, metadata.third_party.version)
+                if updater.is_supported_url():
+                    return updater
 
     raise ValueError('No supported URL.')
 
