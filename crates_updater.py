@@ -29,9 +29,7 @@ from base_updater import Updater
 import metadata_pb2  # type: ignore
 import updater_utils
 
-CRATES_IO_URL_PATTERN: str = (r"^https:\/\/crates.io\/crates\/([-\w]+)")
-
-CRATES_IO_URL_RE: re.Pattern = re.compile(CRATES_IO_URL_PATTERN)
+LIBRARY_NAME_PATTERN: str = (r"([-\w]+)")
 
 ALPHA_BETA_PATTERN: str = (r"^.*[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta).*")
 
@@ -40,6 +38,13 @@ ALPHA_BETA_RE: re.Pattern = re.compile(ALPHA_BETA_PATTERN)
 VERSION_PATTERN: str = (r"([0-9]+)\.([0-9]+)\.([0-9]+)")
 
 VERSION_MATCHER: re.Pattern = re.compile(VERSION_PATTERN)
+
+CRATES_IO_ARCHIVE_URL_PATTERN: str = (r"^https:\/\/static.crates.io\/crates\/" +
+                                      LIBRARY_NAME_PATTERN + "/" +
+                                      LIBRARY_NAME_PATTERN + "-" +
+                                      VERSION_PATTERN + ".crate")
+
+CRATES_IO_ARCHIVE_URL_RE: re.Pattern = re.compile(CRATES_IO_ARCHIVE_URL_PATTERN)
 
 DESCRIPTION_PATTERN: str = (r"^description *= *(\".+\")")
 
@@ -55,9 +60,7 @@ class CratesUpdater(Updater):
     temp_file: IO
 
     def is_supported_url(self) -> bool:
-        if self._old_url.type != metadata_pb2.URL.HOMEPAGE:
-            return False
-        match = CRATES_IO_URL_RE.match(self._old_url.value)
+        match = CRATES_IO_ARCHIVE_URL_RE.match(self._old_url.value)
         if match is None:
             return False
         self.package = match.group(1)
