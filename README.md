@@ -1,19 +1,13 @@
 # external_updater
 
-external updater is a tool to automatically updates libraries in external/ .
+external updater is a tool to automatically update libraries in external/.
 
 ## Usage
 
-Check updates for a library, or verify METADATA is valid:
+Check updates for a library or verify METADATA is valid:
 
 ```shell
 tools/external_updater/updater.sh check ${LIBNAME}
-```
-
-Check updates for all libraries in external/:
-
-```shell
-tools/external_updater/updater.sh check --all
 ```
 
 Update a library, commit, and upload the change to Gerrit:
@@ -28,7 +22,13 @@ Update a library without committing and uploading:
 tools/external_updater/updater.sh update --stop_after_merge ${LIBNAME}
 ```
 
-LIBNAME can be the path to a library under external/. E.g. kotlinc, or
+Update a library on top of the local changes in the current branch, commit, and upload the change to Gerrit:
+
+```shell
+tools/external_updater/updater.sh update --keep_local_changes ${LIBNAME}
+```
+
+LIBNAME can be the path to a library under external/, e.g. kotlinc, or
 python/cpython3.
 
 ## Configure
