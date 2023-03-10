@@ -57,7 +57,7 @@ def replace_package(source_dir, target_dir, temp_file=None) -> None:
       target_dir: The path to the project in Android source tree.
     """
 
-    print('Updating {} using {}.'.format(target_dir, source_dir))
+    print(f'Updating {target_dir} using {source_dir}.')
     script_path = os.path.join(os.path.dirname(sys.argv[0]),
                                'update_package.sh')
     subprocess.check_call(['bash', script_path, source_dir, target_dir,
