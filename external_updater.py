@@ -157,9 +157,7 @@ def check_and_update(args: argparse.Namespace,
 
         current_ver = updater.current_version
         latest_ver = updater.latest_version
-        print('Current version: {}. Latest version: {}'.format(
-            current_ver, latest_ver),
-              end='')
+        print(f'Current version: {current_ver}. Latest version: {latest_ver}', end='')
 
         has_new_version = current_ver != latest_ver
         if has_new_version:
@@ -175,7 +173,7 @@ def check_and_update(args: argparse.Namespace,
         return updater
     # pylint: disable=broad-except
     except Exception as err:
-        print('{} {}.'.format(color_string('Failed.', Color.ERROR), err))
+        print(f'{color_string("Failed.", Color.ERROR)} {err}.')
         return str(err)
 
 
@@ -214,7 +212,7 @@ def get_paths(paths: List[str]) -> List[str]:
     result = [path for abs_path in abs_paths
               for path in sorted(glob.glob(str(abs_path)))]
     if paths and not result:
-        print('Could not find any valid paths in %s' % str(paths))
+        print(f'Could not find any valid paths in {str(paths)}')
     return result
 
 
