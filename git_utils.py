@@ -96,8 +96,7 @@ def get_commits_ahead(proj_path: Path, branch: str,
                       base_branch: str) -> list[str]:
     """Lists commits in `branch` but not `base_branch`."""
     cmd = [
-        'git', 'rev-list', '--left-only', '--ancestry-path', '{}...{}'.format(
-            branch, base_branch)
+        'git', 'rev-list', '--left-only', '--ancestry-path', 'f{branch}...{base_branch}'
     ]
     out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
                          text=True).stdout
