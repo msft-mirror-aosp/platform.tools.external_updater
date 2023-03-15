@@ -126,10 +126,8 @@ class GithubArchiveUpdater(Updater):
                                or self._fetch_latest_tag())
 
         # Adds source code urls.
-        urls.append('https://github.com/{}/{}/archive/{}.tar.gz'.format(
-            self.owner, self.repo, self._new_ver))
-        urls.append('https://github.com/{}/{}/archive/{}.zip'.format(
-            self.owner, self.repo, self._new_ver))
+        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.tar.gz')
+        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.zip')
 
         self._new_url.value = choose_best_url(urls, self._old_url.value)
 
