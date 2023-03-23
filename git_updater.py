@@ -71,10 +71,11 @@ class GitUpdater(base_updater.Updater):
         self._new_ver = git_utils.get_sha_for_branch(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
-    def update(self) -> None:
+    def update(self, skip_post_update: bool) -> None:
         """Updates the package.
-
         Has to call check() before this function.
         """
         print(f"Running `git merge {self._new_ver}`...")
         git_utils.merge(self._proj_path, self._new_ver)
+        if not skip_post_update:
+            updater_utils.run_post_update(self._proj_path, self._proj_path)
