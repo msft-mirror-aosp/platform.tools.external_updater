@@ -101,7 +101,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
-        updater.update()
+        updater.update(args.skip_post_update)
 
         updated_metadata = metadata_pb2.MetaData()
         updated_metadata.CopyFrom(metadata)
@@ -301,6 +301,9 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--keep_local_changes',
                                action='store_true',
                                help='Updates the current branch')
+    update_parser.add_argument('--skip_post_update',
+                               action='store_true',
+                               help='Skip post_update script')
     update_parser.add_argument('--remote_name',
                                default='aosp',
                                required=False,
