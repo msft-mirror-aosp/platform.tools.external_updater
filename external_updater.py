@@ -25,6 +25,7 @@ from collections.abc import Iterable
 import enum
 import glob
 import json
+import logging
 import os
 import sys
 import textwrap
@@ -173,7 +174,7 @@ def check_and_update(args: argparse.Namespace,
         return updater
     # pylint: disable=broad-except
     except Exception as err:
-        print(f'{color_string("Failed.", Color.ERROR)} {err}.')
+        logging.exception("Failed to check or update %s", proj_path)
         return str(err)
 
 
