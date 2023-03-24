@@ -110,7 +110,13 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
         date.year = now.year
         date.month = now.month
         date.day = now.day
-    rel_proj_path = get_relative_project_path(proj_path)
+    try:
+        rel_proj_path = get_relative_project_path(proj_path)
+    except ValueError:
+        # Absolute paths to other trees will not be relative to our tree. There are
+        # not portable instructions for upgrading that project, since the path will
+        # differ between machines (or checkouts).
+        rel_proj_path = "<absolute path to project>"
     usage_hint = textwrap.dedent(f"""\
     # This project was upgraded with external_updater.
     # Usage: tools/external_updater/updater.sh update {rel_proj_path}
