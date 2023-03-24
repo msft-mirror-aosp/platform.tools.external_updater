@@ -23,7 +23,6 @@ import updater_utils
 class GitUpdater(base_updater.Updater):
     """Updater for Git upstream."""
     UPSTREAM_REMOTE_NAME: str = "update_origin"
-    android_remote_name: str
 
     def is_supported_url(self) -> bool:
         return git_utils.is_valid_url(self._proj_path, self._old_url.value)
@@ -31,13 +30,19 @@ class GitUpdater(base_updater.Updater):
     def _setup_remote(self) -> None:
         remotes = git_utils.list_remotes(self._proj_path)
         current_remote_url = None
+        android_remote_name: str | None = None
         for name, url in remotes.items():
             if name == self.UPSTREAM_REMOTE_NAME:
                 current_remote_url = url
 
-            # Guess android remote name.
             if '/platform/external/' in url:
-                self.android_remote_name = name
+                android_remote_name = name
+
+        if android_remote_name is None:
+            remotes_formatted = "\n".join(f"{k} {v}" for k, v in remotes.items())
+            raise RuntimeError(
+                f"Could not determine android remote for {self._proj_path}. Tried:\n"
+                f"{remotes_formatted}")
 
         if current_remote_url is not None and current_remote_url != self._old_url.value:
             git_utils.remove_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME)
@@ -48,7 +53,7 @@ class GitUpdater(base_updater.Updater):
                                  self._old_url.value)
 
         git_utils.fetch(self._proj_path,
-                        [self.UPSTREAM_REMOTE_NAME, self.android_remote_name])
+                        [self.UPSTREAM_REMOTE_NAME, android_remote_name])
 
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
