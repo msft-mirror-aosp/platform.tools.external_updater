@@ -119,7 +119,13 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         if args.stop_after_merge:
             return
 
-        rel_proj_path = fileutils.get_relative_project_path(full_path)
+        try:
+            rel_proj_path = fileutils.get_relative_project_path(full_path)
+        except ValueError:
+            # Absolute paths to other trees will not be relative to our tree. There are
+            # not portable instructions for upgrading that project, since the path will
+            # differ between machines (or checkouts).
+            rel_proj_path = "<absolute path to project>"
         msg = textwrap.dedent(f"""\
         Upgrade {metadata.name} to {updater.latest_version}
 
