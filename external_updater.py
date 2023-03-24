@@ -151,8 +151,8 @@ def check_and_update(args: argparse.Namespace,
     """
 
     try:
-        rel_proj_path = fileutils.get_relative_project_path(proj_path)
-        print(f'Checking {rel_proj_path}. ', end='')
+        canonical_path = fileutils.canonicalize_project_path(proj_path)
+        print(f'Checking {canonical_path}. ', end='')
         updater, metadata = build_updater(proj_path)
         updater.check()
 
@@ -190,8 +190,7 @@ def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
         else:
             res['current'] = updater.current_version
             res['latest'] = updater.latest_version
-        relative_path = fileutils.get_relative_project_path(Path(path))
-        results[str(relative_path)] = res
+        results[str(fileutils.canonicalize_project_path(Path(path)))] = res
         time.sleep(delay)
     return results
 
