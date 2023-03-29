@@ -111,7 +111,7 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
         date.month = now.month
         date.day = now.day
     try:
-        rel_proj_path = get_relative_project_path(proj_path)
+        rel_proj_path = str(get_relative_project_path(proj_path))
     except ValueError:
         # Absolute paths to other trees will not be relative to our tree. There are
         # not portable instructions for upgrading that project, since the path will
