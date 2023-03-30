@@ -48,31 +48,6 @@ def get_relative_project_path(proj_path: Path) -> Path:
     return get_absolute_project_path(proj_path).relative_to(EXTERNAL_PATH)
 
 
-def canonicalize_project_path(proj_path: Path) -> Path:
-  """Returns the canonical representation of the project path.
-
-  For paths that are in the same tree as external_updater (the common case), the
-  canonical path is the path of the project relative to //external.
-
-  For paths that are in a different tree (an uncommon case used for updating projects
-  in other builds such as the NDK), the canonical path is the absolute path.
-  """
-  try:
-      return get_relative_project_path(proj_path)
-  except ValueError:
-      # A less common use case, but the path might be to a non-local tree, in which case
-      # the path will not be relative to our tree. This happens when using
-      # external_updater in another project like the NDK or rr.
-      if proj_path.is_absolute():
-        return proj_path
-
-      # Not relative to //external, and not an absolute path. This case hasn't existed
-      # before, so it has no canonical form.
-      raise ValueError(
-        f"{proj_path} must be either an absolute path or relative to {EXTERNAL_PATH}"
-      )
-
-
 def read_metadata(proj_path: Path) -> metadata_pb2.MetaData:
     """Reads and parses METADATA file for a project.
 
@@ -110,13 +85,7 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
         date.year = now.year
         date.month = now.month
         date.day = now.day
-    try:
-        rel_proj_path = get_relative_project_path(proj_path)
-    except ValueError:
-        # Absolute paths to other trees will not be relative to our tree. There are
-        # not portable instructions for upgrading that project, since the path will
-        # differ between machines (or checkouts).
-        rel_proj_path = "<absolute path to project>"
+    rel_proj_path = get_relative_project_path(proj_path)
     usage_hint = textwrap.dedent(f"""\
     # This project was upgraded with external_updater.
     # Usage: tools/external_updater/updater.sh update {rel_proj_path}

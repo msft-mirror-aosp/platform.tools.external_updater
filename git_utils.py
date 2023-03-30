@@ -197,24 +197,9 @@ def delete_branch(proj_path: Path, branch_name: str) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
-def tree_uses_pore(proj_path: Path) -> bool:
-    """Returns True if the tree uses pore rather than repo.
-
-    https://github.com/jmgao/pore
-    """
-    if proj_path == proj_path.root:
-        return False
-    if (proj_path / ".pore").exists():
-        return True
-    return tree_uses_pore(proj_path.parent)
-
-
 def start_branch(proj_path: Path, branch_name: str) -> None:
     """Starts a new repo branch."""
-    repo = 'repo'
-    if tree_uses_pore(proj_path):
-        repo = 'pore'
-    cmd = [repo, 'start', branch_name]
+    cmd = ['repo', 'start', branch_name]
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 

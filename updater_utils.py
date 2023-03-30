@@ -13,7 +13,6 @@
 # limitations under the License.
 """Helper functions for updaters."""
 
-from collections.abc import Sequence
 import os
 import re
 import subprocess
@@ -63,18 +62,6 @@ def replace_package(source_dir, target_dir, temp_file=None) -> None:
                                'update_package.sh')
     subprocess.check_call(['bash', script_path, source_dir, target_dir,
                            "" if temp_file is None else temp_file])
-
-
-def run_post_update(source_dir: Path, target_dir: Path) -> None:
-    """
-      source_dir: Path to the new downloaded and extracted package.
-      target_dir: The path to the project in Android source tree.
-    """
-    post_update_path = os.path.join(source_dir, 'post_update.sh')
-    if os.path.isfile(post_update_path):
-        cmd: Sequence[str | Path] = ['bash', post_update_path, source_dir, target_dir]
-        print(f'Running {post_update_path}')
-        subprocess.check_call(cmd)
 
 
 VERSION_SPLITTER_PATTERN: str = r'[\.\-_]'
