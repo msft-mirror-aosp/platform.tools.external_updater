@@ -120,7 +120,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             return
 
         try:
-            rel_proj_path = fileutils.get_relative_project_path(full_path)
+            rel_proj_path = str(fileutils.get_relative_project_path(full_path))
         except ValueError:
             # Absolute paths to other trees will not be relative to our tree. There are
             # not portable instructions for upgrading that project, since the path will
