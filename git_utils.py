@@ -15,6 +15,7 @@
 
 import datetime
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -202,7 +203,12 @@ def tree_uses_pore(proj_path: Path) -> bool:
 
     https://github.com/jmgao/pore
     """
-    if proj_path == proj_path.root:
+    if shutil.which("pore") is None:
+        # Fast path for users that don't have pore installed, since that's almost
+        # everyone.
+        return False
+
+    if proj_path == Path(proj_path.root):
         return False
     if (proj_path / ".pore").exists():
         return True
