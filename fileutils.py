@@ -24,8 +24,14 @@ from google.protobuf import text_format  # type: ignore
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
-ANDROID_TOP = Path(os.environ.get('ANDROID_BUILD_TOP', os.getcwd()))
+ANDROID_TOP = Path(os.getcwd())
 EXTERNAL_PATH = ANDROID_TOP / 'external'
+
+if not EXTERNAL_PATH.exists():
+    raise RuntimeError(
+        f"{EXTERNAL_PATH} does not exist. This program must be run from the "
+        f"root of an Android tree (CWD is {os.getcwd()})."
+    )
 
 METADATA_FILENAME = 'METADATA'
 
