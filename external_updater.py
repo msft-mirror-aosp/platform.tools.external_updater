@@ -21,9 +21,11 @@ updater.sh update --refresh --keep_date rust/crates/libc
 """
 
 import argparse
+from collections.abc import Iterable
 import enum
 import glob
 import json
+import logging
 import os
 import sys
 import textwrap
@@ -91,15 +93,16 @@ def _do_update(args: argparse.Namespace, updater: Updater,
                metadata: metadata_pb2.MetaData) -> None:
     full_path = updater.project_path
 
-    git_utils.checkout(full_path, args.remote_name + '/master')
-    if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
-        git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
-        git_utils.reset_hard(full_path)
-        git_utils.clean(full_path)
-    git_utils.start_branch(full_path, TMP_BRANCH_NAME)
+    if not args.keep_local_changes:
+        git_utils.checkout(full_path, args.remote_name + '/master')
+        if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
+            git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
+            git_utils.reset_hard(full_path)
+            git_utils.clean(full_path)
+        git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
-        updater.update()
+        updater.update(args.skip_post_update)
 
         updated_metadata = metadata_pb2.MetaData()
         updated_metadata.CopyFrom(metadata)
@@ -116,7 +119,13 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         if args.stop_after_merge:
             return
 
-        rel_proj_path = fileutils.get_relative_project_path(full_path)
+        try:
+            rel_proj_path = str(fileutils.get_relative_project_path(full_path))
+        except ValueError:
+            # Absolute paths to other trees will not be relative to our tree. There are
+            # not portable instructions for upgrading that project, since the path will
+            # differ between machines (or checkouts).
+            rel_proj_path = "<absolute path to project>"
         msg = textwrap.dedent(f"""\
         Upgrade {metadata.name} to {updater.latest_version}
 
@@ -148,16 +157,14 @@ def check_and_update(args: argparse.Namespace,
     """
 
     try:
-        rel_proj_path = fileutils.get_relative_project_path(proj_path)
-        print(f'Checking {rel_proj_path}. ', end='')
+        canonical_path = fileutils.canonicalize_project_path(proj_path)
+        print(f'Checking {canonical_path}. ', end='')
         updater, metadata = build_updater(proj_path)
         updater.check()
 
         current_ver = updater.current_version
         latest_ver = updater.latest_version
-        print('Current version: {}. Latest version: {}'.format(
-            current_ver, latest_ver),
-              end='')
+        print(f'Current version: {current_ver}. Latest version: {latest_ver}', end='')
 
         has_new_version = current_ver != latest_ver
         if has_new_version:
@@ -173,11 +180,11 @@ def check_and_update(args: argparse.Namespace,
         return updater
     # pylint: disable=broad-except
     except Exception as err:
-        print('{} {}.'.format(color_string('Failed.', Color.ERROR), err))
+        logging.exception("Failed to check or update %s", proj_path)
         return str(err)
 
 
-def check_and_update_path(args: argparse.Namespace, paths: Iterator[str],
+def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
                           update_lib: bool,
                           delay: int) -> Dict[str, Dict[str, str]]:
     results = {}
@@ -189,8 +196,7 @@ def check_and_update_path(args: argparse.Namespace, paths: Iterator[str],
         else:
             res['current'] = updater.current_version
             res['latest'] = updater.latest_version
-        relative_path = fileutils.get_relative_project_path(Path(path))
-        results[str(relative_path)] = res
+        results[str(fileutils.canonicalize_project_path(Path(path)))] = res
         time.sleep(delay)
     return results
 
@@ -212,11 +218,11 @@ def get_paths(paths: List[str]) -> List[str]:
     result = [path for abs_path in abs_paths
               for path in sorted(glob.glob(str(abs_path)))]
     if paths and not result:
-        print('Could not find any valid paths in %s' % str(paths))
+        print(f'Could not find any valid paths in {str(paths)}')
     return result
 
 
-def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> List[str]:
+def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
     """Output a JSON report."""
     with Path(json_file).open('w') as res_file:
         json.dump(results, res_file, sort_keys=True, indent=4)
@@ -298,6 +304,12 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--stop_after_merge',
                                action='store_true',
                                help='Stops after merging new changes')
+    update_parser.add_argument('--keep_local_changes',
+                               action='store_true',
+                               help='Updates the current branch')
+    update_parser.add_argument('--skip_post_update',
+                               action='store_true',
+                               help='Skip post_update script')
     update_parser.add_argument('--remote_name',
                                default='aosp',
                                required=False,
