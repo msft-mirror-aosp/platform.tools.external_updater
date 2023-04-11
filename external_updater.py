@@ -25,6 +25,7 @@ from collections.abc import Iterable
 import enum
 import glob
 import json
+import logging
 import os
 import sys
 import textwrap
@@ -101,7 +102,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
-        updater.update()
+        updater.update(args.skip_post_update)
 
         updated_metadata = metadata_pb2.MetaData()
         updated_metadata.CopyFrom(metadata)
@@ -118,7 +119,13 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         if args.stop_after_merge:
             return
 
-        rel_proj_path = fileutils.get_relative_project_path(full_path)
+        try:
+            rel_proj_path = str(fileutils.get_relative_project_path(full_path))
+        except ValueError:
+            # Absolute paths to other trees will not be relative to our tree. There are
+            # not portable instructions for upgrading that project, since the path will
+            # differ between machines (or checkouts).
+            rel_proj_path = "<absolute path to project>"
         msg = textwrap.dedent(f"""\
         Upgrade {metadata.name} to {updater.latest_version}
 
@@ -150,8 +157,8 @@ def check_and_update(args: argparse.Namespace,
     """
 
     try:
-        rel_proj_path = fileutils.get_relative_project_path(proj_path)
-        print(f'Checking {rel_proj_path}. ', end='')
+        canonical_path = fileutils.canonicalize_project_path(proj_path)
+        print(f'Checking {canonical_path}. ', end='')
         updater, metadata = build_updater(proj_path)
         updater.check()
 
@@ -173,7 +180,7 @@ def check_and_update(args: argparse.Namespace,
         return updater
     # pylint: disable=broad-except
     except Exception as err:
-        print(f'{color_string("Failed.", Color.ERROR)} {err}.')
+        logging.exception("Failed to check or update %s", proj_path)
         return str(err)
 
 
@@ -189,8 +196,7 @@ def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
         else:
             res['current'] = updater.current_version
             res['latest'] = updater.latest_version
-        relative_path = fileutils.get_relative_project_path(Path(path))
-        results[str(relative_path)] = res
+        results[str(fileutils.canonicalize_project_path(Path(path)))] = res
         time.sleep(delay)
     return results
 
@@ -301,6 +307,9 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--keep_local_changes',
                                action='store_true',
                                help='Updates the current branch')
+    update_parser.add_argument('--skip_post_update',
+                               action='store_true',
+                               help='Skip post_update script')
     update_parser.add_argument('--remote_name',
                                default='aosp',
                                required=False,
