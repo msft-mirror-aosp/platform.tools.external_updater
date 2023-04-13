@@ -202,7 +202,7 @@ def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
 
 
 def _list_all_metadata() -> Iterator[str]:
-    for path, dirs, files in os.walk(fileutils.EXTERNAL_PATH):
+    for path, dirs, files in os.walk(fileutils.external_path()):
         if fileutils.METADATA_FILENAME in files:
             # Skip sub directories.
             dirs[:] = []
