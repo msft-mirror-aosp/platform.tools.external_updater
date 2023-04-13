@@ -24,7 +24,10 @@ from google.protobuf import text_format  # type: ignore
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
-ANDROID_TOP = Path(os.getcwd())
+# ./updater.sh doesn't require ANDROID_BUILD_TOP, and will cd into the project directory
+# before executing. Tests, however, will be executed from an arbitrary location in
+# $OUT_DIR, so we still need the ANDROID_BUILD_TOP workflow.
+ANDROID_TOP = Path(os.environ.get("ANDROID_BUILD_TOP", os.getcwd()))
 EXTERNAL_PATH = ANDROID_TOP / 'external'
 
 if not EXTERNAL_PATH.exists():
