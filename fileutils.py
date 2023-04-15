@@ -14,6 +14,7 @@
 """Tool functions to deal with files."""
 
 import datetime
+from functools import cache
 import os
 from pathlib import Path
 import textwrap
@@ -24,19 +25,34 @@ from google.protobuf import text_format  # type: ignore
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
-# ./updater.sh doesn't require ANDROID_BUILD_TOP, and will cd into the project directory
-# before executing. Tests, however, will be executed from an arbitrary location in
-# $OUT_DIR, so we still need the ANDROID_BUILD_TOP workflow.
-ANDROID_TOP = Path(os.environ.get("ANDROID_BUILD_TOP", os.getcwd()))
-EXTERNAL_PATH = ANDROID_TOP / 'external'
-
-if not EXTERNAL_PATH.exists():
-    raise RuntimeError(
-        f"{EXTERNAL_PATH} does not exist. This program must be run from the "
-        f"root of an Android tree (CWD is {os.getcwd()})."
-    )
 
 METADATA_FILENAME = 'METADATA'
+
+
+@cache
+def external_path() -> Path:
+    """Returns the path to //external.
+
+    We cannot use the relative path from this file to find the top of the tree because
+    this will often be run in a "compiled" form from an arbitrary location in the out
+    directory. We can't fully rely on ANDROID_BUILD_TOP because not all contexts will
+    have run envsetup/lunch either. We use ANDROID_BUILD_TOP whenever it is set, but if
+    it is not set we instead rely on the convention that the CWD is the root of the tree
+    (updater.sh will cd there before executing).
+
+    There is one other context where this function cannot succeed: CI. Tests run in CI
+    do not have a source tree to find, so calling this function in that context will
+    fail.
+    """
+    android_top = Path(os.environ.get("ANDROID_BUILD_TOP", os.getcwd()))
+    top = android_top / 'external'
+
+    if not top.exists():
+        raise RuntimeError(
+            f"{top} does not exist. This program must be run from the "
+            f"root of an Android tree (CWD is {os.getcwd()})."
+        )
+    return top
 
 
 def get_absolute_project_path(proj_path: Path) -> Path:
@@ -44,7 +60,7 @@ def get_absolute_project_path(proj_path: Path) -> Path:
 
     Path resolution starts from external/.
     """
-    return EXTERNAL_PATH / proj_path
+    return external_path() / proj_path
 
 
 def get_metadata_path(proj_path: Path) -> Path:
@@ -54,7 +70,7 @@ def get_metadata_path(proj_path: Path) -> Path:
 
 def get_relative_project_path(proj_path: Path) -> Path:
     """Gets the relative path of a project starting from external/."""
-    return get_absolute_project_path(proj_path).relative_to(EXTERNAL_PATH)
+    return get_absolute_project_path(proj_path).relative_to(external_path())
 
 
 def canonicalize_project_path(proj_path: Path) -> Path:
@@ -78,7 +94,7 @@ def canonicalize_project_path(proj_path: Path) -> Path:
       # Not relative to //external, and not an absolute path. This case hasn't existed
       # before, so it has no canonical form.
       raise ValueError(
-        f"{proj_path} must be either an absolute path or relative to {EXTERNAL_PATH}"
+        f"{proj_path} must be either an absolute path or relative to {external_path()}"
       )
 
 
