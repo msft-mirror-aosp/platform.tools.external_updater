@@ -16,22 +16,22 @@ Update a library, commit, and upload the change to Gerrit:
 tools/external_updater/updater.sh update ${LIBNAME}
 ```
 
-Update a library without committing and uploading:
+Update a library without committing and uploading to Gerrit:
 
 ```shell
-tools/external_updater/updater.sh update --stop_after_merge ${LIBNAME}
+tools/external_updater/updater.sh update --no-upload ${LIBNAME}
 ```
 
 Update a library on top of the local changes in the current branch, commit, and upload the change to Gerrit:
 
 ```shell
-tools/external_updater/updater.sh update --keep_local_changes ${LIBNAME}
+tools/external_updater/updater.sh update --keep-local-changes ${LIBNAME}
 ```
 
 Update a library without building:
 
 ```shell
-tools/external_updater/updater.sh update --no_build ${LIBNAME}
+tools/external_updater/updater.sh update --no-build ${LIBNAME}
 ```
 
 LIBNAME can be the path to a library under external/, e.g. kotlinc, or
