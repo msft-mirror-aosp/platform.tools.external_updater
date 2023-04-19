@@ -28,6 +28,12 @@ Update a library on top of the local changes in the current branch, commit, and 
 tools/external_updater/updater.sh update --keep_local_changes ${LIBNAME}
 ```
 
+Update a library without building:
+
+```shell
+tools/external_updater/updater.sh update --no_build ${LIBNAME}
+```
+
 LIBNAME can be the path to a library under external/, e.g. kotlinc, or
 python/cpython3.
 
