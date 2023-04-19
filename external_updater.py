@@ -116,6 +116,11 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
         git_utils.add_file(full_path, 'METADATA')
 
+        if args.build:
+            if not updater_utils.build(full_path):
+                print("Build failed. Aborting upload.")
+                return
+
         if args.stop_after_merge:
             return
 
@@ -310,6 +315,10 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--skip_post_update',
                                action='store_true',
                                help='Skip post_update script')
+    update_parser.add_argument('--no_build',
+                               action='store_false',
+                               dest='build',
+                               help='Skip building'),
     update_parser.add_argument('--remote_name',
                                default='aosp',
                                required=False,
