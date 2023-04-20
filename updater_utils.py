@@ -128,3 +128,9 @@ def get_latest_version(current_version: str, version_list: List[str]) -> str:
     if not latest:
         raise ValueError('No matching version.')
     return latest
+
+
+def build(proj_path: Path) -> None:
+    cmd = ['build/soong/soong_ui.bash', "--build-mode", "--modules-in-a-dir-no-deps", f"--dir={str(proj_path)}"]
+    print('Building...')
+    return subprocess.run(cmd, check=True, text=True)
