@@ -25,6 +25,7 @@ from collections.abc import Iterable
 import enum
 import glob
 import json
+import logging
 import os
 import sys
 import textwrap
@@ -101,7 +102,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
-        updater.update()
+        updater.update(args.skip_post_update)
 
         updated_metadata = metadata_pb2.MetaData()
         updated_metadata.CopyFrom(metadata)
@@ -115,10 +116,21 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
         git_utils.add_file(full_path, 'METADATA')
 
-        if args.stop_after_merge:
+        if args.build:
+            if not updater_utils.build(full_path):
+                print("Build failed. Aborting upload.")
+                return
+
+        if args.no_upload:
             return
 
-        rel_proj_path = fileutils.get_relative_project_path(full_path)
+        try:
+            rel_proj_path = str(fileutils.get_relative_project_path(full_path))
+        except ValueError:
+            # Absolute paths to other trees will not be relative to our tree. There are
+            # not portable instructions for upgrading that project, since the path will
+            # differ between machines (or checkouts).
+            rel_proj_path = "<absolute path to project>"
         msg = textwrap.dedent(f"""\
         Upgrade {metadata.name} to {updater.latest_version}
 
@@ -150,8 +162,8 @@ def check_and_update(args: argparse.Namespace,
     """
 
     try:
-        rel_proj_path = fileutils.get_relative_project_path(proj_path)
-        print(f'Checking {rel_proj_path}. ', end='')
+        canonical_path = fileutils.canonicalize_project_path(proj_path)
+        print(f'Checking {canonical_path}. ', end='')
         updater, metadata = build_updater(proj_path)
         updater.check()
 
@@ -173,7 +185,7 @@ def check_and_update(args: argparse.Namespace,
         return updater
     # pylint: disable=broad-except
     except Exception as err:
-        print(f'{color_string("Failed.", Color.ERROR)} {err}.')
+        logging.exception("Failed to check or update %s", proj_path)
         return str(err)
 
 
@@ -189,14 +201,13 @@ def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
         else:
             res['current'] = updater.current_version
             res['latest'] = updater.latest_version
-        relative_path = fileutils.get_relative_project_path(Path(path))
-        results[str(relative_path)] = res
+        results[str(fileutils.canonicalize_project_path(Path(path)))] = res
         time.sleep(delay)
     return results
 
 
 def _list_all_metadata() -> Iterator[str]:
-    for path, dirs, files in os.walk(fileutils.EXTERNAL_PATH):
+    for path, dirs, files in os.walk(fileutils.external_path()):
         if fileutils.METADATA_FILENAME in files:
             # Skip sub directories.
             dirs[:] = []
@@ -261,7 +272,7 @@ def parse_args() -> argparse.Namespace:
         nargs='*',
         help='Paths of the project. '
         'Relative paths will be resolved from external/.')
-    check_parser.add_argument('--json_output',
+    check_parser.add_argument('--json-output',
                               help='Path of a json file to write result to.')
     check_parser.add_argument(
         '--all',
@@ -281,7 +292,7 @@ def parse_args() -> argparse.Namespace:
         nargs='*',
         help='Paths of the project as globs. '
         'Relative paths will be resolved from external/.')
-    update_parser.add_argument('--json_output',
+    update_parser.add_argument('--json-output',
                                help='Path of a json file to write result to.')
     update_parser.add_argument(
         '--force',
@@ -292,16 +303,23 @@ def parse_args() -> argparse.Namespace:
         help='Run update and refresh to the current version.',
         action='store_true')
     update_parser.add_argument(
-        '--keep_date',
+        '--keep-date',
         help='Run update and do not change date in METADATA.',
         action='store_true')
-    update_parser.add_argument('--stop_after_merge',
+    update_parser.add_argument('--no-upload',
                                action='store_true',
-                               help='Stops after merging new changes')
-    update_parser.add_argument('--keep_local_changes',
+                               help='Does not upload to Gerrit after upgrade')
+    update_parser.add_argument('--keep-local-changes',
                                action='store_true',
                                help='Updates the current branch')
-    update_parser.add_argument('--remote_name',
+    update_parser.add_argument('--skip-post-update',
+                               action='store_true',
+                               help='Skip post_update script')
+    update_parser.add_argument('--no-build',
+                               action='store_false',
+                               dest='build',
+                               help='Skip building'),
+    update_parser.add_argument('--remote-name',
                                default='aosp',
                                required=False,
                                help='Upstream remote name.')

@@ -154,7 +154,7 @@ class GithubArchiveUpdater(Updater):
         else:
             self._fetch_latest_version()
 
-    def update(self) -> None:
+    def update(self, skip_post_update: bool) -> None:
         """Updates the package.
 
         Has to call check() before this function.
