@@ -146,27 +146,29 @@ class CratesUpdater(Updater):
         return False
 
     # pylint: disable=no-self-use
-    def update_metadata(self, metadata: metadata_pb2.MetaData,
-                        full_path: Path) -> None:
+    def update_metadata(self, metadata: metadata_pb2.MetaData) -> metadata_pb2:
         """Updates METADATA content."""
         # copy only HOMEPAGE url, and then add new ARCHIVE url.
+        updated_metadata = super().update_metadata(metadata)
         new_url_list = []
-        for url in metadata.third_party.url:
+        for url in updated_metadata.third_party.url:
             if url.type == metadata_pb2.URL.HOMEPAGE:
                 new_url_list.append(url)
+                break
         new_url = metadata_pb2.URL()
         new_url.type = metadata_pb2.URL.ARCHIVE
-        new_url.value = f"https://static.crates.io/crates/{metadata.name}/" \
-                        f"{metadata.name}-{metadata.third_party.version}.crate"
+        new_url.value = f"https://static.crates.io/crates/{updated_metadata.name}/" \
+                        f"{updated_metadata.name}-{updated_metadata.third_party.version}.crate"
         new_url_list.append(new_url)
-        del metadata.third_party.url[:]
-        metadata.third_party.url.extend(new_url_list)
+        del updated_metadata.third_party.url[:]
+        updated_metadata.third_party.url.extend(new_url_list)
         # copy description from Cargo.toml to METADATA
-        cargo_toml = os.path.join(full_path, "Cargo.toml")
+        cargo_toml = os.path.join(self.project_path, "Cargo.toml")
         description = self._get_cargo_description(cargo_toml)
-        if description and description != metadata.description:
+        if description and description != updated_metadata.description:
             print("New METADATA description:", description)
-            metadata.description = description
+            updated_metadata.description = description
+        return updated_metadata
 
     def check_for_errors(self) -> None:
         # Check for .rej patches from failing to apply patches.
