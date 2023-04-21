@@ -116,7 +116,12 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
         git_utils.add_file(full_path, 'METADATA')
 
-        if args.stop_after_merge:
+        if args.build:
+            if not updater_utils.build(full_path):
+                print("Build failed. Aborting upload.")
+                return
+
+        if args.no_upload:
             return
 
         try:
@@ -267,7 +272,7 @@ def parse_args() -> argparse.Namespace:
         nargs='*',
         help='Paths of the project. '
         'Relative paths will be resolved from external/.')
-    check_parser.add_argument('--json_output',
+    check_parser.add_argument('--json-output',
                               help='Path of a json file to write result to.')
     check_parser.add_argument(
         '--all',
@@ -287,7 +292,7 @@ def parse_args() -> argparse.Namespace:
         nargs='*',
         help='Paths of the project as globs. '
         'Relative paths will be resolved from external/.')
-    update_parser.add_argument('--json_output',
+    update_parser.add_argument('--json-output',
                                help='Path of a json file to write result to.')
     update_parser.add_argument(
         '--force',
@@ -298,19 +303,23 @@ def parse_args() -> argparse.Namespace:
         help='Run update and refresh to the current version.',
         action='store_true')
     update_parser.add_argument(
-        '--keep_date',
+        '--keep-date',
         help='Run update and do not change date in METADATA.',
         action='store_true')
-    update_parser.add_argument('--stop_after_merge',
+    update_parser.add_argument('--no-upload',
                                action='store_true',
-                               help='Stops after merging new changes')
-    update_parser.add_argument('--keep_local_changes',
+                               help='Does not upload to Gerrit after upgrade')
+    update_parser.add_argument('--keep-local-changes',
                                action='store_true',
                                help='Updates the current branch')
-    update_parser.add_argument('--skip_post_update',
+    update_parser.add_argument('--skip-post-update',
                                action='store_true',
                                help='Skip post_update script')
-    update_parser.add_argument('--remote_name',
+    update_parser.add_argument('--no-build',
+                               action='store_false',
+                               dest='build',
+                               help='Skip building'),
+    update_parser.add_argument('--remote-name',
                                default='aosp',
                                required=False,
                                help='Upstream remote name.')
