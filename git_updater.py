@@ -96,9 +96,10 @@ class GitUpdater(base_updater.Updater):
             self._check_tag()
 
     def _check_tag(self) -> None:
-        tags = git_utils.list_remote_tags(self._proj_path,
-                                          self.UPSTREAM_REMOTE_NAME)
-        self._new_ver = updater_utils.get_latest_version(self._old_ver, tags)
+        branch = git_utils.detect_default_branch(self._proj_path,
+                                                 self.UPSTREAM_REMOTE_NAME)
+        self._new_ver = git_utils.get_most_recent_tag(
+            self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
     def _check_head(self) -> None:
         branch = git_utils.detect_default_branch(self._proj_path,
