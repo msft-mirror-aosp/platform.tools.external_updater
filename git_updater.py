@@ -82,8 +82,11 @@ class GitUpdater(base_updater.Updater):
             git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME,
                                  self._old_url.value)
 
-        git_utils.fetch(self._proj_path,
-                        [self.UPSTREAM_REMOTE_NAME, android_remote_name])
+        branch = git_utils.detect_default_branch(self._proj_path,
+                                                 self.UPSTREAM_REMOTE_NAME)
+
+        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
+        git_utils.fetch(self._proj_path, android_remote_name, 'master')
 
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
