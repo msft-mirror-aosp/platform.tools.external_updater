@@ -107,7 +107,7 @@ def get_commits_ahead(proj_path: Path, branch: str,
 def get_most_recent_tag(proj_path: Path, branch: str) -> str:
     cmd = ['git', 'describe', branch, '--abbrev=0']
     out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
-                         text=True).stdout
+                         text=True).stdout.strip()
     return out
 
 

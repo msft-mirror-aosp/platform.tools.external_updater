@@ -15,7 +15,6 @@
 
 import json
 import re
-import time
 import urllib.request
 import urllib.error
 from typing import List, Optional, Tuple
@@ -72,6 +71,7 @@ class GithubArchiveUpdater(Updater):
     release name in GitHub.
     """
 
+    UPSTREAM_REMOTE_NAME: str = "update_origin"
     VERSION_FIELD: str = 'tag_name'
     owner: str
     repo: str
@@ -104,21 +104,33 @@ class GithubArchiveUpdater(Updater):
         ]
         return (data[self.VERSION_FIELD], supported_assets)
 
+    def _setup_remote(self) -> None:
+        homepage = f'https://github.com/{self.owner}/{self.repo}'
+        remotes = git_utils.list_remotes(self._proj_path)
+        current_remote_url = None
+        for name, url in remotes.items():
+            if name == self.UPSTREAM_REMOTE_NAME:
+                current_remote_url = url
+
+        if current_remote_url is not None and current_remote_url != homepage:
+            git_utils.remove_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME)
+            current_remote_url = None
+
+        if current_remote_url is None:
+            git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME, homepage)
+
+        branch = git_utils.detect_default_branch(self._proj_path,
+                                                 self.UPSTREAM_REMOTE_NAME)
+
+        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
+
     def _fetch_latest_tag(self) -> Tuple[str, List[str]]:
-        page = 1
-        tags: List[str] = []
-        # fetches at most 20 pages.
-        for page in range(1, 21):
-            # Sleeps 10s to avoid rate limit.
-            time.sleep(10)
-            # pylint: disable=line-too-long
-            url = f'https://api.github.com/repos/{self.owner}/{self.repo}/tags?page={page}'
-            with urllib.request.urlopen(url) as request:
-                data = json.loads(request.read().decode())
-            if len(data) == 0:
-                break
-            tags.extend(d['name'] for d in data)
-        return (updater_utils.get_latest_version(self._old_ver, tags), [])
+        """We want to avoid hitting GitHub API rate limit by using alternative solutions."""
+        branch = git_utils.detect_default_branch(self._proj_path,
+                                                 self.UPSTREAM_REMOTE_NAME)
+        tag = git_utils.get_most_recent_tag(
+            self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
+        return tag, []
 
     def _fetch_latest_version(self) -> None:
         """Checks upstream and gets the latest release tag."""
@@ -135,10 +147,10 @@ class GithubArchiveUpdater(Updater):
         """Checks upstream and gets the latest commit to master."""
 
         # pylint: disable=line-too-long
-        url = f'https://api.github.com/repos/{self.owner}/{self.repo}/commits/master'
-        with urllib.request.urlopen(url) as request:
-            data = json.loads(request.read().decode())
-        self._new_ver = data['sha']
+        branch = git_utils.detect_default_branch(self._proj_path,
+                                                 self.UPSTREAM_REMOTE_NAME)
+        self._new_ver = git_utils.get_sha_for_branch(
+            self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
         self._new_url.value = (
             # pylint: disable=line-too-long
             f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.zip'
@@ -149,6 +161,7 @@ class GithubArchiveUpdater(Updater):
 
         Returns True if a new version is available.
         """
+        self._setup_remote()
         if git_utils.is_commit(self._old_ver):
             self._fetch_latest_commit()
         else:
