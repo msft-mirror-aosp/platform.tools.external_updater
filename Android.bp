@@ -45,7 +45,6 @@ python_library_host {
         "updater_utils.py",
     ],
     libs: [
-        "python-symbol",
         "libprotobuf-python",
     ],
     proto: {
