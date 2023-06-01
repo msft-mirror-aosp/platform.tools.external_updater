@@ -23,14 +23,14 @@ import hashtags
 import reviewers
 
 
-def fetch(proj_path: Path, remote_names: list[str]) -> None:
+def fetch(proj_path: Path, remote_name: str, branch: str | None = None) -> None:
     """Runs git fetch.
 
     Args:
         proj_path: Path to Git repository.
         remote_names: Array of string to specify remote names.
     """
-    cmd = ['git', 'fetch', '--tags', '--multiple'] + remote_names
+    cmd = ['git', 'fetch', '--tags', remote_name] + ([branch] if branch is not None else [])
     subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True)
 
 
@@ -104,6 +104,13 @@ def get_commits_ahead(proj_path: Path, branch: str,
     return out.splitlines()
 
 
+def get_most_recent_tag(proj_path: Path, branch: str) -> str:
+    cmd = ['git', 'describe', branch, '--abbrev=0']
+    out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
+                         text=True).stdout.strip()
+    return out
+
+
 # pylint: disable=redefined-outer-name
 def get_commit_time(proj_path: Path, commit: str) -> datetime.datetime:
     """Gets commit time of one commit."""
@@ -132,22 +139,6 @@ def list_local_branches(proj_path: Path) -> list[str]:
     lines = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
                            text=True).stdout.splitlines()
     return lines
-
-
-def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
-    """Lists all tags for a remote."""
-    regex = re.compile(r".*refs/tags/(?P<tag>[^\^]*).*")
-
-    def parse_remote_tag(line: str) -> str:
-        if (m := regex.match(line)) is not None:
-            return m.group("tag")
-        raise ValueError(f"Could not parse tag from {line}")
-
-    cmd = ['git', "ls-remote", "--tags", remote_name]
-    lines = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
-                           text=True).stdout.splitlines()
-    tags = [parse_remote_tag(line) for line in lines]
-    return list(set(tags))
 
 
 COMMIT_PATTERN = r'^[a-f0-9]{40}$'

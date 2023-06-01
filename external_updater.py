@@ -104,15 +104,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     try:
         updater.update(args.skip_post_update)
 
-        updated_metadata = metadata_pb2.MetaData()
-        updated_metadata.CopyFrom(metadata)
-        updated_metadata.third_party.version = updater.latest_version
-        for metadata_url in updated_metadata.third_party.url:
-            if metadata_url == updater.current_url:
-                metadata_url.CopyFrom(updater.latest_url)
-        # For Rust crates, replace GIT url with ARCHIVE url
-        if isinstance(updater, CratesUpdater):
-            updater.update_metadata(updated_metadata, full_path)
+        updated_metadata = updater.update_metadata(metadata)
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
         git_utils.add_file(full_path, 'METADATA')
 

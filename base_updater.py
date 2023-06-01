@@ -56,6 +56,15 @@ class Updater:
         """
         return False
 
+    def update_metadata(self, metadata: metadata_pb2.MetaData) -> metadata_pb2:
+        updated_metadata = metadata_pb2.MetaData()
+        updated_metadata.CopyFrom(metadata)
+        updated_metadata.third_party.version = self.latest_version
+        for metadata_url in updated_metadata.third_party.url:
+            if metadata_url == self.current_url:
+                metadata_url.CopyFrom(self.latest_url)
+        return updated_metadata
+
     @property
     def project_path(self) -> Path:
         """Gets absolute path to the project."""
