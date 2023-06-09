@@ -35,7 +35,8 @@ ALPHA_BETA_PATTERN: str = (r"^.*[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta).*")
 
 ALPHA_BETA_RE: re.Pattern = re.compile(ALPHA_BETA_PATTERN)
 
-VERSION_PATTERN: str = (r"([0-9]+)\.([0-9]+)\.([0-9]+)")
+"""Match both x.y.z and x.y.z+a.b.c which is used by some Vulkan binding libraries"""
+VERSION_PATTERN: str = (r"([0-9]+)\.([0-9]+)\.([0-9]+)(\+([0-9]+)\.([0-9]+)\.([0-9]+))?")
 
 VERSION_MATCHER: re.Pattern = re.compile(VERSION_PATTERN)
 
