@@ -16,7 +16,6 @@
 import base_updater
 import git_utils
 # pylint: disable=import-error
-import metadata_pb2  # type: ignore
 import updater_utils
 
 
@@ -33,7 +32,7 @@ class GitUpdater(base_updater.Updater):
         # There isn't a strict rule for finding the correct remote for upstream-master,
         # so we have to guess. Be careful to filter out things that look almost right
         # but aren't. Here's an example of a project that has a lot of false positives:
-        # 
+        #
         # aosp    /usr/local/google/home/danalbert/src/mirrors/android/refs/aosp/toolchain/rr.git (fetch)
         # aosp    persistent-https://android.git.corp.google.com/toolchain/rr (push)
         # origin  https://github.com/DanAlbert/rr.git (fetch)
@@ -57,7 +56,7 @@ class GitUpdater(base_updater.Updater):
             return True
         return False
 
-    def _setup_remote(self) -> None:
+    def setup_remote(self) -> None:
         remotes = git_utils.list_remotes(self._proj_path)
         current_remote_url = None
         android_remote_name: str | None = None
@@ -90,7 +89,7 @@ class GitUpdater(base_updater.Updater):
 
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
-        self._setup_remote()
+        self.setup_remote()
         if git_utils.is_commit(self._old_ver):
             # Update to remote head.
             self._check_head()

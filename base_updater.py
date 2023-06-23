@@ -15,6 +15,7 @@
 
 from pathlib import Path
 
+import git_utils
 import fileutils
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
@@ -37,6 +38,11 @@ class Updater:
     def is_supported_url(self) -> bool:
         """Returns whether the url is supported."""
         raise NotImplementedError()
+
+    def validate(self) -> str:
+        """Checks whether aosp version is what it claims to be."""
+        self.setup_remote()
+        return git_utils.diff(self._proj_path, self._old_ver)
 
     def check(self) -> None:
         """Checks whether a new version is available."""

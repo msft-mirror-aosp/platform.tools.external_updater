@@ -225,6 +225,18 @@ def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
         json.dump(results, res_file, sort_keys=True, indent=4)
 
 
+def validate(args: argparse.Namespace) -> None:
+    """Handler for validate command."""
+    paths = get_paths(args.paths)
+    try:
+        canonical_path = fileutils.canonicalize_project_path(paths[0])
+        print(f'Validating {canonical_path}')
+        updater, metadata = build_updater(paths[0])
+        print(updater.validate())
+    except Exception as err:
+        logging.exception("Failed to check or update %s", paths)
+
+
 def check(args: argparse.Namespace) -> None:
     """Handler for check command."""
     paths = _list_all_metadata() if args.all else get_paths(args.paths)
@@ -255,6 +267,15 @@ def parse_args() -> argparse.Namespace:
         description='Check updates for third party projects in external/.')
     subparsers = parser.add_subparsers(dest='cmd')
     subparsers.required = True
+
+    diff_parser = subparsers.add_parser('validate',
+                                        help='Check if aosp version is what it claims to be.')
+    diff_parser.add_argument(
+        'paths',
+        nargs='*',
+        help='Paths of the project. '
+             'Relative paths will be resolved from external/.')
+    diff_parser.set_defaults(func=validate)
 
     # Creates parser for check command.
     check_parser = subparsers.add_parser('check',
@@ -310,7 +331,7 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--no-build',
                                action='store_false',
                                dest='build',
-                               help='Skip building'),
+                               help='Skip building')
     update_parser.add_argument('--remote-name',
                                default='aosp',
                                required=False,
