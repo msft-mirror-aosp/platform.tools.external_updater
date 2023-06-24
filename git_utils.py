@@ -22,6 +22,10 @@ from pathlib import Path
 import hashtags
 import reviewers
 
+ANDROID_SPECIFIC_FILES = ["*Android.bp", "Android.mk", "CleanSpec.mk", "LICENSE",
+                          "NOTICE", "METADATA", "TEST_MAPPING", ".git",
+                          ".gitignore", "patches", "post_update.sh", "OWNERS",
+                          "README.android", "cargo2android*", "MODULE_LICENSE_*"]
 
 def fetch(proj_path: Path, remote_name: str, branch: str | None = None) -> None:
     """Runs git fetch.
@@ -256,3 +260,17 @@ def is_valid_url(proj_path: Path, url: str) -> bool:
     return subprocess.run(cmd, cwd=proj_path, stdin=subprocess.DEVNULL,
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                           start_new_session=True).returncode == 0
+
+
+def diff(proj_path: Path, sha_or_tag: str) -> str:
+    files = []
+    for file in ANDROID_SPECIFIC_FILES:
+        file = ":!" + file
+        files.append(file)
+    try:
+        cmd = ['git', 'diff', sha_or_tag, '--stat', '--'] + files
+        out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
+                             check=True, text=True).stdout
+        return out
+    except subprocess.CalledProcessError as err:
+        return f"Could not calculate the diff: {err}"
