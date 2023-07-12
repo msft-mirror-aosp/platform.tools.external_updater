@@ -94,7 +94,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     full_path = updater.project_path
 
     if not args.keep_local_changes:
-        git_utils.checkout(full_path, args.remote_name + '/master')
+        git_utils.checkout(full_path, args.remote_name + '/main')
         if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
             git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
             git_utils.reset_hard(full_path)
@@ -128,7 +128,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
 
         This project was upgraded with external_updater.
         Usage: tools/external_updater/updater.sh update {rel_proj_path}
-        For more info, check https://cs.android.com/android/platform/superproject/+/master:tools/external_updater/README.md
+        For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md
 
         Test: TreeHugger""")
         git_utils.remove_gitmodules(full_path)
