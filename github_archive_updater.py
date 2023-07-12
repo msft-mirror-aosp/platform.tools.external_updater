@@ -144,7 +144,7 @@ class GithubArchiveUpdater(Updater):
         self._new_url.value = choose_best_url(urls, self._old_url.value)
 
     def _fetch_latest_commit(self) -> None:
-        """Checks upstream and gets the latest commit to master."""
+        """Checks upstream and gets the latest commit to default branch."""
 
         # pylint: disable=line-too-long
         branch = git_utils.detect_default_branch(self._proj_path,
