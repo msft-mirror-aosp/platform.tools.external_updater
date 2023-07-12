@@ -145,7 +145,7 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
     usage_hint = textwrap.dedent(f"""\
     # This project was upgraded with external_updater.
     # Usage: tools/external_updater/updater.sh update {rel_proj_path}
-    # For more info, check https://cs.android.com/android/platform/superproject/+/master:tools/external_updater/README.md
+    # For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md
 
     """)
     text_metadata = usage_hint + text_format.MessageToString(metadata)
