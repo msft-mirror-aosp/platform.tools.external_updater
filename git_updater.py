@@ -29,7 +29,7 @@ class GitUpdater(base_updater.Updater):
     @staticmethod
     def _is_likely_android_remote(url: str) -> bool:
         """Returns True if the URL is likely to be the project's Android remote."""
-        # There isn't a strict rule for finding the correct remote for upstream-master,
+        # There isn't a strict rule for finding the correct remote for upstream-master/main,
         # so we have to guess. Be careful to filter out things that look almost right
         # but aren't. Here's an example of a project that has a lot of false positives:
         #
@@ -85,7 +85,7 @@ class GitUpdater(base_updater.Updater):
                                                  self.UPSTREAM_REMOTE_NAME)
 
         git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
-        git_utils.fetch(self._proj_path, android_remote_name, 'master')
+        git_utils.fetch(self._proj_path, android_remote_name, 'main')
 
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
