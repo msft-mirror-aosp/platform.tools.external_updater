@@ -108,14 +108,6 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
         git_utils.add_file(full_path, 'METADATA')
 
-        if args.build:
-            if not updater_utils.build(full_path):
-                print("Build failed. Aborting upload.")
-                return
-
-        if args.no_upload:
-            return
-
         try:
             rel_proj_path = str(fileutils.get_relative_project_path(full_path))
         except ValueError:
@@ -134,12 +126,18 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.remove_gitmodules(full_path)
         git_utils.add_file(full_path, '*')
         git_utils.commit(full_path, msg)
+
+        if args.build:
+            if not updater_utils.build(full_path):
+                print("Build failed. Aborting upload.")
+                return
     except Exception as err:
         if updater.rollback():
             print('Rolled back.')
         raise err
 
-    git_utils.push(full_path, args.remote_name, updater.has_errors)
+    if not args.no_upload:
+        git_utils.push(full_path, args.remote_name, updater.has_errors)
 
 
 def check_and_update(args: argparse.Namespace,
