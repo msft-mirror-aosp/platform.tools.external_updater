@@ -25,18 +25,19 @@ from typing import IO
 
 import archive_utils
 from base_updater import Updater
+import git_utils
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 import updater_utils
 
-LIBRARY_NAME_PATTERN: str = (r"([-\w]+)")
+LIBRARY_NAME_PATTERN: str = r"([-\w]+)"
 
-ALPHA_BETA_PATTERN: str = (r"^.*[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta).*")
+ALPHA_BETA_PATTERN: str = r"^.*[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta).*"
 
 ALPHA_BETA_RE: re.Pattern = re.compile(ALPHA_BETA_PATTERN)
 
 """Match both x.y.z and x.y.z+a.b.c which is used by some Vulkan binding libraries"""
-VERSION_PATTERN: str = (r"([0-9]+)\.([0-9]+)\.([0-9]+)(\+([0-9]+)\.([0-9]+)\.([0-9]+))?")
+VERSION_PATTERN: str = r"([0-9]+)\.([0-9]+)\.([0-9]+)(\+([0-9]+)\.([0-9]+)\.([0-9]+))?"
 
 VERSION_MATCHER: re.Pattern = re.compile(VERSION_PATTERN)
 
@@ -47,7 +48,7 @@ CRATES_IO_ARCHIVE_URL_PATTERN: str = (r"^https:\/\/static.crates.io\/crates\/" +
 
 CRATES_IO_ARCHIVE_URL_RE: re.Pattern = re.compile(CRATES_IO_ARCHIVE_URL_PATTERN)
 
-DESCRIPTION_PATTERN: str = (r"^description *= *(\".+\")")
+DESCRIPTION_PATTERN: str = r"^description *= *(\".+\")"
 
 DESCRIPTION_MATCHER: re.Pattern = re.compile(DESCRIPTION_PATTERN)
 
@@ -55,6 +56,7 @@ DESCRIPTION_MATCHER: re.Pattern = re.compile(DESCRIPTION_PATTERN)
 class CratesUpdater(Updater):
     """Updater for crates.io packages."""
 
+    UPSTREAM_REMOTE_NAME: str = "update_origin"
     download_url: str
     package: str
     package_dir: str
@@ -66,6 +68,28 @@ class CratesUpdater(Updater):
             return False
         self.package = match.group(1)
         return True
+
+    def setup_remote(self) -> None:
+        url = "https://crates.io/api/v1/crates/" + self.package
+        with urllib.request.urlopen(url) as request:
+            data = json.loads(request.read().decode())
+        homepage = data["crate"]["repository"]
+        remotes = git_utils.list_remotes(self._proj_path)
+        current_remote_url = None
+        for name, url in remotes.items():
+            if name == self.UPSTREAM_REMOTE_NAME:
+                current_remote_url = url
+
+        if current_remote_url is not None and current_remote_url != homepage:
+            git_utils.remove_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME)
+            current_remote_url = None
+
+        if current_remote_url is None:
+            git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME, homepage)
+
+        branch = git_utils.detect_default_branch(self._proj_path,
+                                                 self.UPSTREAM_REMOTE_NAME)
+        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
 
     def _get_version_numbers(self, version: str) -> tuple[int, int, int]:
         match = VERSION_MATCHER.match(version)

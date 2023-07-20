@@ -104,7 +104,7 @@ class GithubArchiveUpdater(Updater):
         ]
         return (data[self.VERSION_FIELD], supported_assets)
 
-    def _setup_remote(self) -> None:
+    def setup_remote(self) -> None:
         homepage = f'https://github.com/{self.owner}/{self.repo}'
         remotes = git_utils.list_remotes(self._proj_path)
         current_remote_url = None
@@ -161,7 +161,7 @@ class GithubArchiveUpdater(Updater):
 
         Returns True if a new version is available.
         """
-        self._setup_remote()
+        self.setup_remote()
         if git_utils.is_commit(self._old_ver):
             self._fetch_latest_commit()
         else:
