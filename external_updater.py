@@ -94,7 +94,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     full_path = updater.project_path
 
     if not args.keep_local_changes:
-        git_utils.checkout(full_path, args.remote_name + '/master')
+        git_utils.checkout(full_path, args.remote_name + '/main')
         if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
             git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
             git_utils.reset_hard(full_path)
@@ -108,14 +108,6 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
         git_utils.add_file(full_path, 'METADATA')
 
-        if args.build:
-            if not updater_utils.build(full_path):
-                print("Build failed. Aborting upload.")
-                return
-
-        if args.no_upload:
-            return
-
         try:
             rel_proj_path = str(fileutils.get_relative_project_path(full_path))
         except ValueError:
@@ -128,18 +120,24 @@ def _do_update(args: argparse.Namespace, updater: Updater,
 
         This project was upgraded with external_updater.
         Usage: tools/external_updater/updater.sh update {rel_proj_path}
-        For more info, check https://cs.android.com/android/platform/superproject/+/master:tools/external_updater/README.md
+        For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md
 
         Test: TreeHugger""")
         git_utils.remove_gitmodules(full_path)
         git_utils.add_file(full_path, '*')
         git_utils.commit(full_path, msg)
+
+        if args.build:
+            if not updater_utils.build(full_path):
+                print("Build failed. Aborting upload.")
+                return
     except Exception as err:
         if updater.rollback():
             print('Rolled back.')
         raise err
 
-    git_utils.push(full_path, args.remote_name, updater.has_errors)
+    if not args.no_upload:
+        git_utils.push(full_path, args.remote_name, updater.has_errors)
 
 
 def check_and_update(args: argparse.Namespace,
