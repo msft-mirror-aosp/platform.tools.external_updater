@@ -25,7 +25,8 @@ import reviewers
 ANDROID_SPECIFIC_FILES = ["*Android.bp", "Android.mk", "CleanSpec.mk", "LICENSE",
                           "NOTICE", "METADATA", "TEST_MAPPING", ".git",
                           ".gitignore", "patches", "post_update.sh", "OWNERS",
-                          "README.android", "cargo2android*", "MODULE_LICENSE_*"]
+                          "README.android", "cargo2android*", "MODULE_LICENSE_*",
+                          "rules.mk", "cargo2rulesmk*"]
 
 def fetch(proj_path: Path, remote_name: str, branch: str | None = None) -> None:
     """Runs git fetch.
