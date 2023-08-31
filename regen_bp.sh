@@ -25,16 +25,21 @@
 set -e
 
 # Wrapper around cargo2android.
-C2A_WRAPPER="/google/bin/releases/android-rust/cargo2android/sandbox.par"
-C2A_WRAPPER_FLAGS="--updater"
+SANDBOX="/google/bin/releases/android-rust/cargo2android/sandbox.par"
+SANDBOX_FLAGS="--updater"
+SANDBOX_RULESMK_FLAGS="--rulesmk"
 
 function main() {
   check_files $*
   update_files_with_cargo_pkg_vars
   # Save Cargo.lock if it existed before this update.
   [ ! -f Cargo.lock ] || mv Cargo.lock Cargo.lock.saved
-  echo "Updating Android.bp: $C2A_WRAPPER $C2A_WRAPPER_FLAGS -- $FLAGS"
-  $C2A_WRAPPER $C2A_WRAPPER_FLAGS -- $FLAGS
+  echo "Updating Android.bp: $SANDBOX $SANDBOX_FLAGS -- $C2A_SCRIPT_FLAGS"
+  $SANDBOX $SANDBOX_FLAGS -- $C2A_SCRIPT_FLAGS
+  if [ -f rules.mk ]; then
+    echo "Updating rules.mk: $SANDBOX $SANDBOX_FLAGS $SANDBOX_RULESMK_FLAGS -- $C2R_SCRIPT_FLAGS"
+    $SANDBOX $SANDBOX_FLAGS $SANDBOX_RULESMK_FLAGS -- $C2R_SCRIPT_FLAGS
+  fi
   copy_cargo_out_files $*
   rm -rf target.tmp cargo.out Cargo.lock
   # Restore Cargo.lock if it existed before this update.
@@ -52,14 +57,23 @@ function check_files() {
   else
     EXTERNAL_DIR="$2"  # e.g. rust/crates/bytes
   fi
-  [ -f "$C2A_WRAPPER" ] || abort "ERROR: cannot find $C2A_WRAPPER"
+  [ -f "$SANDBOX" ] || abort "ERROR: cannot find $SANDBOX"
   LINE1=`head -1 Android.bp || abort "ERROR: cannot find Android.bp"`
   if [[ ! "$LINE1" =~ ^.*cargo2android.py.*$ ]]; then
     echo 'Android.bp header does not contain "cargo2android.py"; skip regen_bp'
     exit 0
   fi
-  FLAGS=`echo "$LINE1" | sed -e 's:^.*cargo2android.py ::;s:\.$::'`
+  C2A_SCRIPT_FLAGS=`echo "$LINE1" | sed -e 's:^.*cargo2android.py ::;s:\.$::'`
   [ -f Cargo.toml ] || abort "ERROR: cannot find ./Cargo.toml."
+
+  if [ -f rules.mk ]; then
+    LINE1=`head -1 rules.mk`
+    if [[ ! "$LINE1" =~ ^.*cargo2rulesmk.py.*$ ]]; then
+      echo 'rules.mk header does not contain "cargo2rulesmk.py"; skip regen_bp'
+      exit 0
+    fi
+    C2R_SCRIPT_FLAGS=`echo "$LINE1" | sed -e 's:^.*cargo2rulesmk.py ::;s:\.$::'`
+  fi
 }
 
 function copy_cargo_out_files() {
