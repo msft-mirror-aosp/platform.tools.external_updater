@@ -77,9 +77,9 @@ class GithubArchiveUpdater(Updater):
     repo: str
 
     def is_supported_url(self) -> bool:
-        if self._old_url.type != metadata_pb2.URL.ARCHIVE:
+        if self._old_identifier.type.lower() != 'archive':
             return False
-        match = GITHUB_URL_RE.match(self._old_url.value)
+        match = GITHUB_URL_RE.match(self._old_identifier.value)
         if match is None:
             return False
         try:
@@ -134,26 +134,26 @@ class GithubArchiveUpdater(Updater):
 
     def _fetch_latest_version(self) -> None:
         """Checks upstream and gets the latest release tag."""
-        self._new_ver, urls = (self._fetch_latest_release()
+        self._new_identifier.version, urls = (self._fetch_latest_release()
                                or self._fetch_latest_tag())
 
         # Adds source code urls.
-        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.tar.gz')
-        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.zip')
+        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_identifier.version}.tar.gz')
+        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_identifier.version}.zip')
 
-        self._new_url.value = choose_best_url(urls, self._old_url.value)
+        self._new_identifier.value = choose_best_url(urls, self._old_identifier.value)
 
     def _fetch_latest_commit(self) -> None:
-        """Checks upstream and gets the latest commit to master."""
+        """Checks upstream and gets the latest commit to default branch."""
 
         # pylint: disable=line-too-long
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        self._new_ver = git_utils.get_sha_for_branch(
+        self._new_identifier.version = git_utils.get_sha_for_branch(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
-        self._new_url.value = (
+        self._new_identifier.value = (
             # pylint: disable=line-too-long
-            f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_ver}.zip'
+            f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_identifier.version}.zip'
         )
 
     def check(self) -> None:
@@ -162,7 +162,7 @@ class GithubArchiveUpdater(Updater):
         Returns True if a new version is available.
         """
         self.setup_remote()
-        if git_utils.is_commit(self._old_ver):
+        if git_utils.is_commit(self._old_identifier.version):
             self._fetch_latest_commit()
         else:
             self._fetch_latest_version()
@@ -175,7 +175,7 @@ class GithubArchiveUpdater(Updater):
         temporary_dir = None
         try:
             temporary_dir = archive_utils.download_and_extract(
-                self._new_url.value)
+                self._new_identifier.value)
             package_dir = archive_utils.find_archive_root(temporary_dir)
             updater_utils.replace_package(package_dir, self._proj_path)
         finally:

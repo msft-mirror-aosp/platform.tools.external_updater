@@ -25,7 +25,8 @@ import reviewers
 ANDROID_SPECIFIC_FILES = ["*Android.bp", "Android.mk", "CleanSpec.mk", "LICENSE",
                           "NOTICE", "METADATA", "TEST_MAPPING", ".git",
                           ".gitignore", "patches", "post_update.sh", "OWNERS",
-                          "README.android", "cargo2android*", "MODULE_LICENSE_*"]
+                          "README.android", "cargo2android*", "MODULE_LICENSE_*",
+                          "rules.mk", "cargo2rulesmk*"]
 
 def fetch(proj_path: Path, remote_name: str, branch: str | None = None) -> None:
     """Runs git fetch.
@@ -233,7 +234,7 @@ def checkout(proj_path: Path, branch_name: str) -> None:
 
 def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
     """Pushes change to remote."""
-    cmd = ['git', 'push', remote_name, 'HEAD:refs/for/master']
+    cmd = ['git', 'push', remote_name, 'HEAD:refs/for/main']
     if revs := reviewers.find_reviewers(str(proj_path)):
         cmd.extend(['-o', revs])
     if tag := hashtags.find_hashtag(proj_path):

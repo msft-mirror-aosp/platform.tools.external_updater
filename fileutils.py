@@ -117,6 +117,21 @@ def read_metadata(proj_path: Path) -> metadata_pb2.MetaData:
         return text_format.Parse(metadata, metadata_pb2.MetaData())
 
 
+def convert_url_to_identifier(metadata: metadata_pb2.MetaData) -> metadata_pb2.MetaData:
+    """Converts the old style METADATA to the new style"""
+    for url in metadata.third_party.url:
+        identifier = metadata_pb2.Identifier()
+        identifier.type = metadata_pb2.URL.Type.Name(url.type)
+        identifier.value = url.value
+        if url.type != metadata_pb2.URL.HOMEPAGE:
+            identifier.version = metadata.third_party.version
+            metadata.third_party.ClearField("version")
+
+        metadata.third_party.identifier.append(identifier)
+    metadata.third_party.ClearField("url")
+    return metadata
+
+
 def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: bool) -> None:
     """Writes updated METADATA file for a project.
 
@@ -145,7 +160,7 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
     usage_hint = textwrap.dedent(f"""\
     # This project was upgraded with external_updater.
     # Usage: tools/external_updater/updater.sh update {rel_proj_path}
-    # For more info, check https://cs.android.com/android/platform/superproject/+/master:tools/external_updater/README.md
+    # For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md
 
     """)
     text_metadata = usage_hint + text_format.MessageToString(metadata)
