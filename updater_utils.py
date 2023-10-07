@@ -40,10 +40,10 @@ def create_updater(metadata: metadata_pb2.MetaData, proj_path: Path,
     Raises:
       ValueError: Occurred when there's no updater for all urls.
     """
-    for identifier in metadata.third_party.identifier:
-        if identifier.type.lower() != 'homepage':
+    for url in metadata.third_party.url:
+        if url.type != metadata_pb2.URL.HOMEPAGE:
             for updater_cls in updaters:
-                updater = updater_cls(proj_path, identifier, metadata.third_party.version)
+                updater = updater_cls(proj_path, url, metadata.third_party.version)
                 if updater.is_supported_url():
                     return updater
 
@@ -107,7 +107,7 @@ def _match_and_get_version(old_ver: ParsedVersion,
     except ValueError:
         return (False, False, [])
 
-    right_format = new_ver[1:] == old_ver[1:]
+    right_format = (new_ver[1:] == old_ver[1:])
     right_length = len(new_ver[0]) == len(old_ver[0])
 
     return (right_format, right_length, new_ver[0])
