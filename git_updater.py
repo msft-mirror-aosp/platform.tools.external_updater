@@ -115,5 +115,3 @@ class GitUpdater(base_updater.Updater):
         """
         print(f"Running `git merge {self._new_ver}`...")
         git_utils.merge(self._proj_path, self._new_ver)
-        if not skip_post_update:
-            updater_utils.run_post_update(self._proj_path, self._proj_path)
