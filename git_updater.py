@@ -24,7 +24,7 @@ class GitUpdater(base_updater.Updater):
     UPSTREAM_REMOTE_NAME: str = "update_origin"
 
     def is_supported_url(self) -> bool:
-        return git_utils.is_valid_url(self._proj_path, self._old_identifier.value)
+        return git_utils.is_valid_url(self._proj_path, self._old_url.value)
 
     @staticmethod
     def _is_likely_android_remote(url: str) -> bool:
@@ -73,13 +73,13 @@ class GitUpdater(base_updater.Updater):
                 f"Could not determine android remote for {self._proj_path}. Tried:\n"
                 f"{remotes_formatted}")
 
-        if current_remote_url is not None and current_remote_url != self._old_identifier.value:
+        if current_remote_url is not None and current_remote_url != self._old_url.value:
             git_utils.remove_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME)
             current_remote_url = None
 
         if current_remote_url is None:
             git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME,
-                                 self._old_identifier.value)
+                                 self._old_url.value)
 
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
@@ -90,7 +90,7 @@ class GitUpdater(base_updater.Updater):
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
         self.setup_remote()
-        if git_utils.is_commit(self._old_identifier.version):
+        if git_utils.is_commit(self._old_ver):
             # Update to remote head.
             self._check_head()
         else:
@@ -100,20 +100,18 @@ class GitUpdater(base_updater.Updater):
     def _check_tag(self) -> None:
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        self._new_identifier.version = git_utils.get_most_recent_tag(
+        self._new_ver = git_utils.get_most_recent_tag(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
     def _check_head(self) -> None:
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        self._new_identifier.version = git_utils.get_sha_for_branch(
+        self._new_ver = git_utils.get_sha_for_branch(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
     def update(self, skip_post_update: bool) -> None:
         """Updates the package.
         Has to call check() before this function.
         """
-        print(f"Running `git merge {self._new_identifier.version}`...")
-        git_utils.merge(self._proj_path, self._new_identifier.version)
-        if not skip_post_update:
-            updater_utils.run_post_update(self._proj_path, self._proj_path)
+        print(f"Running `git merge {self._new_ver}`...")
+        git_utils.merge(self._proj_path, self._new_ver)

@@ -23,14 +23,15 @@ import metadata_pb2  # type: ignore
 
 class Updater:
     """Base Updater that defines methods common for all updaters."""
-    def __init__(self, proj_path: Path, old_identifier: metadata_pb2.Identifier,
+    def __init__(self, proj_path: Path, old_url: metadata_pb2.URL,
                  old_ver: str) -> None:
         self._proj_path = fileutils.get_absolute_project_path(proj_path)
-        self._old_identifier = old_identifier
-        self._old_identifier.version = old_identifier.version if old_identifier.version else old_ver
+        self._old_url = old_url
+        self._old_ver = old_ver
 
-        self._new_identifier = metadata_pb2.Identifier()
-        self._new_identifier.CopyFrom(old_identifier)
+        self._new_url = metadata_pb2.URL()
+        self._new_url.CopyFrom(old_url)
+        self._new_ver = old_ver
 
         self._has_errors = False
 
@@ -41,7 +42,7 @@ class Updater:
     def validate(self) -> str:
         """Checks whether aosp version is what it claims to be."""
         self.setup_remote()
-        return git_utils.diff(self._proj_path, self._old_identifier.version)
+        return git_utils.diff(self._proj_path, self._old_ver)
 
     def check(self) -> None:
         """Checks whether a new version is available."""
@@ -64,10 +65,10 @@ class Updater:
     def update_metadata(self, metadata: metadata_pb2.MetaData) -> metadata_pb2:
         updated_metadata = metadata_pb2.MetaData()
         updated_metadata.CopyFrom(metadata)
-        updated_metadata.third_party.ClearField("version")
-        for identifier in updated_metadata.third_party.identifier:
-            if identifier == self.current_identifier:
-                identifier.CopyFrom(self.latest_identifier)
+        updated_metadata.third_party.version = self.latest_version
+        for metadata_url in updated_metadata.third_party.url:
+            if metadata_url == self.current_url:
+                metadata_url.CopyFrom(self.latest_url)
         return updated_metadata
 
     @property
@@ -78,22 +79,22 @@ class Updater:
     @property
     def current_version(self) -> str:
         """Gets the current version."""
-        return self._old_identifier.version
+        return self._old_ver
 
     @property
-    def current_identifier(self) -> metadata_pb2.Identifier:
-        """Gets the current identifier."""
-        return self._old_identifier
+    def current_url(self) -> metadata_pb2.URL:
+        """Gets the current url."""
+        return self._old_url
 
     @property
     def latest_version(self) -> str:
         """Gets latest version."""
-        return self._new_identifier.version
+        return self._new_ver
 
     @property
-    def latest_identifier(self) -> metadata_pb2.Identifier:
-        """Gets identifier for latest version."""
-        return self._new_identifier
+    def latest_url(self) -> metadata_pb2.URL:
+        """Gets URL for latest version."""
+        return self._new_url
 
     @property
     def has_errors(self) -> bool:
@@ -102,5 +103,5 @@ class Updater:
 
     def use_current_as_latest(self):
         """Uses current version/url as the latest to refresh project."""
-        self._new_identifier.version = self._old_identifier.version
-        self._new_identifier = self._old_identifier
+        self._new_ver = self._old_ver
+        self._new_url = self._old_url

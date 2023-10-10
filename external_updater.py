@@ -85,7 +85,6 @@ def build_updater(proj_path: Path) -> Tuple[Updater, metadata_pb2.MetaData]:
 
     proj_path = fileutils.get_absolute_project_path(proj_path)
     metadata = fileutils.read_metadata(proj_path)
-    metadata = fileutils.convert_url_to_identifier(metadata)
     updater = updater_utils.create_updater(metadata, proj_path, UPDATERS)
     return (updater, metadata)
 
@@ -127,6 +126,9 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.remove_gitmodules(full_path)
         git_utils.add_file(full_path, '*')
         git_utils.commit(full_path, msg)
+
+        if not args.skip_post_update:
+            updater_utils.run_post_update(full_path, full_path)
 
         if args.build:
             if not updater_utils.build(full_path):
