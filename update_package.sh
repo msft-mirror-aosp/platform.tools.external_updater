@@ -49,6 +49,9 @@ CopyIfPresent ".gitignore"
 if compgen -G "$external_dir/cargo2android*"; then
     cp -a -f -n $external_dir/cargo2android* .
 fi
+if compgen -G "$external_dir/cargo_embargo*"; then
+    cp -a -f -n $external_dir/cargo_embargo* .
+fi
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
 CopyIfPresent "OWNERS"
