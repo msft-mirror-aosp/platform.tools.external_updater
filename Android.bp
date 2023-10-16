@@ -21,6 +21,7 @@ python_binary_host {
     main: "external_updater.py",
     srcs: ["external_updater.py"],
     libs: ["external_updater_lib"],
+    required: ["cargo_embargo"],
 }
 
 python_binary_host {
