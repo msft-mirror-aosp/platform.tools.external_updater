@@ -144,7 +144,7 @@ class CratesUpdater(Updater):
         self.download_url = f"https://static.crates.io/crates/{self.package}/" \
                             f"{self.package}-{self._new_ver}.crate"
 
-    def update(self, skip_post_update: bool) -> None:
+    def update(self) -> None:
         """Updates the package.
 
         Has to call check() before this function.
