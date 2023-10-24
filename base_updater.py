@@ -48,7 +48,7 @@ class Updater:
         """Checks whether a new version is available."""
         raise NotImplementedError()
 
-    def update(self, skip_post_update: bool) -> None:
+    def update(self) -> None:
         """Updates the package.
 
         Has to call check() before this function.

@@ -102,7 +102,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
-        updater.update(args.skip_post_update)
+        updater.update()
 
         updated_metadata = updater.update_metadata(metadata)
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
@@ -125,7 +125,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         Test: TreeHugger""")
         git_utils.remove_gitmodules(full_path)
         git_utils.add_file(full_path, '*')
-        git_utils.commit(full_path, msg)
+        git_utils.commit(full_path, msg, args.no_verify)
 
         if not args.skip_post_update:
             updater_utils.run_post_update(full_path, full_path)
@@ -333,6 +333,9 @@ def parse_args() -> argparse.Namespace:
                                action='store_false',
                                dest='build',
                                help='Skip building')
+    update_parser.add_argument('--no-verify',
+                               action='store_true',
+                               help='Pass --no-verify to git commit')
     update_parser.add_argument('--remote-name',
                                default='aosp',
                                required=False,
