@@ -220,9 +220,9 @@ def start_branch(proj_path: Path, branch_name: str) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
-def commit(proj_path: Path, message: str) -> None:
+def commit(proj_path: Path, message: str, no_verify: bool) -> None:
     """Commits changes."""
-    cmd = ['git', 'commit', '-m', message]
+    cmd = ['git', 'commit', '-m', message] + (['--no-verify'] if no_verify is True else [])
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
