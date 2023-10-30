@@ -109,7 +109,7 @@ class GitUpdater(base_updater.Updater):
         self._new_ver = git_utils.get_sha_for_branch(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
-    def update(self, skip_post_update: bool) -> None:
+    def update(self) -> None:
         """Updates the package.
         Has to call check() before this function.
         """
