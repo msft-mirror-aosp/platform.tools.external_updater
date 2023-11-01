@@ -226,6 +226,12 @@ def commit(proj_path: Path, message: str, no_verify: bool) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
+def commit_amend(proj_path: Path) -> None:
+    """Commits changes."""
+    cmd = ['git', 'commit', '--amend', '--no-edit']
+    subprocess.run(cmd, cwd=proj_path, check=True)
+
+
 def checkout(proj_path: Path, branch_name: str) -> None:
     """Checkouts a branch."""
     cmd = ['git', 'checkout', branch_name]

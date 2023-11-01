@@ -129,6 +129,8 @@ def _do_update(args: argparse.Namespace, updater: Updater,
 
         if not args.skip_post_update:
             updater_utils.run_post_update(full_path, full_path)
+            git_utils.add_file(full_path, '*')
+            git_utils.commit_amend(full_path)
 
         if args.build:
             if not updater_utils.build(full_path):
