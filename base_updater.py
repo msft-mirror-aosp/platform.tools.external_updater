@@ -39,6 +39,9 @@ class Updater:
         """Returns whether the url is supported."""
         raise NotImplementedError()
 
+    def setup_remote(self) -> None:
+        raise NotImplementedError()
+
     def validate(self) -> str:
         """Checks whether aosp version is what it claims to be."""
         self.setup_remote()
