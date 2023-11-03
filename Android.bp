@@ -41,6 +41,7 @@ python_library_host {
         "git_utils.py",
         "github_archive_updater.py",
         "hashtags.py",
+        "manifest.py",
         "metadata.proto",
         "reviewers.py",
         "updater_utils.py",
