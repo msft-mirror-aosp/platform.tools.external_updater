@@ -204,11 +204,17 @@ def tree_uses_pore(proj_path: Path) -> bool:
         # everyone.
         return False
 
-    if proj_path == Path(proj_path.root):
-        return False
-    if (proj_path / ".pore").exists():
-        return True
-    return tree_uses_pore(proj_path.parent)
+    root = find_tree_root_for_project(proj_path)
+    return (root / ".pore").exists()
+
+
+def find_tree_root_for_project(path: Path) -> Path:
+    """Returns the path to the root of the tree that contains the project."""
+    if (path / ".repo").exists():
+        return path
+    if (path / ".pore").exists():
+        return path
+    return find_tree_root_for_project(path.parent)
 
 
 def start_branch(proj_path: Path, branch_name: str) -> None:
