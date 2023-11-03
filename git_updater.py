@@ -17,6 +17,7 @@ import base_updater
 import git_utils
 # pylint: disable=import-error
 import updater_utils
+from manifest import Manifest
 
 
 class GitUpdater(base_updater.Updater):
@@ -85,7 +86,8 @@ class GitUpdater(base_updater.Updater):
                                                  self.UPSTREAM_REMOTE_NAME)
 
         git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
-        git_utils.fetch(self._proj_path, android_remote_name, 'main')
+        git_utils.fetch(self._proj_path, android_remote_name,
+                        self._determine_android_fetch_ref())
 
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
@@ -115,3 +117,20 @@ class GitUpdater(base_updater.Updater):
         """
         print(f"Running `git merge {self._new_ver}`...")
         git_utils.merge(self._proj_path, self._new_ver)
+
+    def _determine_android_fetch_ref(self) -> str:
+        """Returns the ref that should be fetched from the android remote."""
+        # It isn't particularly efficient to reparse the tree for every project, but we
+        # don't guarantee that all paths passed to updater.sh are actually in the same
+        # tree so it wouldn't necessarily be correct to do this once at the top level.
+        # This isn't the slow part anyway, so it can be dealt with if that ever changes.
+        root = git_utils.find_tree_root_for_project(self._proj_path)
+        manifest = Manifest.for_tree(root)
+        manifest_path = str(self._proj_path.relative_to(root))
+        try:
+            project = manifest.project_with_path(manifest_path)
+        except KeyError as ex:
+            raise RuntimeError(
+                f"Did not find {manifest_path} in {manifest.path} (tree root is {root})"
+            ) from ex
+        return project.revision
