@@ -28,10 +28,10 @@ from xml.etree import ElementTree
 
 def find_manifest_xml_for_tree(root: Path) -> Path:
     """Returns the path to the manifest XML file for the tree."""
-    repo_path = root / ".repo/manifest.xml"
+    repo_path = root / ".repo/manifests/default.xml"
     if repo_path.exists():
         return repo_path
-    pore_path = root / ".pore/manifest.xml"
+    pore_path = root / ".pore/manifest/default.xml"
     if pore_path.exists():
         return pore_path
     raise FileNotFoundError(
