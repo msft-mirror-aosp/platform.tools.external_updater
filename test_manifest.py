@@ -27,13 +27,17 @@ class TestFindManifestXmlForTree:
 
     def test_repo_tree(self, repo_tree: Path) -> None:
         """Tests that the correct manifest file is found in a repo tree."""
-        manifest_path = repo_tree / ".repo/manifest.xml"
+        manifest_dir = Path(repo_tree / ".repo/manifests")
+        manifest_dir.mkdir()
+        manifest_path = manifest_dir / "default.xml"
         manifest_path.touch()
         assert find_manifest_xml_for_tree(repo_tree) == manifest_path
 
     def test_pore_tree(self, pore_tree: Path) -> None:
         """Tests that the correct manifest file is found in a pore tree."""
-        manifest_path = pore_tree / ".pore/manifest.xml"
+        manifest_dir = Path(pore_tree / ".pore/manifest")
+        manifest_dir.mkdir()
+        manifest_path = manifest_dir / "default.xml"
         manifest_path.touch()
         assert find_manifest_xml_for_tree(pore_tree) == manifest_path
 
@@ -160,7 +164,9 @@ class TestManifest:
 
     def test_for_tree(self, repo_tree: Path) -> None:
         """Tests the Manifest.for_tree constructor."""
-        (repo_tree / ".repo/manifest.xml").write_text(
+        manifest_dir = Path(repo_tree / ".repo/manifests")
+        manifest_dir.mkdir()
+        (manifest_dir / "default.xml").write_text(
             textwrap.dedent(
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -179,7 +185,9 @@ class TestManifest:
 
     def test_project_with_path(self, repo_tree: Path) -> None:
         """Tests that Manifest.project_with_path returns the correct project."""
-        (repo_tree / ".repo/manifest.xml").write_text(
+        manifest_dir = Path(repo_tree / ".repo/manifests")
+        manifest_dir.mkdir()
+        (manifest_dir / "default.xml").write_text(
             textwrap.dedent(
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -198,7 +206,9 @@ class TestManifest:
 
     def test_project_with_path_missing(self, repo_tree: Path) -> None:
         """Tests that Manifest.project_with_path raises an error when not found."""
-        (repo_tree / ".repo/manifest.xml").write_text(
+        manifest_dir = Path(repo_tree / ".repo/manifests")
+        manifest_dir.mkdir()
+        (manifest_dir / "default.xml").write_text(
             textwrap.dedent(
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
