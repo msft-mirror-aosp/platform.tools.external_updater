@@ -68,10 +68,10 @@ python_defaults {
 }
 
 python_test_host {
-    name: "external_updater_test",
+    name: "external_updater_github_archive_updater_test",
     defaults: ["external_updater_test_defaults"],
-    main: "external_updater_test.py",
-    srcs: ["external_updater_test.py"],
+    main: "test_github_archive_updater.py",
+    srcs: ["test_github_archive_updater.py"],
     libs: ["external_updater_lib"],
     test_options: {
         unit_test: true,
