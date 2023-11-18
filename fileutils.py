@@ -14,7 +14,7 @@
 """Tool functions to deal with files."""
 
 import datetime
-from functools import cache
+import glob
 import os
 from pathlib import Path
 import textwrap
@@ -29,7 +29,6 @@ import metadata_pb2  # type: ignore
 METADATA_FILENAME = 'METADATA'
 
 
-@cache
 def external_path() -> Path:
     """Returns the path to //external.
 
@@ -63,6 +62,29 @@ def get_absolute_project_path(proj_path: Path) -> Path:
     if proj_path.is_absolute():
         return proj_path
     return external_path() / proj_path
+
+
+def resolve_command_line_paths(paths: list[str]) -> list[str]:
+    """Expand paths via globs.
+
+    Paths are resolved in one of two ways: external-relative, or absolute.
+
+    Absolute paths are not modified.
+
+    External-relative paths are converted to absolute paths where the input path is
+    relative to the //external directory of the tree defined by either
+    $ANDROID_BUILD_TOP or, if not set, the CWD.
+
+    Both forms of paths will glob expand after being resolved to an absolute path.
+    """
+    # We want to use glob to get all the paths, so we first convert to absolute.
+    abs_paths = [get_absolute_project_path(Path(path))
+                 for path in paths]
+    result = [path for abs_path in abs_paths
+              for path in sorted(glob.glob(str(abs_path)))]
+    if paths and not result:
+        print(f'Could not find any valid paths in {str(paths)}')
+    return result
 
 
 def get_metadata_path(proj_path: Path) -> Path:

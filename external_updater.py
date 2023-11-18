@@ -214,18 +214,6 @@ def _list_all_metadata() -> Iterator[str]:
         dirs.sort(key=lambda d: d.lower())
 
 
-def get_paths(paths: List[str]) -> List[str]:
-    """Expand paths via globs."""
-    # We want to use glob to get all the paths, so we first convert to absolute.
-    abs_paths = [fileutils.get_absolute_project_path(Path(path))
-                 for path in paths]
-    result = [path for abs_path in abs_paths
-              for path in sorted(glob.glob(str(abs_path)))]
-    if paths and not result:
-        print(f'Could not find any valid paths in {str(paths)}')
-    return result
-
-
 def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
     """Output a JSON report."""
     with Path(json_file).open('w') as res_file:
@@ -234,7 +222,7 @@ def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
 
 def validate(args: argparse.Namespace) -> None:
     """Handler for validate command."""
-    paths = get_paths(args.paths)
+    paths = fileutils.resolve_command_line_paths(args.paths)
     try:
         canonical_path = fileutils.canonicalize_project_path(Path(paths[0]))
         print(f'Validating {canonical_path}')
@@ -246,7 +234,10 @@ def validate(args: argparse.Namespace) -> None:
 
 def check(args: argparse.Namespace) -> None:
     """Handler for check command."""
-    paths = _list_all_metadata() if args.all else get_paths(args.paths)
+    if args.all:
+        paths = list(_list_all_metadata())
+    else:
+        paths = fileutils.resolve_command_line_paths(args.paths)
     results = check_and_update_path(args, paths, False, args.delay)
 
     if args.json_output is not None:
@@ -255,7 +246,7 @@ def check(args: argparse.Namespace) -> None:
 
 def update(args: argparse.Namespace) -> None:
     """Handler for update command."""
-    all_paths = get_paths(args.paths)
+    all_paths = fileutils.resolve_command_line_paths(args.paths)
     # Remove excluded paths.
     excludes = set() if args.exclude is None else set(args.exclude)
     filtered_paths = [path for path in all_paths
