@@ -27,6 +27,7 @@ import glob
 import json
 import logging
 import os
+import subprocess
 import sys
 import textwrap
 import time
@@ -129,10 +130,14 @@ def _do_update(args: argparse.Namespace, updater: Updater,
 
         if not args.skip_post_update:
             updater_utils.run_post_update(full_path, full_path)
+            git_utils.add_file(full_path, '*')
+            git_utils.commit_amend(full_path)
 
         if args.build:
-            if not updater_utils.build(full_path):
-                print("Build failed. Aborting upload.")
+            try:
+                updater_utils.build(full_path)
+            except subprocess.CalledProcessError as err:
+                logging.exception(f"Build failed, aborting upload")
                 return
     except Exception as err:
         if updater.rollback():
@@ -230,9 +235,9 @@ def validate(args: argparse.Namespace) -> None:
     """Handler for validate command."""
     paths = get_paths(args.paths)
     try:
-        canonical_path = fileutils.canonicalize_project_path(paths[0])
+        canonical_path = fileutils.canonicalize_project_path(Path(paths[0]))
         print(f'Validating {canonical_path}')
-        updater, metadata = build_updater(paths[0])
+        updater, metadata = build_updater(Path(paths[0]))
         print(updater.validate())
     except Exception as err:
         logging.exception("Failed to check or update %s", paths)

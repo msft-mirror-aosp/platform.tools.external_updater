@@ -204,11 +204,17 @@ def tree_uses_pore(proj_path: Path) -> bool:
         # everyone.
         return False
 
-    if proj_path == Path(proj_path.root):
-        return False
-    if (proj_path / ".pore").exists():
-        return True
-    return tree_uses_pore(proj_path.parent)
+    root = find_tree_root_for_project(proj_path)
+    return (root / ".pore").exists()
+
+
+def find_tree_root_for_project(path: Path) -> Path:
+    """Returns the path to the root of the tree that contains the project."""
+    if (path / ".repo").exists():
+        return path
+    if (path / ".pore").exists():
+        return path
+    return find_tree_root_for_project(path.parent)
 
 
 def start_branch(proj_path: Path, branch_name: str) -> None:
@@ -223,6 +229,12 @@ def start_branch(proj_path: Path, branch_name: str) -> None:
 def commit(proj_path: Path, message: str, no_verify: bool) -> None:
     """Commits changes."""
     cmd = ['git', 'commit', '-m', message] + (['--no-verify'] if no_verify is True else [])
+    subprocess.run(cmd, cwd=proj_path, check=True)
+
+
+def commit_amend(proj_path: Path) -> None:
+    """Commits changes."""
+    cmd = ['git', 'commit', '--amend', '--no-edit']
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
