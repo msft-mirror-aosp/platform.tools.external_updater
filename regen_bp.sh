@@ -35,8 +35,8 @@ function main() {
   # Save Cargo.lock if it existed before this update.
   [ ! -f Cargo.lock ] || mv Cargo.lock Cargo.lock.saved
   if [[ "$CARGO_EMBARGO" = 'true' ]]; then
-    echo "Updating Android.bp: cargo_embargo --cfg cargo_embargo.json"
-    cargo_embargo --cfg cargo_embargo.json
+    echo "Updating Android.bp: cargo_embargo generate cargo_embargo.json"
+    cargo_embargo generate cargo_embargo.json
   else
     echo "Updating Android.bp: $SANDBOX $SANDBOX_FLAGS -- $C2A_SCRIPT_FLAGS"
     $SANDBOX $SANDBOX_FLAGS -- $C2A_SCRIPT_FLAGS
