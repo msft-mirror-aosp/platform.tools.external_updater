@@ -60,6 +60,8 @@ def get_absolute_project_path(proj_path: Path) -> Path:
 
     Path resolution starts from external/.
     """
+    if proj_path.is_absolute():
+        return proj_path
     return external_path() / proj_path
 
 
