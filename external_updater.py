@@ -188,19 +188,19 @@ def check_and_update(args: argparse.Namespace,
         return str(err)
 
 
-def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
+def check_and_update_path(args: argparse.Namespace, paths: Iterable[Path],
                           update_lib: bool,
                           delay: int) -> Dict[str, Dict[str, str]]:
     results = {}
     for path in paths:
         res = {}
-        updater = check_and_update(args, Path(path), update_lib)
+        updater = check_and_update(args, path, update_lib)
         if isinstance(updater, str):
             res['error'] = updater
         else:
             res['current'] = updater.current_version
             res['latest'] = updater.latest_version
-        results[str(fileutils.canonicalize_project_path(Path(path)))] = res
+        results[str(fileutils.canonicalize_project_path(path))] = res
         time.sleep(delay)
     return results
 
@@ -214,18 +214,6 @@ def _list_all_metadata() -> Iterator[str]:
         dirs.sort(key=lambda d: d.lower())
 
 
-def get_paths(paths: List[str]) -> List[str]:
-    """Expand paths via globs."""
-    # We want to use glob to get all the paths, so we first convert to absolute.
-    abs_paths = [fileutils.get_absolute_project_path(Path(path))
-                 for path in paths]
-    result = [path for abs_path in abs_paths
-              for path in sorted(glob.glob(str(abs_path)))]
-    if paths and not result:
-        print(f'Could not find any valid paths in {str(paths)}')
-    return result
-
-
 def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
     """Output a JSON report."""
     with Path(json_file).open('w') as res_file:
@@ -234,11 +222,11 @@ def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
 
 def validate(args: argparse.Namespace) -> None:
     """Handler for validate command."""
-    paths = get_paths(args.paths)
+    paths = fileutils.resolve_command_line_paths(args.paths)
     try:
-        canonical_path = fileutils.canonicalize_project_path(Path(paths[0]))
+        canonical_path = fileutils.canonicalize_project_path(paths[0])
         print(f'Validating {canonical_path}')
-        updater, metadata = build_updater(Path(paths[0]))
+        updater, metadata = build_updater(paths[0])
         print(updater.validate())
     except Exception as err:
         logging.exception("Failed to check or update %s", paths)
@@ -246,7 +234,10 @@ def validate(args: argparse.Namespace) -> None:
 
 def check(args: argparse.Namespace) -> None:
     """Handler for check command."""
-    paths = _list_all_metadata() if args.all else get_paths(args.paths)
+    if args.all:
+        paths = [Path(p) for p in _list_all_metadata()]
+    else:
+        paths = fileutils.resolve_command_line_paths(args.paths)
     results = check_and_update_path(args, paths, False, args.delay)
 
     if args.json_output is not None:
@@ -255,11 +246,11 @@ def check(args: argparse.Namespace) -> None:
 
 def update(args: argparse.Namespace) -> None:
     """Handler for update command."""
-    all_paths = get_paths(args.paths)
+    all_paths = fileutils.resolve_command_line_paths(args.paths)
     # Remove excluded paths.
     excludes = set() if args.exclude is None else set(args.exclude)
     filtered_paths = [path for path in all_paths
-                      if not Path(path).name in excludes]
+                      if not path.name in excludes]
     # Now we can update each path.
     results = check_and_update_path(args, filtered_paths, True, 0)
 
