@@ -116,7 +116,7 @@ class GitUpdater(base_updater.Updater):
         Has to call check() before this function.
         """
         print(f"Running `git merge {self._new_identifier.version}`...")
-        git_utils.merge(self._proj_path, self._new_ver)
+        git_utils.merge(self._proj_path, self._new_identifier.version)
 
     def _determine_android_fetch_ref(self) -> str:
         """Returns the ref that should be fetched from the android remote."""
