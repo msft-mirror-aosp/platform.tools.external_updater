@@ -36,7 +36,7 @@ class ResolveCommandLinePathsTest(unittest.TestCase):
         # output, so the test inputs need to be paths that exist on the system running
         # the test.
         self.assertListEqual(
-            ["/usr/lib", "/bin"],
+            [Path("/usr/lib"), Path("/bin")],
             fileutils.resolve_command_line_paths(["/usr/lib", "/bin"]),
         )
 
@@ -54,7 +54,7 @@ class ResolveCommandLinePathsTest(unittest.TestCase):
             try:
                 os.environ["ANDROID_BUILD_TOP"] = str(temp_dir)
                 self.assertListEqual(
-                    [str(a), str(b)], fileutils.resolve_command_line_paths(["a", "b"])
+                    [a, b], fileutils.resolve_command_line_paths(["a", "b"])
                 )
             finally:
                 os.environ = old_env  # type: ignore

@@ -64,7 +64,7 @@ def get_absolute_project_path(proj_path: Path) -> Path:
     return external_path() / proj_path
 
 
-def resolve_command_line_paths(paths: list[str]) -> list[str]:
+def resolve_command_line_paths(paths: list[str]) -> list[Path]:
     """Expand paths via globs.
 
     Paths are resolved in one of two ways: external-relative, or absolute.
@@ -84,7 +84,7 @@ def resolve_command_line_paths(paths: list[str]) -> list[str]:
               for path in sorted(glob.glob(str(abs_path)))]
     if paths and not result:
         print(f'Could not find any valid paths in {str(paths)}')
-    return result
+    return [Path(p) for p in result]
 
 
 def get_metadata_path(proj_path: Path) -> Path:
