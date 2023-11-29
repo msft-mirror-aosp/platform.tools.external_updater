@@ -29,6 +29,36 @@ import metadata_pb2  # type: ignore
 METADATA_FILENAME = 'METADATA'
 
 
+def find_tree_containing(project: Path) -> Path:
+    """Returns the path to the repo tree parent of the given project.
+
+    The parent tree is found by searching up the directory tree until a directory is
+    found that contains a .repo directory. Other methods of finding this directory won't
+    necessarily work:
+
+    * Using ANDROID_BUILD_TOP might find the wrong tree (if external_updater is used to
+      manage a project that is not in AOSP, as it does for CMake, rr, and a few others),
+      since ANDROID_BUILD_TOP will be the one that built external_updater rather than
+      the given project.
+    * Paths relative to __file__ are no good because we'll run from a "built" PAR
+      somewhere in the soong out directory, or possibly somewhere more arbitrary when
+      run from CI.
+    * Paths relative to the CWD require external_updater to be run from a predictable
+      location. Doing so prevents the user from using relative paths (and tab complete)
+      from directories other than the expected location.
+
+    The result for one project should not be reused for other projects, as it's possible
+    that the user has provided project paths from multiple trees.
+    """
+    if (project / ".repo").exists():
+        return project
+    if project.parent == project:
+        raise FileNotFoundError(
+            f"Could not find a .repo directory in any parent of {project}"
+        )
+    return find_tree_containing(project.parent)
+
+
 def external_path() -> Path:
     """Returns the path to //external.
 

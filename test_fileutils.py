@@ -15,10 +15,11 @@
 #
 """Unit tests for fileutils."""
 
+import contextlib
 import os
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 import fileutils
 
@@ -58,6 +59,50 @@ class ResolveCommandLinePathsTest(unittest.TestCase):
                 )
             finally:
                 os.environ = old_env  # type: ignore
+
+
+class FindTreeContainingTest(unittest.TestCase):
+    """Unit tests for find_tree_containing."""
+
+    def setUp(self) -> None:
+        self._temp_dir = TemporaryDirectory()
+        self.temp_dir = Path(self._temp_dir.name)
+        self.repo_tree = self.temp_dir / "tree"
+        (self.repo_tree / ".repo").mkdir(parents=True)
+
+    def tearDown(self) -> None:
+        self._temp_dir.cleanup()
+
+    def test_cwd_is_in_tree(self) -> None:
+        """Tests that the root is found when the CWD is in the same tree."""
+        (self.repo_tree / "external/a").mkdir(parents=True)
+        (self.repo_tree / "external/b").mkdir(parents=True)
+
+        with contextlib.chdir(self.repo_tree / "external/a"):
+            self.assertEqual(
+                fileutils.find_tree_containing(self.repo_tree / "external/b"),
+                self.repo_tree,
+            )
+
+    def test_cwd_is_in_other_tree(self) -> None:
+        """Tests that the root is found when the CWD is in another tree."""
+        tree_a = self.temp_dir / "a"
+        (tree_a / ".repo").mkdir(parents=True)
+        (tree_a / "external/a").mkdir(parents=True)
+
+        tree_b = self.temp_dir / "b"
+        (tree_b / ".repo").mkdir(parents=True)
+        (tree_b / "external/b").mkdir(parents=True)
+
+        with contextlib.chdir(tree_a / "external/a"):
+            self.assertEqual(
+                fileutils.find_tree_containing(tree_b / "external/b"), tree_b
+            )
+
+    def test_no_root(self) -> None:
+        """Tests that an error is raised when no tree is found."""
+        with self.assertRaises(FileNotFoundError):
+            fileutils.find_tree_containing(self.temp_dir)
 
 
 if __name__ == "__main__":
