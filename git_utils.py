@@ -194,36 +194,20 @@ def delete_branch(proj_path: Path, branch_name: str) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
-def tree_uses_pore(proj_path: Path) -> bool:
-    """Returns True if the tree uses pore rather than repo.
-
-    https://github.com/jmgao/pore
-    """
-    if shutil.which("pore") is None:
-        # Fast path for users that don't have pore installed, since that's almost
-        # everyone.
-        return False
-
-    root = find_tree_root_for_project(proj_path)
-    return (root / ".pore").exists()
-
-
 def find_tree_root_for_project(path: Path) -> Path:
     """Returns the path to the root of the tree that contains the project."""
     if (path / ".repo").exists():
         return path
-    if (path / ".pore").exists():
-        return path
+    if path.parent == path:
+        raise FileNotFoundError(
+            f"Could not find a .repo directory in any parent of {path}"
+        )
     return find_tree_root_for_project(path.parent)
 
 
 def start_branch(proj_path: Path, branch_name: str) -> None:
     """Starts a new repo branch."""
-    repo = 'repo'
-    if tree_uses_pore(proj_path):
-        repo = 'pore'
-    cmd = [repo, 'start', branch_name]
-    subprocess.run(cmd, cwd=proj_path, check=True)
+    subprocess.run(['repo', 'start', branch_name], cwd=proj_path, check=True)
 
 
 def commit(proj_path: Path, message: str, no_verify: bool) -> None:
