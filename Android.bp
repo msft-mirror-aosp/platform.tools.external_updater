@@ -68,6 +68,17 @@ python_defaults {
 }
 
 python_test_host {
+    name: "external_updater_fileutils_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_fileutils.py",
+    srcs: ["test_fileutils.py"],
+    libs: ["external_updater_lib"],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+python_test_host {
     name: "external_updater_github_archive_updater_test",
     defaults: ["external_updater_test_defaults"],
     main: "test_github_archive_updater.py",
