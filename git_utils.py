@@ -194,17 +194,6 @@ def delete_branch(proj_path: Path, branch_name: str) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
-def find_tree_root_for_project(path: Path) -> Path:
-    """Returns the path to the root of the tree that contains the project."""
-    if (path / ".repo").exists():
-        return path
-    if path.parent == path:
-        raise FileNotFoundError(
-            f"Could not find a .repo directory in any parent of {path}"
-        )
-    return find_tree_root_for_project(path.parent)
-
-
 def start_branch(proj_path: Path, branch_name: str) -> None:
     """Starts a new repo branch."""
     subprocess.run(['repo', 'start', branch_name], cwd=proj_path, check=True)
