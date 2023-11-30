@@ -14,9 +14,9 @@
 """Module to check updates from Git upstream."""
 
 import base_updater
+import fileutils
 import git_utils
 # pylint: disable=import-error
-import updater_utils
 from manifest import Manifest
 
 
@@ -124,7 +124,7 @@ class GitUpdater(base_updater.Updater):
         # don't guarantee that all paths passed to updater.sh are actually in the same
         # tree so it wouldn't necessarily be correct to do this once at the top level.
         # This isn't the slow part anyway, so it can be dealt with if that ever changes.
-        root = git_utils.find_tree_root_for_project(self._proj_path)
+        root = fileutils.find_tree_containing(self._proj_path)
         manifest = Manifest.for_tree(root)
         manifest_path = str(self._proj_path.relative_to(root))
         try:
