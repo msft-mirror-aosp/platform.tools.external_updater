@@ -31,12 +31,7 @@ def find_manifest_xml_for_tree(root: Path) -> Path:
     repo_path = root / ".repo/manifests/default.xml"
     if repo_path.exists():
         return repo_path
-    pore_path = root / ".pore/manifest/default.xml"
-    if pore_path.exists():
-        return pore_path
-    raise FileNotFoundError(
-        f"Could not find manifest at either {repo_path} or {pore_path}"
-    )
+    raise FileNotFoundError(f"Could not find manifest at {repo_path}")
 
 
 @dataclass(frozen=True)
