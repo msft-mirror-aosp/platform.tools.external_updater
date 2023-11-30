@@ -228,6 +228,14 @@ def checkout(proj_path: Path, branch_name: str) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
+def detach_to_android_head(proj_path: Path) -> None:
+    """Detaches the project HEAD back to the manifest revision."""
+    # -d detaches the project back to the manifest revision without updating.
+    # -l avoids fetching new revisions from the remote. This might be superfluous with
+    # -d, but I'm not sure, and it certainly doesn't harm anything.
+    subprocess.run(['repo', 'sync', '-l', '-d', proj_path], cwd=proj_path, check=True)
+
+
 def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
     """Pushes change to remote."""
     cmd = ['git', 'push', remote_name, 'HEAD:refs/for/main']
