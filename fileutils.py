@@ -14,6 +14,7 @@
 """Tool functions to deal with files."""
 
 import datetime
+import enum
 import glob
 import os
 from pathlib import Path
@@ -27,6 +28,17 @@ import metadata_pb2  # type: ignore
 
 
 METADATA_FILENAME = 'METADATA'
+
+
+@enum.unique
+class IdentifierType(enum.Enum):
+    """A subset of different Identifier types"""
+    GIT = 'Git'
+    SVN = 'SVN'
+    HG = 'Hg'
+    DARCS = 'Darcs'
+    ARCHIVE = 'Archive'
+    OTHER = 'Other'
 
 
 def find_tree_containing(project: Path) -> Path:
@@ -170,18 +182,18 @@ def read_metadata(proj_path: Path) -> metadata_pb2.MetaData:
         metadata = metadata_file.read()
         return text_format.Parse(metadata, metadata_pb2.MetaData())
 
-
 def convert_url_to_identifier(metadata: metadata_pb2.MetaData) -> metadata_pb2.MetaData:
     """Converts the old style METADATA to the new style"""
     for url in metadata.third_party.url:
-        identifier = metadata_pb2.Identifier()
-        identifier.type = metadata_pb2.URL.Type.Name(url.type)
-        identifier.value = url.value
-        if url.type != metadata_pb2.URL.HOMEPAGE:
+        if url.type == metadata_pb2.URL.HOMEPAGE:
+            metadata.third_party.homepage = url.value
+        else:
+            identifier = metadata_pb2.Identifier()
+            identifier.type = IdentifierType[metadata_pb2.URL.Type.Name(url.type)].value
+            identifier.value = url.value
             identifier.version = metadata.third_party.version
             metadata.third_party.ClearField("version")
-
-        metadata.third_party.identifier.append(identifier)
+            metadata.third_party.identifier.append(identifier)
     metadata.third_party.ClearField("url")
     return metadata
 
