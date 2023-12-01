@@ -39,18 +39,18 @@ ALPHA_BETA_RE: re.Pattern = re.compile(ALPHA_BETA_PATTERN)
 """Match both x.y.z and x.y.z+a.b.c which is used by some Vulkan binding libraries"""
 VERSION_PATTERN: str = r"([0-9]+)\.([0-9]+)\.([0-9]+)(\+([0-9]+)\.([0-9]+)\.([0-9]+))?"
 
-VERSION_MATCHER: re.Pattern = re.compile(VERSION_PATTERN)
+VERSION_RE: re.Pattern = re.compile(VERSION_PATTERN)
 
 CRATES_IO_ARCHIVE_URL_PATTERN: str = (r"^https:\/\/static.crates.io\/crates\/" +
                                       LIBRARY_NAME_PATTERN + "/" +
                                       LIBRARY_NAME_PATTERN + "-" +
-                                      VERSION_PATTERN + ".crate")
+                                      "(.*?)" + ".crate")
 
 CRATES_IO_ARCHIVE_URL_RE: re.Pattern = re.compile(CRATES_IO_ARCHIVE_URL_PATTERN)
 
 DESCRIPTION_PATTERN: str = r"^description *= *(\".+\")"
 
-DESCRIPTION_MATCHER: re.Pattern = re.compile(DESCRIPTION_PATTERN)
+DESCRIPTION_RE: re.Pattern = re.compile(DESCRIPTION_PATTERN)
 
 
 class CratesUpdater(Updater):
@@ -92,7 +92,7 @@ class CratesUpdater(Updater):
         git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
 
     def _get_version_numbers(self, version: str) -> tuple[int, int, int]:
-        match = VERSION_MATCHER.match(version)
+        match = VERSION_RE.match(version)
         if match is not None:
             return (
                 int(match.group(1)),
@@ -222,7 +222,7 @@ class CratesUpdater(Updater):
         if os.path.isfile(cargo_toml) and os.access(cargo_toml, os.R_OK):
             with open(cargo_toml, "r") as toml_file:
                 for line in toml_file:
-                    match = DESCRIPTION_MATCHER.match(line)
+                    match = DESCRIPTION_RE.match(line)
                     if match:
                         return self._toml2str(match.group(1))
         return ""
