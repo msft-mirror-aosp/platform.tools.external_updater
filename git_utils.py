@@ -194,36 +194,9 @@ def delete_branch(proj_path: Path, branch_name: str) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
-def tree_uses_pore(proj_path: Path) -> bool:
-    """Returns True if the tree uses pore rather than repo.
-
-    https://github.com/jmgao/pore
-    """
-    if shutil.which("pore") is None:
-        # Fast path for users that don't have pore installed, since that's almost
-        # everyone.
-        return False
-
-    root = find_tree_root_for_project(proj_path)
-    return (root / ".pore").exists()
-
-
-def find_tree_root_for_project(path: Path) -> Path:
-    """Returns the path to the root of the tree that contains the project."""
-    if (path / ".repo").exists():
-        return path
-    if (path / ".pore").exists():
-        return path
-    return find_tree_root_for_project(path.parent)
-
-
 def start_branch(proj_path: Path, branch_name: str) -> None:
     """Starts a new repo branch."""
-    repo = 'repo'
-    if tree_uses_pore(proj_path):
-        repo = 'pore'
-    cmd = [repo, 'start', branch_name]
-    subprocess.run(cmd, cwd=proj_path, check=True)
+    subprocess.run(['repo', 'start', branch_name], cwd=proj_path, check=True)
 
 
 def commit(proj_path: Path, message: str, no_verify: bool) -> None:
@@ -242,6 +215,14 @@ def checkout(proj_path: Path, branch_name: str) -> None:
     """Checkouts a branch."""
     cmd = ['git', 'checkout', branch_name]
     subprocess.run(cmd, cwd=proj_path, check=True)
+
+
+def detach_to_android_head(proj_path: Path) -> None:
+    """Detaches the project HEAD back to the manifest revision."""
+    # -d detaches the project back to the manifest revision without updating.
+    # -l avoids fetching new revisions from the remote. This might be superfluous with
+    # -d, but I'm not sure, and it certainly doesn't harm anything.
+    subprocess.run(['repo', 'sync', '-l', '-d', proj_path], cwd=proj_path, check=True)
 
 
 def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
