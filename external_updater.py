@@ -96,7 +96,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     full_path = updater.project_path
 
     if not args.keep_local_changes:
-        git_utils.checkout(full_path, args.remote_name + '/main')
+        git_utils.detach_to_android_head(full_path)
         if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
             git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
             git_utils.reset_hard(full_path)
