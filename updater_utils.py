@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import List, Tuple, Type
 
 from base_updater import Updater
+import fileutils
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
@@ -131,6 +132,12 @@ def get_latest_version(current_version: str, version_list: List[str]) -> str:
 
 
 def build(proj_path: Path) -> None:
-    cmd = ['build/soong/soong_ui.bash', "--build-mode", "--modules-in-a-dir-no-deps", f"--dir={str(proj_path)}"]
+    tree = fileutils.find_tree_containing(proj_path)
+    cmd = [
+        str(tree / 'build/soong/soong_ui.bash'),
+        "--build-mode",
+        "--modules-in-a-dir-no-deps",
+        f"--dir={str(proj_path)}",
+    ]
     print('Building...')
     subprocess.run(cmd, check=True, text=True)
