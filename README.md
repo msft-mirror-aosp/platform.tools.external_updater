@@ -4,34 +4,47 @@ external updater is a tool to automatically update libraries in external/.
 
 ## Usage
 
+In each of the examples below, `$PROJECT_PATH` is the path to the project to
+operate on. If more than one path is given, external_updater will operate on
+each in turn.
+
+Note: Older versions of external_updater used a different path resolution
+method. Relative paths were resolved relative to `//external` rather than the
+CWD, which meant tab-completed paths would only work if the CWD was
+`//external`, and that wildcards had to be escaped for processing by
+external_updater rather than the shell (e.g.
+`updater.sh 'check rust/crates/*'`). That behavior was removed to support CWD
+relative paths. If you want the old behavior back, leave a comment on
+http://b/243685332 or https://r.android.com/2855445.
+
 Check updates for a library or verify METADATA is valid:
 
 ```shell
-tools/external_updater/updater.sh check ${LIBNAME}
+tools/external_updater/updater.sh check $PROJECT_PATH
 ```
 
 Update a library, commit, and upload the change to Gerrit:
 
 ```shell
-tools/external_updater/updater.sh update ${LIBNAME}
+tools/external_updater/updater.sh update $PROJECT_PATH
 ```
 
 Update a library without committing and uploading to Gerrit:
 
 ```shell
-tools/external_updater/updater.sh update --no-upload ${LIBNAME}
+tools/external_updater/updater.sh update --no-upload $PROJECT_PATH
 ```
 
 Update a library on top of the local changes in the current branch, commit, and upload the change to Gerrit:
 
 ```shell
-tools/external_updater/updater.sh update --keep-local-changes ${LIBNAME}
+tools/external_updater/updater.sh update --keep-local-changes $PROJECT_PATH
 ```
 
 Update a library without building:
 
 ```shell
-tools/external_updater/updater.sh update --no-build ${LIBNAME}
+tools/external_updater/updater.sh update --no-build $PROJECT_PATH
 ```
 
 LIBNAME can be the path to a library under external/, e.g. kotlinc, or
