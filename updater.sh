@@ -16,6 +16,10 @@
 
 set -e
 
-cd $(dirname "$0")/../..
-.//build/soong/soong_ui.bash --make-mode external_updater
-out/host/linux-x86/bin/external_updater $@
+# We don't change directory because relative paths passed as arguments should be
+# resolved relative to the user's CWD. If we don't do that, tab completion won't
+# work, and there are few things worse in life than bad tab completion.
+THIS_DIR=$(dirname "$0")
+TOP=$THIS_DIR/../..
+$TOP/build/soong/soong_ui.bash --make-mode external_updater
+$TOP/out/host/linux-x86/bin/external_updater $@
