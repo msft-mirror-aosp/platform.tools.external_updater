@@ -16,7 +16,6 @@
 """Unit tests for fileutils."""
 
 import contextlib
-import os
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -33,32 +32,47 @@ class ResolveCommandLinePathsTest(unittest.TestCase):
 
     def test_absolute_paths(self) -> None:
         """Tests that absolute paths are resolved correctly."""
-        # The current implementation will remove paths which do not exist from the
-        # output, so the test inputs need to be paths that exist on the system running
-        # the test.
-        self.assertListEqual(
-            [Path("/usr/lib"), Path("/bin")],
-            fileutils.resolve_command_line_paths(["/usr/lib", "/bin"]),
-        )
-
-    def test_external_relative_paths(self) -> None:
-        """Tests that paths relative to //external are resolved correctly."""
         with TemporaryDirectory() as temp_dir_str:
             temp_dir = Path(temp_dir_str)
+            a = temp_dir / "a"
+            b = temp_dir / "external" / "b"
+            a.mkdir()
+            b.mkdir(parents=True)
+            self.assertListEqual(
+                [a, b],
+                fileutils.resolve_command_line_paths(
+                    [str(a), str(b), "/does/not/exist"]
+                ),
+            )
+
+    def test_relative_paths(self) -> None:
+        """Tests that relative paths are resolved correctly."""
+        with TemporaryDirectory() as temp_dir_str:
+            # Make this absolute so the CWD change later doesn't break it.
+            temp_dir = Path(temp_dir_str).resolve()
             external = temp_dir / "external"
             external.mkdir()
             a = external / "a"
-            b = external / "b"
             a.mkdir()
+
+            working_dir = temp_dir / "cwd"
+            working_dir.mkdir()
+            b = working_dir / "b"
             b.mkdir()
-            old_env = dict(os.environ)
-            try:
-                os.environ["ANDROID_BUILD_TOP"] = str(temp_dir)
+            with contextlib.chdir(working_dir):
                 self.assertListEqual(
-                    [a, b], fileutils.resolve_command_line_paths(["a", "b"])
+                    [a, working_dir, b],
+                    fileutils.resolve_command_line_paths(
+                        [
+                            # These will all be resolved as absolute paths and returned.
+                            "../external/a",
+                            ".",
+                            "b",
+                            # This one doesn't exist. It will be pruned from the result.
+                            "c",
+                        ]
+                    ),
                 )
-            finally:
-                os.environ = old_env  # type: ignore
 
 
 class FindTreeContainingTest(unittest.TestCase):
