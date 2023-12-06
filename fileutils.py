@@ -14,6 +14,7 @@
 """Tool functions to deal with files."""
 
 import datetime
+import enum
 import glob
 import os
 from pathlib import Path
@@ -27,6 +28,47 @@ import metadata_pb2  # type: ignore
 
 
 METADATA_FILENAME = 'METADATA'
+
+
+@enum.unique
+class IdentifierType(enum.Enum):
+    """A subset of different Identifier types"""
+    GIT = 'Git'
+    SVN = 'SVN'
+    HG = 'Hg'
+    DARCS = 'Darcs'
+    ARCHIVE = 'Archive'
+    OTHER = 'Other'
+
+
+def find_tree_containing(project: Path) -> Path:
+    """Returns the path to the repo tree parent of the given project.
+
+    The parent tree is found by searching up the directory tree until a directory is
+    found that contains a .repo directory. Other methods of finding this directory won't
+    necessarily work:
+
+    * Using ANDROID_BUILD_TOP might find the wrong tree (if external_updater is used to
+      manage a project that is not in AOSP, as it does for CMake, rr, and a few others),
+      since ANDROID_BUILD_TOP will be the one that built external_updater rather than
+      the given project.
+    * Paths relative to __file__ are no good because we'll run from a "built" PAR
+      somewhere in the soong out directory, or possibly somewhere more arbitrary when
+      run from CI.
+    * Paths relative to the CWD require external_updater to be run from a predictable
+      location. Doing so prevents the user from using relative paths (and tab complete)
+      from directories other than the expected location.
+
+    The result for one project should not be reused for other projects, as it's possible
+    that the user has provided project paths from multiple trees.
+    """
+    if (project / ".repo").exists():
+        return project
+    if project.parent == project:
+        raise FileNotFoundError(
+            f"Could not find a .repo directory in any parent of {project}"
+        )
+    return find_tree_containing(project.parent)
 
 
 def external_path() -> Path:
@@ -65,26 +107,20 @@ def get_absolute_project_path(proj_path: Path) -> Path:
 
 
 def resolve_command_line_paths(paths: list[str]) -> list[Path]:
-    """Expand paths via globs.
+    """Resolves project paths provided by the command line.
 
-    Paths are resolved in one of two ways: external-relative, or absolute.
-
-    Absolute paths are not modified.
-
-    External-relative paths are converted to absolute paths where the input path is
-    relative to the //external directory of the tree defined by either
-    $ANDROID_BUILD_TOP or, if not set, the CWD.
-
-    Both forms of paths will glob expand after being resolved to an absolute path.
+    Both relative and absolute paths are resolved to fully qualified paths and returned.
+    If any path does not exist relative to the CWD, a message will be printed and that
+    path will be pruned from the list.
     """
-    # We want to use glob to get all the paths, so we first convert to absolute.
-    abs_paths = [get_absolute_project_path(Path(path))
-                 for path in paths]
-    result = [path for abs_path in abs_paths
-              for path in sorted(glob.glob(str(abs_path)))]
-    if paths and not result:
-        print(f'Could not find any valid paths in {str(paths)}')
-    return [Path(p) for p in result]
+    resolved: list[Path] = []
+    for path_str in paths:
+        path = Path(path_str)
+        if not path.exists():
+            print(f"Provided path {path} ({path.resolve()}) does not exist. Skipping.")
+        else:
+            resolved.append(path.resolve())
+    return resolved
 
 
 def get_metadata_path(proj_path: Path) -> Path:
@@ -140,18 +176,18 @@ def read_metadata(proj_path: Path) -> metadata_pb2.MetaData:
         metadata = metadata_file.read()
         return text_format.Parse(metadata, metadata_pb2.MetaData())
 
-
 def convert_url_to_identifier(metadata: metadata_pb2.MetaData) -> metadata_pb2.MetaData:
     """Converts the old style METADATA to the new style"""
     for url in metadata.third_party.url:
-        identifier = metadata_pb2.Identifier()
-        identifier.type = metadata_pb2.URL.Type.Name(url.type)
-        identifier.value = url.value
-        if url.type != metadata_pb2.URL.HOMEPAGE:
+        if url.type == metadata_pb2.URL.HOMEPAGE:
+            metadata.third_party.homepage = url.value
+        else:
+            identifier = metadata_pb2.Identifier()
+            identifier.type = IdentifierType[metadata_pb2.URL.Type.Name(url.type)].value
+            identifier.value = url.value
             identifier.version = metadata.third_party.version
             metadata.third_party.ClearField("version")
-
-        metadata.third_party.identifier.append(identifier)
+            metadata.third_party.identifier.append(identifier)
     metadata.third_party.ClearField("url")
     return metadata
 

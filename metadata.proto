@@ -55,6 +55,7 @@ message ThirdPartyMetaData {
   optional Security security = 7;
   optional Date last_upgrade_date = 10;
   optional DirectoryType type = 11 [default = PACKAGE];
+  optional string homepage = 14;
   repeated Identifier identifier = 15;
 }
 
