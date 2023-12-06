@@ -107,26 +107,20 @@ def get_absolute_project_path(proj_path: Path) -> Path:
 
 
 def resolve_command_line_paths(paths: list[str]) -> list[Path]:
-    """Expand paths via globs.
+    """Resolves project paths provided by the command line.
 
-    Paths are resolved in one of two ways: external-relative, or absolute.
-
-    Absolute paths are not modified.
-
-    External-relative paths are converted to absolute paths where the input path is
-    relative to the //external directory of the tree defined by either
-    $ANDROID_BUILD_TOP or, if not set, the CWD.
-
-    Both forms of paths will glob expand after being resolved to an absolute path.
+    Both relative and absolute paths are resolved to fully qualified paths and returned.
+    If any path does not exist relative to the CWD, a message will be printed and that
+    path will be pruned from the list.
     """
-    # We want to use glob to get all the paths, so we first convert to absolute.
-    abs_paths = [get_absolute_project_path(Path(path))
-                 for path in paths]
-    result = [path for abs_path in abs_paths
-              for path in sorted(glob.glob(str(abs_path)))]
-    if paths and not result:
-        print(f'Could not find any valid paths in {str(paths)}')
-    return [Path(p) for p in result]
+    resolved: list[Path] = []
+    for path_str in paths:
+        path = Path(path_str)
+        if not path.exists():
+            print(f"Provided path {path} ({path.resolve()}) does not exist. Skipping.")
+        else:
+            resolved.append(path.resolve())
+    return resolved
 
 
 def get_metadata_path(proj_path: Path) -> Path:
