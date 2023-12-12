@@ -15,7 +15,6 @@
 
 import datetime
 import re
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -27,6 +26,8 @@ ANDROID_SPECIFIC_FILES = ["*Android.bp", "Android.mk", "CleanSpec.mk", "LICENSE"
                           ".gitignore", "patches", "post_update.sh", "OWNERS",
                           "README.android", "cargo2android*", "MODULE_LICENSE_*",
                           "rules.mk", "cargo2rulesmk*", "cargo_embargo*"]
+
+UNWANTED_TAGS = ["*alpha*", "*Alpha*", "*beta*", "*Beta*", "*rc*", "*RC*", "*test*"]
 
 def fetch(proj_path: Path, remote_name: str, branch: str | None = None) -> None:
     """Runs git fetch.
@@ -110,7 +111,8 @@ def get_commits_ahead(proj_path: Path, branch: str,
 
 
 def get_most_recent_tag(proj_path: Path, branch: str) -> str:
-    cmd = ['git', 'describe', '--tags', branch, '--abbrev=0']
+    cmd = ['git', 'describe', '--tags', branch, '--abbrev=0'] + \
+          [f'--exclude={unwanted_tag}' for unwanted_tag in UNWANTED_TAGS]
     out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
                          text=True).stdout.strip()
     return out
