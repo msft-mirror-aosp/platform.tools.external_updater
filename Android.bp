@@ -100,3 +100,10 @@ python_test_host {
         unit_test: true,
     },
 }
+
+// The tests in tests/endtoend are not built as a Soong module because we can't
+// run those tests via python_test_host. It's an end-to-end test so it needs to
+// run `repo`, but `repo init` will try to clone the real repo source (the thing
+// in PATH is just a launcher), which our Python can't do (the SSL module's
+// certificate validation is not configured for that). Run those tests with
+// `pytest tests/endtoend`.
