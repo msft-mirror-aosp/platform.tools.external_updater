@@ -55,6 +55,8 @@ message ThirdPartyMetaData {
   optional Security security = 7;
   optional Date last_upgrade_date = 10;
   optional DirectoryType type = 11 [default = PACKAGE];
+  optional string homepage = 14;
+  repeated Identifier identifier = 15;
 }
 
 message URL {
@@ -73,6 +75,12 @@ message URL {
   optional Type type = 1;
 
   optional string value = 2;
+}
+
+message Identifier {
+  optional string type = 1;
+  optional string value = 3;
+  optional string version = 4;
 }
 
 message Date {

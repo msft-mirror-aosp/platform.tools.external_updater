@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import List, Tuple, Type
 
 from base_updater import Updater
+import fileutils
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
@@ -40,10 +41,10 @@ def create_updater(metadata: metadata_pb2.MetaData, proj_path: Path,
     Raises:
       ValueError: Occurred when there's no updater for all urls.
     """
-    for url in metadata.third_party.url:
-        if url.type != metadata_pb2.URL.HOMEPAGE:
+    for identifier in metadata.third_party.identifier:
+        if identifier.type.lower() != 'homepage':
             for updater_cls in updaters:
-                updater = updater_cls(proj_path, url, metadata.third_party.version)
+                updater = updater_cls(proj_path, identifier, metadata.third_party.version)
                 if updater.is_supported_url():
                     return updater
 
@@ -107,7 +108,7 @@ def _match_and_get_version(old_ver: ParsedVersion,
     except ValueError:
         return (False, False, [])
 
-    right_format = (new_ver[1:] == old_ver[1:])
+    right_format = new_ver[1:] == old_ver[1:]
     right_length = len(new_ver[0]) == len(old_ver[0])
 
     return (right_format, right_length, new_ver[0])
@@ -131,6 +132,12 @@ def get_latest_version(current_version: str, version_list: List[str]) -> str:
 
 
 def build(proj_path: Path) -> None:
-    cmd = ['build/soong/soong_ui.bash', "--build-mode", "--modules-in-a-dir-no-deps", f"--dir={str(proj_path)}"]
+    tree = fileutils.find_tree_containing(proj_path)
+    cmd = [
+        str(tree / 'build/soong/soong_ui.bash'),
+        "--build-mode",
+        "--modules-in-a-dir-no-deps",
+        f"--dir={str(proj_path)}",
+    ]
     print('Building...')
     subprocess.run(cmd, check=True, text=True)

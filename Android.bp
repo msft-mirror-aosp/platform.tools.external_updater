@@ -22,6 +22,7 @@ python_binary_host {
     srcs: ["external_updater.py"],
     libs: ["external_updater_lib"],
     required: ["cargo_embargo"],
+    data: [":bpfmt"],
 }
 
 python_binary_host {
@@ -68,6 +69,17 @@ python_defaults {
 }
 
 python_test_host {
+    name: "external_updater_fileutils_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_fileutils.py",
+    srcs: ["test_fileutils.py"],
+    libs: ["external_updater_lib"],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+python_test_host {
     name: "external_updater_github_archive_updater_test",
     defaults: ["external_updater_test_defaults"],
     main: "test_github_archive_updater.py",
@@ -88,3 +100,10 @@ python_test_host {
         unit_test: true,
     },
 }
+
+// The tests in tests/endtoend are not built as a Soong module because we can't
+// run those tests via python_test_host. It's an end-to-end test so it needs to
+// run `repo`, but `repo init` will try to clone the real repo source (the thing
+// in PATH is just a launcher), which our Python can't do (the SSL module's
+// certificate validation is not configured for that). Run those tests with
+// `pytest tests/endtoend`.
