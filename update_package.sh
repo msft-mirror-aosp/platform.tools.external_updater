@@ -73,6 +73,8 @@ do
   then
       [ "$(basename $p)" != "Android.bp.diff" ] || continue
       [ "$(basename $p)" != "Android.bp.patch" ] || continue
+      [ "$(basename $p)" != "rules.mk.diff" ] || continue
+      [ "$(basename $p)" != "rules.mk.patch" ] || continue
   fi
   echo "Applying patch [$file_counter/$total_files] $p..."
   patch -p1 -d $tmp_dir --no-backup-if-mismatch < $p;
