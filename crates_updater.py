@@ -197,14 +197,6 @@ class CratesUpdater(Updater):
         if len(rejects) > 0:
             print(f"Error: Found patch reject files: {str(rejects)}")
             self._has_errors = True
-        # Check for Cargo errors embedded in Android.bp.
-        # Note that this should stay in sync with cargo2android.py.
-        with open(f'{self._proj_path}/Android.bp', 'r') as bp_file:
-            for line in bp_file:
-                if line.strip() == "Errors in cargo.out:":
-                    print("Error: Found Cargo errors in Android.bp")
-                    self._has_errors = True
-                    return
 
     def _toml2str(self, line: str) -> str:
         """Convert a quoted toml string to a Python str without quotes."""
