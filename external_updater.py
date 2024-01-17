@@ -23,7 +23,6 @@ updater.sh update --refresh --keep_date rust/crates/libc
 import argparse
 from collections.abc import Iterable
 import enum
-import glob
 import json
 import logging
 import os
@@ -162,24 +161,41 @@ def check_and_update(args: argparse.Namespace,
 
     try:
         canonical_path = fileutils.canonicalize_project_path(proj_path)
-        print(f'Checking {canonical_path}. ', end='')
+        print(f'Checking {canonical_path}...')
         updater, metadata = build_updater(proj_path)
         updater.check()
 
-        current_ver = updater.current_version
-        latest_ver = updater.latest_version
-        print(f'Current version: {current_ver}. Latest version: {latest_ver}', end='')
+        current_version = updater.current_version
+        latest_version = updater.latest_version
+        print(f'Current version: {current_version}\nLatest version: {latest_version}')
+        suggested_version = updater.suggested_latest_version
+        if suggested_version is not None:
+            print(f'Suggested latest version: {suggested_version}')
 
-        has_new_version = current_ver != latest_ver
+        has_new_version = current_version != latest_version
         if has_new_version:
-            print(color_string(' Out of date!', Color.STALE))
+            print(color_string('Out of date!', Color.STALE))
         else:
-            print(color_string(' Up to date.', Color.FRESH))
+            print(color_string('Up to date.', Color.FRESH))
 
         if update_lib and args.refresh:
             print('Refreshing the current version')
-            updater.use_current_as_latest()
-        if update_lib and (has_new_version or args.force or args.refresh):
+            updater.refresh_without_upgrading()
+
+        if update_lib and suggested_version is not None:
+            answer = ''
+            suggested_ver_type = (
+                'tag' if git_utils.is_commit(current_version) else 'SHA'
+            )
+            answer = input(
+                f'There is a new {suggested_ver_type} available:'
+                f' {suggested_version}. Would you like to switch to'
+                f' the latest {suggested_ver_type} instead? (y/n) '
+            )
+            if answer == 'y':
+                updater.set_new_version(suggested_version)
+
+        if update_lib and (has_new_version or args.force or args.refresh or answer == 'y'):
             _do_update(args, updater, metadata)
         return updater
     # pylint: disable=broad-except
