@@ -138,8 +138,8 @@ class CratesUpdater(Updater):
                 data = json.loads(request.read().decode())
                 self.download_url = "https://crates.io" + data["version"]["dl_path"]
 
-    def use_current_as_latest(self):
-        Updater.use_current_as_latest(self)
+    def set_new_version_to_old(self):
+        super().set_new_version_to_old()
         # A shortcut to use the static download path.
         self.download_url = f"https://static.crates.io/crates/{self.package}/" \
                             f"{self.package}-{self._new_identifier.version}.crate"

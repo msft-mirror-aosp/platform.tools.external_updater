@@ -13,10 +13,13 @@
 # limitations under the License.
 """Module to check updates from Git upstream."""
 
+from pathlib import Path
+
 import base_updater
 import fileutils
 import git_utils
 # pylint: disable=import-error
+import metadata_pb2
 from manifest import Manifest
 
 
@@ -94,21 +97,29 @@ class GitUpdater(base_updater.Updater):
         self.setup_remote()
         if git_utils.is_commit(self._old_identifier.version):
             # Update to remote head.
-            self._check_head()
+            self._new_identifier.version = self.current_head_of_upstream_default_branch()
+            # Some libraries don't have a tag. We only populate
+            # _suggested_new_ver if there is a tag newer than _old_ver.
+            # Checks if there is a tag newer than AOSP's SHA
+            possible_suggested_new_ver = self.latest_tag_of_upstream_default_branch()
         else:
             # Update to latest version tag.
-            self._check_tag()
+            self._new_identifier.version = self.latest_tag_of_upstream_default_branch()
+            # Checks if there is a SHA newer than AOSP's tag
+            possible_suggested_new_ver = self.current_head_of_upstream_default_branch()
+        if git_utils.is_ancestor(self._proj_path, self._old_identifier.version, possible_suggested_new_ver):
+            self._suggested_new_ver = possible_suggested_new_ver
 
-    def _check_tag(self) -> None:
+    def latest_tag_of_upstream_default_branch(self) -> str:
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        self._new_identifier.version = git_utils.get_most_recent_tag(
+        return git_utils.get_most_recent_tag(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
-    def _check_head(self) -> None:
+    def current_head_of_upstream_default_branch(self) -> str:
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        self._new_identifier.version = git_utils.get_sha_for_branch(
+        return git_utils.get_sha_for_branch(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
     def update(self) -> None:

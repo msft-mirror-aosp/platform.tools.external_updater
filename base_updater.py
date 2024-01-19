@@ -32,6 +32,8 @@ class Updater:
         self._new_identifier = metadata_pb2.Identifier()
         self._new_identifier.CopyFrom(old_identifier)
 
+        self._suggested_new_ver = None
+
         self._has_errors = False
 
     def is_supported_url(self) -> bool:
@@ -65,6 +67,7 @@ class Updater:
         return False
 
     def update_metadata(self, metadata: metadata_pb2.MetaData) -> metadata_pb2:
+        """Rewrites the metadata file."""
         updated_metadata = metadata_pb2.MetaData()
         updated_metadata.CopyFrom(metadata)
         updated_metadata.third_party.ClearField("version")
@@ -103,7 +106,16 @@ class Updater:
         """Gets whether this update had an error."""
         return self._has_errors
 
-    def use_current_as_latest(self):
-        """Uses current version/url as the latest to refresh project."""
+    @property
+    def suggested_latest_version(self) -> str | None:
+        """Gets suggested latest version."""
+        return self._suggested_new_ver
+
+    def refresh_without_upgrading(self) -> None:
+        """Uses current version and url as the latest to refresh project."""
         self._new_identifier.version = self._old_identifier.version
-        self._new_identifier = self._old_identifier
+        self._new_identifier.value = self._old_identifier.value
+
+    def set_new_version(self, version: str) -> None:
+        """Uses the passed version as the latest to upgrade project."""
+        self._new_identifier.version = version
