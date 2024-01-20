@@ -17,6 +17,8 @@
 import subprocess
 from pathlib import Path
 
+import pytest
+
 from .gitrepo import GitRepo
 
 
@@ -65,3 +67,42 @@ class TestGitRepo:
             ).returncode
             != 0
         )
+
+    def test_current_branch(self, tmp_path: Path) -> None:
+        """Tests that current branch returns the current branch name."""
+        repo = GitRepo(tmp_path / "repo")
+        repo.init("main")
+        assert repo.current_branch() == "main"
+
+    def test_current_branch_fails_if_not_init(self, tmp_path: Path) -> None:
+        """Tests that current branch fails when there is no git repo."""
+        with pytest.raises(subprocess.CalledProcessError):
+            GitRepo(tmp_path / "repo").current_branch()
+
+    def test_switch_to_new_branch(self, tmp_path: Path) -> None:
+        """Tests that switch_to_new_branch creates a new branch and switches to it."""
+        repo = GitRepo(tmp_path / "repo")
+        repo.init("main")
+        repo.switch_to_new_branch("feature")
+        assert repo.current_branch() == "feature"
+
+    def test_switch_to_new_branch_does_not_clobber_existing_branches(
+        self, tmp_path: Path
+    ) -> None:
+        """Tests that switch_to_new_branch raises an error for extant branches."""
+        repo = GitRepo(tmp_path / "repo")
+        repo.init("main")
+        repo.commit("Initial commit.", allow_empty=True)
+        with pytest.raises(subprocess.CalledProcessError):
+            repo.switch_to_new_branch("main")
+
+    def test_switch_to_new_branch_with_start_point(self, tmp_path: Path) -> None:
+        """Tests that switch_to_new_branch uses the provided start point."""
+        repo = GitRepo(tmp_path / "repo")
+        repo.init("main")
+        repo.commit("Initial commit.", allow_empty=True)
+        initial_commit = repo.head()
+        repo.commit("Second commit.", allow_empty=True)
+        repo.switch_to_new_branch("feature", start_point=initial_commit)
+        assert repo.current_branch() == "feature"
+        assert repo.head() == initial_commit
