@@ -111,6 +111,7 @@ def get_commits_ahead(proj_path: Path, branch: str,
 
 
 def get_most_recent_tag(proj_path: Path, branch: str) -> str:
+    """Finds the most recent tag that is reachable from HEAD."""
     cmd = ['git', 'describe', '--tags', branch, '--abbrev=0'] + \
           [f'--exclude={unwanted_tag}' for unwanted_tag in UNWANTED_TAGS]
     out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
@@ -270,3 +271,15 @@ def diff(proj_path: Path, sha_or_tag: str) -> str:
         return out
     except subprocess.CalledProcessError as err:
         return f"Could not calculate the diff: {err}"
+
+
+def is_ancestor(proj_path: Path, ancestor: str, child: str) -> bool:
+    cmd = ['git', 'merge-base', '--is-ancestor', ancestor, child]
+    result = subprocess.run(cmd, cwd=proj_path, text=True, stderr=subprocess.STDOUT, check=False, stdout=subprocess.PIPE)
+    match result.returncode:
+        case 0:
+            return True
+        case 1:
+            return False
+        case _:
+            result.check_returncode()
