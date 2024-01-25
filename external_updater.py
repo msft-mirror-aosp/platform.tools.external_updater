@@ -120,7 +120,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         Upgrade {metadata.name} to {updater.latest_version}
 
         This project was upgraded with external_updater.
-        Usage: tools/external_updater/updater.sh update {rel_proj_path}
+        Usage: tools/external_updater/updater.sh update external/{rel_proj_path}
         For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md
 
         Test: TreeHugger""")
