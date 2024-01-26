@@ -182,8 +182,8 @@ def check_and_update(args: argparse.Namespace,
             print('Refreshing the current version')
             updater.refresh_without_upgrading()
 
+        answer = 'n'
         if update_lib and suggested_version is not None:
-            answer = ''
             suggested_ver_type = (
                 'tag' if git_utils.is_commit(current_version) else 'SHA'
             )
