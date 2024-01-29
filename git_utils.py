@@ -275,11 +275,19 @@ def diff(proj_path: Path, sha_or_tag: str) -> str:
 
 def is_ancestor(proj_path: Path, ancestor: str, child: str) -> bool:
     cmd = ['git', 'merge-base', '--is-ancestor', ancestor, child]
-    result = subprocess.run(cmd, cwd=proj_path, text=True, stderr=subprocess.STDOUT, check=False, stdout=subprocess.PIPE)
-    match result.returncode:
-        case 0:
-            return True
-        case 1:
+    # https://git-scm.com/docs/git-merge-base#Documentation/git-merge-base.txt---is-ancestor
+    # Exit status of 0 means yes, 1 means no, and all others mean an error occurred.
+    try:
+        subprocess.run(
+            cmd,
+            cwd=proj_path,
+            text=True,
+            stderr=subprocess.STDOUT,
+            check=True,
+            stdout=subprocess.PIPE
+        )
+        return True
+    except subprocess.CalledProcessError as ex:
+        if ex.returncode == 1:
             return False
-        case _:
-            result.check_returncode()
+        raise
