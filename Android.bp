@@ -125,6 +125,19 @@ python_test_host {
     },
 }
 
+python_test_host {
+    name: "external_updater_gitrepo_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "tests/test_gitrepo.py",
+    srcs: ["tests/test_gitrepo.py"],
+    libs: [
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
 // The tests in tests/endtoend are not built as a Soong module because we can't
 // run those tests via python_test_host. It's an end-to-end test so it needs to
 // run `repo`, but `repo init` will try to clone the real repo source (the thing
