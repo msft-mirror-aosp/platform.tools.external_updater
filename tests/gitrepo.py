@@ -54,6 +54,10 @@ class GitRepo:
         """Returns the SHA of the current HEAD."""
         return self.run(["rev-parse", "HEAD"]).strip()
 
+    def current_branch(self) -> str:
+        """Returns the name of the current branch."""
+        return self.run(["branch", "--show-current"]).strip()
+
     def fetch(self, ref_or_repo: str | GitRepo) -> None:
         """Fetches the given ref or repo."""
         if isinstance(ref_or_repo, GitRepo):
@@ -98,6 +102,13 @@ class GitRepo:
         if allow_unrelated_histories:
             cmd.append("--allow-unrelated-histories")
         self.run(cmd + [ref])
+
+    def switch_to_new_branch(self, name: str, start_point: str | None = None) -> None:
+        """Creates and switches to a new branch."""
+        args = ["switch", "--create", name]
+        if start_point is not None:
+            args.append(start_point)
+        self.run(args)
 
     def commit_message_at_revision(self, revision: str) -> str:
         """Returns the commit message of the given revision."""
