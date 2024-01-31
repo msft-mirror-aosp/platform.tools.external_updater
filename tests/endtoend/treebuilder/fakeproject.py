@@ -17,7 +17,7 @@
 import textwrap
 from pathlib import Path
 
-from .gitrepo import GitRepo
+from tests.gitrepo import GitRepo
 
 
 class FakeProject:  # pylint: disable=too-few-public-methods
