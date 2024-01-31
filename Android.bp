@@ -68,6 +68,16 @@ python_defaults {
     },
 }
 
+python_library_host {
+    name: "external_updater_test_lib",
+    srcs: [
+        "tests/gitrepo.py",
+    ],
+    proto: {
+        canonical_path_from_root: false,
+    },
+}
+
 python_test_host {
     name: "external_updater_fileutils_test",
     defaults: ["external_updater_test_defaults"],
@@ -96,6 +106,33 @@ python_test_host {
     main: "external_updater_reviewers_test.py",
     srcs: ["external_updater_reviewers_test.py"],
     libs: ["external_updater_lib"],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+python_test_host {
+    name: "external_updater_git_utils_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "tests/test_git_utils.py",
+    srcs: ["tests/test_git_utils.py"],
+    libs: [
+        "external_updater_lib",
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+python_test_host {
+    name: "external_updater_gitrepo_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "tests/test_gitrepo.py",
+    srcs: ["tests/test_gitrepo.py"],
+    libs: [
+        "external_updater_test_lib",
+    ],
     test_options: {
         unit_test: true,
     },
