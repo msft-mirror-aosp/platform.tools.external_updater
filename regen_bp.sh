@@ -17,7 +17,7 @@
 # This script is used by external_updater to replace a package.
 # It can also be invoked directly.  It is used in two ways:
 # (1) in a .../external/* rust directory with .bp and Cargo.toml;
-#     cargo2android.py and cargo_embargo must be in PATH
+#     cargo_embargo must be in PATH
 # (2) in a tmp new directory with .bp and Cargo.toml,
 #     and $1 equals to the rust Android source tree root,
 #     and $2 equals to the rust sub-directory path name under external.
@@ -35,11 +35,8 @@ function main() {
   # Save Cargo.lock if it existed before this update.
   [ ! -f Cargo.lock ] || mv Cargo.lock Cargo.lock.saved
   if [[ "$CARGO_EMBARGO" = 'true' ]]; then
-    echo "Updating Android.bp: cargo_embargo --cfg cargo_embargo.json"
-    cargo_embargo --cfg cargo_embargo.json
-  else
-    echo "Updating Android.bp: $SANDBOX $SANDBOX_FLAGS -- $C2A_SCRIPT_FLAGS"
-    $SANDBOX $SANDBOX_FLAGS -- $C2A_SCRIPT_FLAGS
+    echo "Updating Android.bp: cargo_embargo generate cargo_embargo.json"
+    cargo_embargo generate cargo_embargo.json
   fi
   if [ -f rules.mk ]; then
     echo "Updating rules.mk: $SANDBOX $SANDBOX_FLAGS $SANDBOX_RULESMK_FLAGS -- $C2R_SCRIPT_FLAGS"
@@ -64,12 +61,10 @@ function check_files() {
   fi
   [ -f "$SANDBOX" ] || abort "ERROR: cannot find $SANDBOX"
   LINE1=`head -1 Android.bp || abort "ERROR: cannot find Android.bp"`
-  if [[ "$LINE1" =~ ^.*cargo2android.py.*$ ]]; then
-    C2A_SCRIPT_FLAGS=`echo "$LINE1" | sed -e 's:^.*cargo2android.py ::;s:\.$::'`
-  elif [[ "$LINE1" =~ ^.*cargo_embargo.*$ ]]; then
+  if [[ "$LINE1" =~ ^.*cargo_embargo.*$ ]]; then
     CARGO_EMBARGO='true'
   else
-    echo 'Android.bp header does not contain "cargo2android.py" or "cargo_embargo"; skip regen_bp'
+    echo 'Android.bp header does not contain "cargo_embargo"; skip regen_bp'
     exit 0
   fi
   [ -f Cargo.toml ] || abort "ERROR: cannot find ./Cargo.toml."

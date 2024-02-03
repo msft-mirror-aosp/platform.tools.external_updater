@@ -13,10 +13,13 @@
 # limitations under the License.
 """Module to check updates from Git upstream."""
 
+from pathlib import Path
+
 import base_updater
+import fileutils
 import git_utils
 # pylint: disable=import-error
-import updater_utils
+import metadata_pb2
 from manifest import Manifest
 
 
@@ -25,7 +28,7 @@ class GitUpdater(base_updater.Updater):
     UPSTREAM_REMOTE_NAME: str = "update_origin"
 
     def is_supported_url(self) -> bool:
-        return git_utils.is_valid_url(self._proj_path, self._old_url.value)
+        return git_utils.is_valid_url(self._proj_path, self._old_identifier.value)
 
     @staticmethod
     def _is_likely_android_remote(url: str) -> bool:
@@ -74,13 +77,13 @@ class GitUpdater(base_updater.Updater):
                 f"Could not determine android remote for {self._proj_path}. Tried:\n"
                 f"{remotes_formatted}")
 
-        if current_remote_url is not None and current_remote_url != self._old_url.value:
+        if current_remote_url is not None and current_remote_url != self._old_identifier.value:
             git_utils.remove_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME)
             current_remote_url = None
 
         if current_remote_url is None:
             git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME,
-                                 self._old_url.value)
+                                 self._old_identifier.value)
 
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
@@ -92,31 +95,39 @@ class GitUpdater(base_updater.Updater):
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
         self.setup_remote()
-        if git_utils.is_commit(self._old_ver):
+        if git_utils.is_commit(self._old_identifier.version):
             # Update to remote head.
-            self._check_head()
+            self._new_identifier.version = self.current_head_of_upstream_default_branch()
+            # Some libraries don't have a tag. We only populate
+            # _suggested_new_ver if there is a tag newer than _old_ver.
+            # Checks if there is a tag newer than AOSP's SHA
+            possible_suggested_new_ver = self.latest_tag_of_upstream_default_branch()
         else:
             # Update to latest version tag.
-            self._check_tag()
+            self._new_identifier.version = self.latest_tag_of_upstream_default_branch()
+            # Checks if there is a SHA newer than AOSP's tag
+            possible_suggested_new_ver = self.current_head_of_upstream_default_branch()
+        if git_utils.is_ancestor(self._proj_path, self._old_identifier.version, possible_suggested_new_ver):
+            self._suggested_new_ver = possible_suggested_new_ver
 
-    def _check_tag(self) -> None:
+    def latest_tag_of_upstream_default_branch(self) -> str:
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        self._new_ver = git_utils.get_most_recent_tag(
+        return git_utils.get_most_recent_tag(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
-    def _check_head(self) -> None:
+    def current_head_of_upstream_default_branch(self) -> str:
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        self._new_ver = git_utils.get_sha_for_branch(
+        return git_utils.get_sha_for_branch(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
     def update(self) -> None:
         """Updates the package.
         Has to call check() before this function.
         """
-        print(f"Running `git merge {self._new_ver}`...")
-        git_utils.merge(self._proj_path, self._new_ver)
+        print(f"Running `git merge {self._new_identifier.version}`...")
+        git_utils.merge(self._proj_path, self._new_identifier.version)
 
     def _determine_android_fetch_ref(self) -> str:
         """Returns the ref that should be fetched from the android remote."""
@@ -124,7 +135,7 @@ class GitUpdater(base_updater.Updater):
         # don't guarantee that all paths passed to updater.sh are actually in the same
         # tree so it wouldn't necessarily be correct to do this once at the top level.
         # This isn't the slow part anyway, so it can be dealt with if that ever changes.
-        root = git_utils.find_tree_root_for_project(self._proj_path)
+        root = fileutils.find_tree_containing(self._proj_path)
         manifest = Manifest.for_tree(root)
         manifest_path = str(self._proj_path.relative_to(root))
         try:

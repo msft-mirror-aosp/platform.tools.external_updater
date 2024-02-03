@@ -23,7 +23,6 @@ updater.sh update --refresh --keep_date rust/crates/libc
 import argparse
 from collections.abc import Iterable
 import enum
-import glob
 import json
 import logging
 import os
@@ -86,6 +85,7 @@ def build_updater(proj_path: Path) -> Tuple[Updater, metadata_pb2.MetaData]:
 
     proj_path = fileutils.get_absolute_project_path(proj_path)
     metadata = fileutils.read_metadata(proj_path)
+    metadata = fileutils.convert_url_to_identifier(metadata)
     updater = updater_utils.create_updater(metadata, proj_path, UPDATERS)
     return (updater, metadata)
 
@@ -95,7 +95,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
     full_path = updater.project_path
 
     if not args.keep_local_changes:
-        git_utils.checkout(full_path, args.remote_name + '/main')
+        git_utils.detach_to_android_head(full_path)
         if TMP_BRANCH_NAME in git_utils.list_local_branches(full_path):
             git_utils.delete_branch(full_path, TMP_BRANCH_NAME)
             git_utils.reset_hard(full_path)
@@ -120,7 +120,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         Upgrade {metadata.name} to {updater.latest_version}
 
         This project was upgraded with external_updater.
-        Usage: tools/external_updater/updater.sh update {rel_proj_path}
+        Usage: tools/external_updater/updater.sh update external/{rel_proj_path}
         For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md
 
         Test: TreeHugger""")
@@ -161,24 +161,41 @@ def check_and_update(args: argparse.Namespace,
 
     try:
         canonical_path = fileutils.canonicalize_project_path(proj_path)
-        print(f'Checking {canonical_path}. ', end='')
+        print(f'Checking {canonical_path}...')
         updater, metadata = build_updater(proj_path)
         updater.check()
 
-        current_ver = updater.current_version
-        latest_ver = updater.latest_version
-        print(f'Current version: {current_ver}. Latest version: {latest_ver}', end='')
+        current_version = updater.current_version
+        latest_version = updater.latest_version
+        print(f'Current version: {current_version}\nLatest version: {latest_version}')
+        suggested_version = updater.suggested_latest_version
+        if suggested_version is not None:
+            print(f'Suggested latest version: {suggested_version}')
 
-        has_new_version = current_ver != latest_ver
+        has_new_version = current_version != latest_version
         if has_new_version:
-            print(color_string(' Out of date!', Color.STALE))
+            print(color_string('Out of date!', Color.STALE))
         else:
-            print(color_string(' Up to date.', Color.FRESH))
+            print(color_string('Up to date.', Color.FRESH))
 
         if update_lib and args.refresh:
             print('Refreshing the current version')
-            updater.use_current_as_latest()
-        if update_lib and (has_new_version or args.force or args.refresh):
+            updater.refresh_without_upgrading()
+
+        answer = 'n'
+        if update_lib and suggested_version is not None:
+            suggested_ver_type = (
+                'tag' if git_utils.is_commit(current_version) else 'SHA'
+            )
+            answer = input(
+                f'There is a new {suggested_ver_type} available:'
+                f' {suggested_version}. Would you like to switch to'
+                f' the latest {suggested_ver_type} instead? (y/n) '
+            )
+            if answer == 'y':
+                updater.set_new_version(suggested_version)
+
+        if update_lib and (has_new_version or args.force or args.refresh or answer == 'y'):
             _do_update(args, updater, metadata)
         return updater
     # pylint: disable=broad-except
@@ -187,19 +204,19 @@ def check_and_update(args: argparse.Namespace,
         return str(err)
 
 
-def check_and_update_path(args: argparse.Namespace, paths: Iterable[str],
+def check_and_update_path(args: argparse.Namespace, paths: Iterable[Path],
                           update_lib: bool,
                           delay: int) -> Dict[str, Dict[str, str]]:
     results = {}
     for path in paths:
         res = {}
-        updater = check_and_update(args, Path(path), update_lib)
+        updater = check_and_update(args, path, update_lib)
         if isinstance(updater, str):
             res['error'] = updater
         else:
             res['current'] = updater.current_version
             res['latest'] = updater.latest_version
-        results[str(fileutils.canonicalize_project_path(Path(path)))] = res
+        results[str(fileutils.canonicalize_project_path(path))] = res
         time.sleep(delay)
     return results
 
@@ -213,18 +230,6 @@ def _list_all_metadata() -> Iterator[str]:
         dirs.sort(key=lambda d: d.lower())
 
 
-def get_paths(paths: List[str]) -> List[str]:
-    """Expand paths via globs."""
-    # We want to use glob to get all the paths, so we first convert to absolute.
-    abs_paths = [fileutils.get_absolute_project_path(Path(path))
-                 for path in paths]
-    result = [path for abs_path in abs_paths
-              for path in sorted(glob.glob(str(abs_path)))]
-    if paths and not result:
-        print(f'Could not find any valid paths in {str(paths)}')
-    return result
-
-
 def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
     """Output a JSON report."""
     with Path(json_file).open('w') as res_file:
@@ -233,11 +238,11 @@ def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
 
 def validate(args: argparse.Namespace) -> None:
     """Handler for validate command."""
-    paths = get_paths(args.paths)
+    paths = fileutils.resolve_command_line_paths(args.paths)
     try:
-        canonical_path = fileutils.canonicalize_project_path(Path(paths[0]))
+        canonical_path = fileutils.canonicalize_project_path(paths[0])
         print(f'Validating {canonical_path}')
-        updater, metadata = build_updater(Path(paths[0]))
+        updater, metadata = build_updater(paths[0])
         print(updater.validate())
     except Exception as err:
         logging.exception("Failed to check or update %s", paths)
@@ -245,7 +250,10 @@ def validate(args: argparse.Namespace) -> None:
 
 def check(args: argparse.Namespace) -> None:
     """Handler for check command."""
-    paths = _list_all_metadata() if args.all else get_paths(args.paths)
+    if args.all:
+        paths = [Path(p) for p in _list_all_metadata()]
+    else:
+        paths = fileutils.resolve_command_line_paths(args.paths)
     results = check_and_update_path(args, paths, False, args.delay)
 
     if args.json_output is not None:
@@ -254,11 +262,11 @@ def check(args: argparse.Namespace) -> None:
 
 def update(args: argparse.Namespace) -> None:
     """Handler for update command."""
-    all_paths = get_paths(args.paths)
+    all_paths = fileutils.resolve_command_line_paths(args.paths)
     # Remove excluded paths.
     excludes = set() if args.exclude is None else set(args.exclude)
     filtered_paths = [path for path in all_paths
-                      if not Path(path).name in excludes]
+                      if not path.name in excludes]
     # Now we can update each path.
     results = check_and_update_path(args, filtered_paths, True, 0)
 

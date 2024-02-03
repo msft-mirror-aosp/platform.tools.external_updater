@@ -33,14 +33,6 @@ class TestFindManifestXmlForTree:
         manifest_path.touch()
         assert find_manifest_xml_for_tree(repo_tree) == manifest_path
 
-    def test_pore_tree(self, pore_tree: Path) -> None:
-        """Tests that the correct manifest file is found in a pore tree."""
-        manifest_dir = Path(pore_tree / ".pore/manifest")
-        manifest_dir.mkdir()
-        manifest_path = manifest_dir / "default.xml"
-        manifest_path.touch()
-        assert find_manifest_xml_for_tree(pore_tree) == manifest_path
-
     def test_no_manifest(self, tmp_path: Path) -> None:
         """Tests that an error is raised when no manifest is found."""
         with pytest.raises(FileNotFoundError):

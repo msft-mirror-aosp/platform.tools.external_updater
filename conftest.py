@@ -19,16 +19,14 @@ from pathlib import Path
 import pytest
 
 
+def make_repo_tree(root: Path) -> Path:
+    """Creates a fake repo tree in the given root."""
+    (root / ".repo").mkdir(parents=True)
+    (root / "external/foobar").mkdir(parents=True)
+    return root
+
+
 @pytest.fixture(name="repo_tree")
 def fixture_repo_tree(tmp_path: Path) -> Path:
     """Fixture for a repo tree."""
-    (tmp_path / ".repo").mkdir()
-    (tmp_path / "external/foobar").mkdir(parents=True)
-    return tmp_path
-
-
-@pytest.fixture(name="pore_tree")
-def fixture_pore_tree(repo_tree: Path) -> Path:
-    """Fixture for a pore tree."""
-    (repo_tree / ".pore").mkdir()
-    return repo_tree
+    return make_repo_tree(tmp_path)
