@@ -95,7 +95,7 @@ def _parse_version(version: str) -> ParsedVersion:
     try:
         prefix, version, suffix = match.group('prefix', 'version', 'suffix')
         versions = [int(v) for v in VERSION_SPLITTER_RE.split(version)]
-        return (versions, str(prefix), str(suffix))
+        return versions, str(prefix), str(suffix)
     except IndexError:
         # pylint: disable=raise-missing-from
         raise ValueError('Invalid version.')
@@ -106,12 +106,12 @@ def _match_and_get_version(old_ver: ParsedVersion,
     try:
         new_ver = _parse_version(version)
     except ValueError:
-        return (False, False, [])
+        return False, False, []
 
     right_format = new_ver[1:] == old_ver[1:]
     right_length = len(new_ver[0]) == len(old_ver[0])
 
-    return (right_format, right_length, new_ver[0])
+    return right_format, right_length, new_ver[0]
 
 
 def get_latest_version(current_version: str, version_list: List[str]) -> str:

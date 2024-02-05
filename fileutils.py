@@ -15,7 +15,6 @@
 
 import datetime
 import enum
-import glob
 import os
 from pathlib import Path
 import textwrap
@@ -44,23 +43,24 @@ class IdentifierType(enum.Enum):
 def find_tree_containing(project: Path) -> Path:
     """Returns the path to the repo tree parent of the given project.
 
-    The parent tree is found by searching up the directory tree until a directory is
-    found that contains a .repo directory. Other methods of finding this directory won't
-    necessarily work:
+    The parent tree is found by searching up the directory tree until a
+    directory is found that contains a .repo directory. Other methods of
+    finding this directory won't necessarily work:
 
-    * Using ANDROID_BUILD_TOP might find the wrong tree (if external_updater is used to
-      manage a project that is not in AOSP, as it does for CMake, rr, and a few others),
-      since ANDROID_BUILD_TOP will be the one that built external_updater rather than
-      the given project.
-    * Paths relative to __file__ are no good because we'll run from a "built" PAR
-      somewhere in the soong out directory, or possibly somewhere more arbitrary when
-      run from CI.
-    * Paths relative to the CWD require external_updater to be run from a predictable
-      location. Doing so prevents the user from using relative paths (and tab complete)
-      from directories other than the expected location.
+    * Using ANDROID_BUILD_TOP might find the wrong tree (if external_updater
+    is used to manage a project that is not in AOSP, as it does for CMake,
+    rr, and a few others), since ANDROID_BUILD_TOP will be the one that built
+    external_updater rather than the given project.
+    * Paths relative to __file__ are no good because we'll run from a "built"
+    PAR somewhere in the soong out directory, or possibly somewhere more
+    arbitrary when run from CI.
+    * Paths relative to the CWD require external_updater to be run from a
+    predictable location. Doing so prevents the user from using relative
+    paths (and tab complete) from directories other than the expected location.
 
-    The result for one project should not be reused for other projects, as it's possible
-    that the user has provided project paths from multiple trees.
+    The result for one project should not be reused for other projects,
+    as it's possible that the user has provided project paths from multiple
+    trees.
     """
     if (project / ".repo").exists():
         return project
@@ -74,16 +74,17 @@ def find_tree_containing(project: Path) -> Path:
 def external_path() -> Path:
     """Returns the path to //external.
 
-    We cannot use the relative path from this file to find the top of the tree because
-    this will often be run in a "compiled" form from an arbitrary location in the out
-    directory. We can't fully rely on ANDROID_BUILD_TOP because not all contexts will
-    have run envsetup/lunch either. We use ANDROID_BUILD_TOP whenever it is set, but if
-    it is not set we instead rely on the convention that the CWD is the root of the tree
-    (updater.sh will cd there before executing).
+    We cannot use the relative path from this file to find the top of the
+    tree because this will often be run in a "compiled" form from an
+    arbitrary location in the out directory. We can't fully rely on
+    ANDROID_BUILD_TOP because not all contexts will have run envsetup/lunch
+    either. We use ANDROID_BUILD_TOP whenever it is set, but if it is not set
+    we instead rely on the convention that the CWD is the root of the tree (
+    updater.sh will cd there before executing).
 
-    There is one other context where this function cannot succeed: CI. Tests run in CI
-    do not have a source tree to find, so calling this function in that context will
-    fail.
+    There is one other context where this function cannot succeed: CI. Tests
+    run in CI do not have a source tree to find, so calling this function in
+    that context will fail.
     """
     android_top = Path(os.environ.get("ANDROID_BUILD_TOP", os.getcwd()))
     top = android_top / 'external'
@@ -109,9 +110,9 @@ def get_absolute_project_path(proj_path: Path) -> Path:
 def resolve_command_line_paths(paths: list[str]) -> list[Path]:
     """Resolves project paths provided by the command line.
 
-    Both relative and absolute paths are resolved to fully qualified paths and returned.
-    If any path does not exist relative to the CWD, a message will be printed and that
-    path will be pruned from the list.
+    Both relative and absolute paths are resolved to fully qualified paths
+    and returned. If any path does not exist relative to the CWD, a message
+    will be printed and that path will be pruned from the list.
     """
     resolved: list[Path] = []
     for path_str in paths:
@@ -136,23 +137,25 @@ def get_relative_project_path(proj_path: Path) -> Path:
 def canonicalize_project_path(proj_path: Path) -> Path:
     """Returns the canonical representation of the project path.
 
-    For paths that are in the same tree as external_updater (the common case), the
-    canonical path is the path of the project relative to //external.
+    For paths that are in the same tree as external_updater (the common
+    case), the canonical path is the path of the project relative to //external.
 
-    For paths that are in a different tree (an uncommon case used for updating projects
-    in other builds such as the NDK), the canonical path is the absolute path.
+    For paths that are in a different tree (an uncommon case used for
+    updating projects in other builds such as the NDK), the canonical path is
+    the absolute path.
     """
     try:
         return get_relative_project_path(proj_path)
     except ValueError:
-        # A less common use case, but the path might be to a non-local tree, in which case
-        # the path will not be relative to our tree. This happens when using
-        # external_updater in another project like the NDK or rr.
+        # A less common use case, but the path might be to a non-local tree,
+        # in which case the path will not be relative to our tree. This
+        # happens when using external_updater in another project like the NDK
+        # or rr.
         if proj_path.is_absolute():
             return proj_path
 
-        # Not relative to //external, and not an absolute path. This case hasn't existed
-        # before, so it has no canonical form.
+        # Not relative to //external, and not an absolute path. This case
+        # hasn't existed before, so it has no canonical form.
         raise ValueError(
             f"{proj_path} must be either an absolute path or relative to {external_path()}"
         )
@@ -213,9 +216,9 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
     try:
         rel_proj_path = str(get_relative_project_path(proj_path))
     except ValueError:
-        # Absolute paths to other trees will not be relative to our tree. There are
-        # not portable instructions for upgrading that project, since the path will
-        # differ between machines (or checkouts).
+        # Absolute paths to other trees will not be relative to our tree.
+        # There are no portable instructions for upgrading that project,
+        # since the path will differ between machines (or checkouts).
         rel_proj_path = "<absolute path to project>"
     usage_hint = textwrap.dedent(f"""\
     # This project was upgraded with external_updater.

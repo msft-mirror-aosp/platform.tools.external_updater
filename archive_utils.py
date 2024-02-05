@@ -119,7 +119,7 @@ def find_archive_root(path):
     """Finds the real root of an extracted archive.
 
     Sometimes archives has additional layers of directories. This function tries
-    to guess the right 'root' path by entering all single sub-directories.
+    to guess the right 'root' path by entering all single subdirectories.
 
     Args:
         path: Path to the extracted archive.
