@@ -29,12 +29,13 @@ ANDROID_SPECIFIC_FILES = ["*Android.bp", "Android.mk", "CleanSpec.mk", "LICENSE"
 
 UNWANTED_TAGS = ["*alpha*", "*Alpha*", "*beta*", "*Beta*", "*rc*", "*RC*", "*test*"]
 
+
 def fetch(proj_path: Path, remote_name: str, branch: str | None = None) -> None:
     """Runs git fetch.
 
     Args:
         proj_path: Path to Git repository.
-        remote_names: Array of string to specify remote names.
+        remote_name: A string to specify remote names.
     """
     cmd = ['git', 'fetch', '--tags', remote_name] + ([branch] if branch is not None else [])
     subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True)

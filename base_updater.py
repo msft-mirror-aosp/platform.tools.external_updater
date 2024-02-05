@@ -32,7 +32,7 @@ class Updater:
         self._new_identifier = metadata_pb2.Identifier()
         self._new_identifier.CopyFrom(old_identifier)
 
-        self._suggested_new_ver = None
+        self._alternative_new_ver = None
 
         self._has_errors = False
 
@@ -107,9 +107,9 @@ class Updater:
         return self._has_errors
 
     @property
-    def suggested_latest_version(self) -> str | None:
-        """Gets suggested latest version."""
-        return self._suggested_new_ver
+    def alternative_latest_version(self) -> str | None:
+        """Gets alternative latest version."""
+        return self._alternative_new_ver
 
     def refresh_without_upgrading(self) -> None:
         """Uses current version and url as the latest to refresh project."""
