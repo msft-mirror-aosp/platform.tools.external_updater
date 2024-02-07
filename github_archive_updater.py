@@ -23,7 +23,6 @@ import archive_utils
 from base_updater import Updater
 import git_utils
 # pylint: disable=import-error
-import metadata_pb2  # type: ignore
 import updater_utils
 
 GITHUB_URL_PATTERN: str = (r'^https:\/\/github.com\/([-\w]+)\/([-\w]+)\/' +
@@ -102,7 +101,7 @@ class GithubArchiveUpdater(Updater):
             a['browser_download_url'] for a in data['assets']
             if archive_utils.is_supported_archive(a['browser_download_url'])
         ]
-        return (data[self.VERSION_FIELD], supported_assets)
+        return data[self.VERSION_FIELD], supported_assets
 
     def setup_remote(self) -> None:
         homepage = f'https://github.com/{self.owner}/{self.repo}'
@@ -138,8 +137,10 @@ class GithubArchiveUpdater(Updater):
                                or self._fetch_latest_tag())
 
         # Adds source code urls.
-        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_identifier.version}.tar.gz')
-        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_identifier.version}.zip')
+        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/'
+                    f'{self._new_identifier.version}.tar.gz')
+        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/'
+                    f'{self._new_identifier.version}.zip')
 
         self._new_identifier.value = choose_best_url(urls, self._old_identifier.value)
 
