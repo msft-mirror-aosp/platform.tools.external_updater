@@ -13,13 +13,10 @@
 # limitations under the License.
 """Module to check updates from Git upstream."""
 
-from pathlib import Path
-
 import base_updater
 import fileutils
 import git_utils
 # pylint: disable=import-error
-import metadata_pb2
 from manifest import Manifest
 
 
@@ -33,9 +30,10 @@ class GitUpdater(base_updater.Updater):
     @staticmethod
     def _is_likely_android_remote(url: str) -> bool:
         """Returns True if the URL is likely to be the project's Android remote."""
-        # There isn't a strict rule for finding the correct remote for upstream-master/main,
-        # so we have to guess. Be careful to filter out things that look almost right
-        # but aren't. Here's an example of a project that has a lot of false positives:
+        # There isn't a strict rule for finding the correct remote for
+        # upstream-master/main, so we have to guess. Be careful to filter out
+        # things that look almost right but aren't. Here's an example of a
+        # project that has a lot of false positives:
         #
         # aosp    /usr/local/google/home/danalbert/src/mirrors/android/refs/aosp/toolchain/rr.git (fetch)
         # aosp    persistent-https://android.git.corp.google.com/toolchain/rr (push)
@@ -48,9 +46,9 @@ class GitUpdater(base_updater.Updater):
         # upstream        https://github.com/rr-debugger/rr.git (fetch)
         # upstream        https://github.com/rr-debugger/rr.git (push)
         #
-        # unmirrored is the correct remote here. It's not a local path, and contains
-        # either /platform/external/ or /toolchain/ (the two common roots for third-
-        # party Android imports).
+        # unmirrored is the correct remote here. It's not a local path,
+        # and contains either /platform/external/ or /toolchain/ (the two
+        # common roots for third- party Android imports).
         if '://' not in url:
             # Skip anything that's likely a local GoB mirror.
             return False
@@ -99,16 +97,16 @@ class GitUpdater(base_updater.Updater):
             # Update to remote head.
             self._new_identifier.version = self.current_head_of_upstream_default_branch()
             # Some libraries don't have a tag. We only populate
-            # _suggested_new_ver if there is a tag newer than _old_ver.
+            # _alternative_new_ver if there is a tag newer than _old_ver.
             # Checks if there is a tag newer than AOSP's SHA
-            possible_suggested_new_ver = self.latest_tag_of_upstream_default_branch()
+            possible_alternative_new_ver = self.latest_tag_of_upstream_default_branch()
         else:
-            # Update to latest version tag.
+            # Update to the latest version tag.
             self._new_identifier.version = self.latest_tag_of_upstream_default_branch()
             # Checks if there is a SHA newer than AOSP's tag
-            possible_suggested_new_ver = self.current_head_of_upstream_default_branch()
-        if git_utils.is_ancestor(self._proj_path, self._old_identifier.version, possible_suggested_new_ver):
-            self._suggested_new_ver = possible_suggested_new_ver
+            possible_alternative_new_ver = self.current_head_of_upstream_default_branch()
+        if git_utils.is_ancestor(self._proj_path, self._old_identifier.version, possible_alternative_new_ver):
+            self._alternative_new_ver = possible_alternative_new_ver
 
     def latest_tag_of_upstream_default_branch(self) -> str:
         branch = git_utils.detect_default_branch(self._proj_path,
@@ -131,10 +129,11 @@ class GitUpdater(base_updater.Updater):
 
     def _determine_android_fetch_ref(self) -> str:
         """Returns the ref that should be fetched from the android remote."""
-        # It isn't particularly efficient to reparse the tree for every project, but we
-        # don't guarantee that all paths passed to updater.sh are actually in the same
-        # tree so it wouldn't necessarily be correct to do this once at the top level.
-        # This isn't the slow part anyway, so it can be dealt with if that ever changes.
+        # It isn't particularly efficient to reparse the tree for every
+        # project, but we don't guarantee that all paths passed to updater.sh
+        # are actually in the same tree so it wouldn't necessarily be correct
+        # to do this once at the top level. This isn't the slow part anyway,
+        # so it can be dealt with if that ever changes.
         root = fileutils.find_tree_containing(self._proj_path)
         manifest = Manifest.for_tree(root)
         manifest_path = str(self._proj_path.relative_to(root))

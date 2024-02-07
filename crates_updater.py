@@ -139,7 +139,7 @@ class CratesUpdater(Updater):
                 self.download_url = "https://crates.io" + data["version"]["dl_path"]
 
     def set_new_version_to_old(self):
-        super().set_new_version_to_old()
+        super().refresh_without_upgrading()
         # A shortcut to use the static download path.
         self.download_url = f"https://static.crates.io/crates/{self.package}/" \
                             f"{self.package}-{self._new_identifier.version}.crate"
@@ -177,8 +177,10 @@ class CratesUpdater(Updater):
         updated_metadata = super().update_metadata(metadata)
         for identifier in updated_metadata.third_party.identifier:
             if identifier.version:
-                identifier.value = f"https://static.crates.io/crates/{updated_metadata.name}/" \
-                                     f"{updated_metadata.name}-{self.latest_identifier.version}.crate"
+                identifier.value = f"https://static.crates.io/crates/" \
+                                   f"{updated_metadata.name}/"\
+                                   f"{updated_metadata.name}" \
+                                   f"-{self.latest_identifier.version}.crate"
                 break
         # copy description from Cargo.toml to METADATA
         cargo_toml = os.path.join(self.project_path, "Cargo.toml")

@@ -87,7 +87,7 @@ def build_updater(proj_path: Path) -> Tuple[Updater, metadata_pb2.MetaData]:
     metadata = fileutils.read_metadata(proj_path)
     metadata = fileutils.convert_url_to_identifier(metadata)
     updater = updater_utils.create_updater(metadata, proj_path, UPDATERS)
-    return (updater, metadata)
+    return updater, metadata
 
 
 def _do_update(args: argparse.Namespace, updater: Updater,
@@ -137,7 +137,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             try:
                 updater_utils.build(full_path)
             except subprocess.CalledProcessError as err:
-                logging.exception(f"Build failed, aborting upload")
+                logging.exception("Build failed, aborting upload")
                 return
     except Exception as err:
         if updater.rollback():
@@ -156,7 +156,7 @@ def check_and_update(args: argparse.Namespace,
     Args:
       args: commandline arguments
       proj_path: Absolute or relative path to the project.
-      update: If false, will only check for new version, but not update.
+      update_lib: If false, will only check for new version, but not update.
     """
 
     try:
@@ -168,9 +168,9 @@ def check_and_update(args: argparse.Namespace,
         current_version = updater.current_version
         latest_version = updater.latest_version
         print(f'Current version: {current_version}\nLatest version: {latest_version}')
-        suggested_version = updater.suggested_latest_version
-        if suggested_version is not None:
-            print(f'Suggested latest version: {suggested_version}')
+        alternative_version = updater.alternative_latest_version
+        if alternative_version is not None:
+            print(f'Alternative latest version: {alternative_version}')
 
         has_new_version = current_version != latest_version
         if has_new_version:
@@ -183,17 +183,17 @@ def check_and_update(args: argparse.Namespace,
             updater.refresh_without_upgrading()
 
         answer = 'n'
-        if update_lib and suggested_version is not None:
-            suggested_ver_type = (
+        if update_lib and alternative_version is not None:
+            alternative_ver_type = (
                 'tag' if git_utils.is_commit(current_version) else 'SHA'
             )
             answer = input(
-                f'There is a new {suggested_ver_type} available:'
-                f' {suggested_version}. Would you like to switch to'
-                f' the latest {suggested_ver_type} instead? (y/n) '
+                f'There is a new {alternative_ver_type} available:'
+                f' {alternative_version}. Would you like to switch to'
+                f' the latest {alternative_ver_type} instead? (y/n) '
             )
             if answer == 'y':
-                updater.set_new_version(suggested_version)
+                updater.set_new_version(alternative_version)
 
         if update_lib and (has_new_version or args.force or args.refresh or answer == 'y'):
             _do_update(args, updater, metadata)
