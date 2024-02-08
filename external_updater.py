@@ -136,7 +136,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         if args.build:
             try:
                 updater_utils.build(full_path)
-            except subprocess.CalledProcessError as err:
+            except subprocess.CalledProcessError:
                 logging.exception("Build failed, aborting upload")
                 return
     except Exception as err:
@@ -242,9 +242,9 @@ def validate(args: argparse.Namespace) -> None:
     try:
         canonical_path = fileutils.canonicalize_project_path(paths[0])
         print(f'Validating {canonical_path}')
-        updater, metadata = build_updater(paths[0])
+        updater, _ = build_updater(paths[0])
         print(updater.validate())
-    except Exception as err:
+    except Exception:
         logging.exception("Failed to check or update %s", paths)
 
 
