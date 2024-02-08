@@ -244,7 +244,7 @@ def clean(proj_path: Path) -> None:
 
 def is_valid_url(proj_path: Path, url: str) -> bool:
     cmd = ['git', "ls-remote", url]
-    return subprocess.run(cmd, cwd=proj_path, stdin=subprocess.DEVNULL,
+    return subprocess.run(cmd, cwd=proj_path, check=False, stdin=subprocess.DEVNULL,
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                           start_new_session=True).returncode == 0
 
