@@ -244,7 +244,7 @@ def validate(args: argparse.Namespace) -> None:
         print(f'Validating {canonical_path}')
         updater, _ = build_updater(paths[0])
         print(updater.validate())
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         logging.exception("Failed to check or update %s", paths)
 
 
