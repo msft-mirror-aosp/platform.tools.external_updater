@@ -2,6 +2,9 @@
 
 external updater is a tool to automatically update libraries in external/.
 
+The documentation on this page is for users of `external_updater`. If you're
+looking for developer docs, see [docs/dev.md](docs/dev.md).
+
 ## Usage
 
 In each of the examples below, `$PROJECT_PATH` is the path to the project to
