@@ -15,7 +15,6 @@
 
 import json
 import os
-# pylint: disable=g-importing-member
 from pathlib import Path
 import re
 import shutil
@@ -170,7 +169,6 @@ class CratesUpdater(Updater):
             return True
         return False
 
-    # pylint: disable=no-self-use
     def update_metadata(self, metadata: metadata_pb2.MetaData) -> metadata_pb2:
         """Updates METADATA content."""
         # copy only HOMEPAGE url, and then add new ARCHIVE url.
