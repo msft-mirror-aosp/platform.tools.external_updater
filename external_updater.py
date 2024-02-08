@@ -232,7 +232,7 @@ def _list_all_metadata() -> Iterator[str]:
 
 def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
     """Output a JSON report."""
-    with Path(json_file).open('w') as res_file:
+    with Path(json_file).open('w', encoding='utf-8') as res_file:
         json.dump(results, res_file, sort_keys=True, indent=4)
 
 
