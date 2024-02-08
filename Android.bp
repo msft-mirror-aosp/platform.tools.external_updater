@@ -138,6 +138,23 @@ python_test_host {
     },
 }
 
+// This test is intentionally not in the tests/ directory. Everything in the
+// tests/ directory should be runnable with pytest, and this file is not because
+// it depends on the generated protobuf modules.
+python_test_host {
+    name: "external_updater_base_updater_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_base_updater.py",
+    srcs: ["test_base_updater.py"],
+    libs: [
+        "external_updater_lib",
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
 // The tests in tests/endtoend are not built as a Soong module because we can't
 // run those tests via python_test_host. It's an end-to-end test so it needs to
 // run `repo`, but `repo init` will try to clone the real repo source (the thing
