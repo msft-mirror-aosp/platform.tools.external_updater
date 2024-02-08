@@ -1,0 +1,7 @@
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "duplicate-code",
+    "fixme",
+    "missing-docstring",
+    "refactoring",
+]
