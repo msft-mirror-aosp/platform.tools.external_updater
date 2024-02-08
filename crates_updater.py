@@ -214,7 +214,7 @@ class CratesUpdater(Updater):
     def _get_cargo_description(self, cargo_toml: str) -> str:
         """Return the description in Cargo.toml or empty string."""
         if os.path.isfile(cargo_toml) and os.access(cargo_toml, os.R_OK):
-            with open(cargo_toml, "r") as toml_file:
+            with open(cargo_toml, "r", encoding="utf-8") as toml_file:
                 for line in toml_file:
                     match = DESCRIPTION_RE.match(line)
                     if match:

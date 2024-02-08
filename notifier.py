@@ -67,7 +67,7 @@ def _read_owner_file(proj):
     owner_file = os.path.join(_get_android_top(), 'external', proj, 'OWNERS')
     if not os.path.isfile(owner_file):
         return None
-    with open(owner_file, 'r') as f:
+    with open(owner_file, 'r', encoding='utf-8') as f:
         return f.read().strip()
 
 
@@ -162,18 +162,18 @@ RESULT_FILE_PATH = '/tmp/update_check_result.json'
 def send_notification(args):
     """Compare results and send notification."""
     results = {}
-    with open(RESULT_FILE_PATH, 'r') as f:
+    with open(RESULT_FILE_PATH, 'r', encoding='utf-8') as f:
         results = json.load(f)
     history = {}
     try:
-        with open(args.history, 'r') as f:
+        with open(args.history, 'r', encoding='utf-8') as f:
             history = json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         pass
 
     _process_results(args, history, results)
 
-    with open(args.history, 'w') as f:
+    with open(args.history, 'w', encoding='utf-8') as f:
         json.dump(history, f, sort_keys=True, indent=4)
 
 
