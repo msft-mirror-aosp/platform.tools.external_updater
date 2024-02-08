@@ -38,7 +38,6 @@ class ExternalUpdaterReviewersTest(unittest.TestCase):
         reviewers.RUST_REVIEWER_LIST = self.saved_rust_reviewer_list
         reviewers.RUST_CRATE_OWNERS = self.saved_rust_crate_owners
 
-    # pylint: disable=no-self-use
     def _collect_reviewers(self, num_runs, proj_path):
         counters = {}
         for _ in range(num_runs):
