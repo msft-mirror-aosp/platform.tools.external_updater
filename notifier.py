@@ -151,7 +151,7 @@ def _process_results(args, history, results):
                 proj_history[NOTIFIED_TIME_KEY_NAME] = int(time.time())
             except subprocess.CalledProcessError as err:
                 msg = f"""Failed to send email for {proj} ({latest_ver}).
-stdout: {stdout}
+stdout: {err.stdout}
 stderr: {err.stderr}"""
                 print(msg)
 
