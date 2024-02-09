@@ -1,4 +1,5 @@
-SRC_PATHS := .
+# TODO: Move sources into a package.
+SRC_PATHS := *.py tests
 # This is distinct from SRC_PATHS because not all the tests can be run with
 # pytest. Any test that touches the METADATA file (or even imports a module that
 # does) must be run via soong.
