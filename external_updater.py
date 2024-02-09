@@ -182,6 +182,55 @@ def find_ver_types(current_version: str) -> Tuple[str, str]:
     return latest_ver_type, alternative_ver_type
 
 
+def use_alternative_version(updater: Updater) -> bool:
+    """This function only runs when there is an alternative version available."""
+
+    latest_ver_type, alternative_ver_type = find_ver_types(updater.current_version)
+    latest_version = updater.latest_version
+    alternative_version = updater.alternative_latest_version
+    new_version_available = has_new_version(updater)
+
+    out_of_date_question = f'Would you like to upgrade to {alternative_ver_type} {alternative_version} instead of {latest_ver_type} {latest_version}? (yes/no)\n'
+    up_to_date_question = f'Would you like to upgrade to {alternative_ver_type} {alternative_version}? (yes/no)\n'
+    recom_message = color_string(f'We recommend upgrading to {alternative_ver_type} {alternative_version} instead. ', Color.FRESH)
+    not_recom_message = color_string(f'We DO NOT recommend upgrading to {alternative_ver_type} {alternative_version}. ', Color.STALE)
+
+    # If alternative_version is not None, there are ONLY three possible
+    # scenarios:
+    # Scenario 1, out of date, we recommend switching to tag:
+    # Current version: sha1
+    # Latest version: sha2
+    # Alternative latest version: tag
+
+    # Scenario 2, out of date, we DO NOT recommend switching to sha.
+    # Current version: tag1
+    # Latest version: tag2
+    # Alternative latest version: sha
+
+    # Scenario 3, up to date, we DO NOT recommend switching to sha.
+    # Current version: tag1
+    # Latest version: tag1
+    # Alternative latest version: sha
+
+    if alternative_ver_type == 'tag':
+        warning = out_of_date_question + recom_message
+    else:
+        if not new_version_available:
+            warning = up_to_date_question + not_recom_message
+        else:
+            warning = out_of_date_question + not_recom_message
+
+    answer = input(warning)
+    if "yes".startswith(answer.lower()):
+        return True
+    elif answer.lower().startswith("no"):
+        return False
+    # If user types something that is not "yes" or "no" or something similar, abort.
+    else:
+        raise ValueError(f"Invalid input: {answer}")
+
+
+
 def check_and_update(args: argparse.Namespace,
                      proj_path: Path,
                      update_lib=False) -> Union[Updater, str]:
@@ -199,7 +248,6 @@ def check_and_update(args: argparse.Namespace,
         updater, metadata = build_updater(proj_path)
         updater.check()
 
-        current_version = updater.current_version
         alternative_version = updater.alternative_latest_version
         new_version_available = has_new_version(updater)
         print_project_status(updater)
@@ -209,18 +257,11 @@ def check_and_update(args: argparse.Namespace,
                 print('Refreshing the current version')
                 updater.refresh_without_upgrading()
 
-            answer = 'n'
             if alternative_version is not None:
-                _, alternative_ver_type = find_ver_types(current_version)
-                answer = input(
-                    f'There is a new {alternative_ver_type} available:'
-                    f' {alternative_version}. Would you like to switch to'
-                    f' the latest {alternative_ver_type} instead? (y/n) '
-                )
-                if answer == 'y':
+                answer = use_alternative_version(updater)
+                if answer:
                     updater.set_new_version(alternative_version)
-
-            if new_version_available or args.force or args.refresh or answer == 'y':
+            if new_version_available or args.force or args.refresh or answer:
                 _do_update(args, updater, metadata)
         return updater
     # pylint: disable=broad-except
