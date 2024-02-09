@@ -32,7 +32,7 @@ class Updater:
         self._new_identifier = metadata_pb2.Identifier()
         self._new_identifier.CopyFrom(old_identifier)
 
-        self._alternative_new_ver = None
+        self._alternative_new_ver: str | None = None
 
         self._has_errors = False
 
