@@ -148,10 +148,44 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.push(full_path, args.remote_name, updater.has_errors)
 
 
+def has_new_version(updater: Updater) -> bool:
+    """Checks if a newer version of the project is available."""
+    if updater.current_version != updater.latest_version:
+        return True
+    return False
+
+
+def print_project_status(updater: Updater) -> None:
+    """Prints the current status of the project on console."""
+
+    current_version = updater.current_version
+    latest_version = updater.latest_version
+    alternative_latest_version = updater.alternative_latest_version
+
+    print(f'Current version: {current_version}')
+    print(f'Latest version: {latest_version}')
+    if alternative_latest_version is not None:
+        print(f'Alternative latest version: {alternative_latest_version}')
+    if has_new_version(updater):
+        print(color_string('Out of date!', Color.STALE))
+    else:
+        print(color_string('Up to date.', Color.FRESH))
+
+
+def find_ver_types(current_version: str) -> Tuple[str, str]:
+    if git_utils.is_commit(current_version):
+        alternative_ver_type = 'tag'
+        latest_ver_type = 'sha'
+    else:
+        alternative_ver_type = 'sha'
+        latest_ver_type = 'tag'
+    return latest_ver_type, alternative_ver_type
+
+
 def check_and_update(args: argparse.Namespace,
                      proj_path: Path,
                      update_lib=False) -> Union[Updater, str]:
-    """Checks updates for a project. Prints result on console.
+    """Checks updates for a project.
 
     Args:
       args: commandline arguments
@@ -166,37 +200,28 @@ def check_and_update(args: argparse.Namespace,
         updater.check()
 
         current_version = updater.current_version
-        latest_version = updater.latest_version
-        print(f'Current version: {current_version}\nLatest version: {latest_version}')
         alternative_version = updater.alternative_latest_version
-        if alternative_version is not None:
-            print(f'Alternative latest version: {alternative_version}')
+        new_version_available = has_new_version(updater)
+        print_project_status(updater)
 
-        has_new_version = current_version != latest_version
-        if has_new_version:
-            print(color_string('Out of date!', Color.STALE))
-        else:
-            print(color_string('Up to date.', Color.FRESH))
+        if update_lib:
+            if args.refresh:
+                print('Refreshing the current version')
+                updater.refresh_without_upgrading()
 
-        if update_lib and args.refresh:
-            print('Refreshing the current version')
-            updater.refresh_without_upgrading()
+            answer = 'n'
+            if alternative_version is not None:
+                _, alternative_ver_type = find_ver_types(current_version)
+                answer = input(
+                    f'There is a new {alternative_ver_type} available:'
+                    f' {alternative_version}. Would you like to switch to'
+                    f' the latest {alternative_ver_type} instead? (y/n) '
+                )
+                if answer == 'y':
+                    updater.set_new_version(alternative_version)
 
-        answer = 'n'
-        if update_lib and alternative_version is not None:
-            alternative_ver_type = (
-                'tag' if git_utils.is_commit(current_version) else 'SHA'
-            )
-            answer = input(
-                f'There is a new {alternative_ver_type} available:'
-                f' {alternative_version}. Would you like to switch to'
-                f' the latest {alternative_ver_type} instead? (y/n) '
-            )
-            if answer == 'y':
-                updater.set_new_version(alternative_version)
-
-        if update_lib and (has_new_version or args.force or args.refresh or answer == 'y'):
-            _do_update(args, updater, metadata)
+            if new_version_available or args.force or args.refresh or answer == 'y':
+                _do_update(args, updater, metadata)
         return updater
     # pylint: disable=broad-except
     except Exception as err:
