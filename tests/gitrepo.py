@@ -54,6 +54,10 @@ class GitRepo:
         """Returns the SHA of the current HEAD."""
         return self.run(["rev-parse", "HEAD"]).strip()
 
+    def sha_of_ref(self, ref: str) -> str:
+        """Returns the sha of the given ref."""
+        return self.run(["rev-list", "-n", "1", ref]).strip()
+
     def current_branch(self) -> str:
         """Returns the name of the current branch."""
         return self.run(["branch", "--show-current"]).strip()
@@ -108,6 +112,13 @@ class GitRepo:
         args = ["switch", "--create", name]
         if start_point is not None:
             args.append(start_point)
+        self.run(args)
+
+    def tag(self, name: str, ref: str | None = None) -> None:
+        """Creates a tag at the given ref, or HEAD if not provided."""
+        args = ["tag", name]
+        if ref is not None:
+            args.append(ref)
         self.run(args)
 
     def commit_message_at_revision(self, revision: str) -> str:

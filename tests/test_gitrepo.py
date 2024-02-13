@@ -143,6 +143,32 @@ class GitRepoTest(unittest.TestCase):
         self.assertEqual(repo.current_branch(), "feature")
         self.assertEqual(repo.head(), initial_commit)
 
+    def test_sha_of_ref(self) -> None:
+        """Tests that sha_of_ref returns the SHA of the given ref."""
+        repo = GitRepo(self.tmp_path / "repo")
+        repo.init("main")
+        repo.commit("Initial commit.", allow_empty=True)
+        self.assertEqual(repo.sha_of_ref("heads/main"), repo.head())
+
+    def test_tag_head(self) -> None:
+        """Tests that tag creates a tag at HEAD."""
+        repo = GitRepo(self.tmp_path / "repo")
+        repo.init()
+        repo.commit("Initial commit.", allow_empty=True)
+        repo.commit("Second commit.", allow_empty=True)
+        repo.tag("v1.0.0")
+        self.assertEqual(repo.sha_of_ref("tags/v1.0.0"), repo.head())
+
+    def test_tag_ref(self) -> None:
+        """Tests that tag creates a tag at the given ref."""
+        repo = GitRepo(self.tmp_path / "repo")
+        repo.init()
+        repo.commit("Initial commit.", allow_empty=True)
+        first_commit = repo.head()
+        repo.commit("Second commit.", allow_empty=True)
+        repo.tag("v1.0.0", first_commit)
+        self.assertEqual(repo.sha_of_ref("tags/v1.0.0"), first_commit)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
