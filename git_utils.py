@@ -267,6 +267,10 @@ def is_ancestor(proj_path: Path, ancestor: str, child: str) -> bool:
     cmd = ['git', 'merge-base', '--is-ancestor', ancestor, child]
     # https://git-scm.com/docs/git-merge-base#Documentation/git-merge-base.txt---is-ancestor
     # Exit status of 0 means yes, 1 means no, and all others mean an error occurred.
+    # Although a commit is an ancestor of itself, we don't want to return True
+    # if ancestor points to the same commit as child.
+    if get_sha_for_branch(proj_path, ancestor) == child:
+        return False
     try:
         subprocess.run(
             cmd,

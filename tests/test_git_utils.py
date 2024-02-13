@@ -53,6 +53,13 @@ class IsAncestorTest(unittest.TestCase):
         os.environ.clear()
         os.environ.update(self._original_env)
 
+    def test_if_commit_is_its_own_ancestor(self) -> None:
+        """Tests that False is returned when both commits are the same."""
+        self.repo.init()
+        self.repo.commit("Initial commit.", allow_empty=True)
+        initial_commit = self.repo.head()
+        assert not git_utils.is_ancestor(self.repo.path, initial_commit, initial_commit)
+
     def test_is_ancestor(self) -> None:
         """Tests that True is returned when the ref is an ancestor."""
         self.repo.init()
