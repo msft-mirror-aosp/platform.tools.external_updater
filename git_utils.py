@@ -100,17 +100,6 @@ def get_sha_for_branch(proj_path: Path, branch: str):
                           text=True).stdout.strip()
 
 
-def get_commits_ahead(proj_path: Path, branch: str,
-                      base_branch: str) -> list[str]:
-    """Lists commits in `branch` but not `base_branch`."""
-    cmd = [
-        'git', 'rev-list', '--left-only', '--ancestry-path', 'f{branch}...{base_branch}'
-    ]
-    out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
-                         text=True).stdout
-    return out.splitlines()
-
-
 def get_most_recent_tag(proj_path: Path, branch: str) -> str:
     """Finds the most recent tag that is reachable from HEAD."""
     cmd = ['git', 'describe', '--tags', branch, '--abbrev=0'] + \
@@ -255,7 +244,7 @@ def clean(proj_path: Path) -> None:
 
 def is_valid_url(proj_path: Path, url: str) -> bool:
     cmd = ['git', "ls-remote", url]
-    return subprocess.run(cmd, cwd=proj_path, stdin=subprocess.DEVNULL,
+    return subprocess.run(cmd, cwd=proj_path, check=False, stdin=subprocess.DEVNULL,
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                           start_new_session=True).returncode == 0
 
@@ -278,6 +267,10 @@ def is_ancestor(proj_path: Path, ancestor: str, child: str) -> bool:
     cmd = ['git', 'merge-base', '--is-ancestor', ancestor, child]
     # https://git-scm.com/docs/git-merge-base#Documentation/git-merge-base.txt---is-ancestor
     # Exit status of 0 means yes, 1 means no, and all others mean an error occurred.
+    # Although a commit is an ancestor of itself, we don't want to return True
+    # if ancestor points to the same commit as child.
+    if get_sha_for_branch(proj_path, ancestor) == child:
+        return False
     try:
         subprocess.run(
             cmd,
