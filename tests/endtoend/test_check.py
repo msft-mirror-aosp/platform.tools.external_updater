@@ -54,8 +54,10 @@ class TestCheck:
         output = self.check(updater_cmd, [a.local.path])
         current_version = a.upstream.head()
         assert output == (
-            f"Checking {a.local.path}. Current version: {current_version}. Latest "
-            f"version: {current_version} Up to date.\n"
+            f"Checking {a.local.path}...\n"
+            f"Current version: {current_version}\n"
+            f"Latest version: {current_version}\n"
+            "Up to date.\n"
         )
 
     def test_git_out_of_date(
@@ -81,6 +83,8 @@ class TestCheck:
         output = self.check(updater_cmd, [a.local.path])
         latest_version = a.upstream.head()
         assert output == (
-            f"Checking {a.local.path}. Current version: {current_version}. Latest "
-            f"version: {latest_version} Out of date!\n"
+            f"Checking {a.local.path}...\n"
+            f"Current version: {current_version}\n"
+            f"Latest version: {latest_version}\n"
+            "Out of date!\n"
         )

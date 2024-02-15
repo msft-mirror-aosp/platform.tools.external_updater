@@ -100,13 +100,20 @@ def get_sha_for_branch(proj_path: Path, branch: str):
                           text=True).stdout.strip()
 
 
-def get_most_recent_tag(proj_path: Path, branch: str) -> str:
+def get_most_recent_tag(proj_path: Path, branch: str) -> str | None:
     """Finds the most recent tag that is reachable from HEAD."""
     cmd = ['git', 'describe', '--tags', branch, '--abbrev=0'] + \
           [f'--exclude={unwanted_tag}' for unwanted_tag in UNWANTED_TAGS]
-    out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
-                         text=True).stdout.strip()
-    return out
+    try:
+        out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
+                            text=True).stdout.strip()
+        return out
+    except subprocess.CalledProcessError as ex:
+        if "fatal: No names found" in ex.stderr:
+            return None
+        if "fatal: No tags can describe" in ex.stderr:
+            return None
+        raise
 
 
 # pylint: disable=redefined-outer-name
