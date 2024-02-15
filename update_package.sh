@@ -49,10 +49,17 @@ CopyIfPresent ".gitignore"
 if compgen -G "$external_dir/cargo2android*"; then
     cp -a -f -n $external_dir/cargo2android* .
 fi
+if compgen -G "$external_dir/cargo_embargo*"; then
+    cp -a -f -n $external_dir/cargo_embargo* .
+fi
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
 CopyIfPresent "OWNERS"
 CopyIfPresent "README.android"
+CopyIfPresent "rules.mk"
+if compgen -G "$external_dir/cargo2rulesmk*"; then
+    cp -a -f -n $external_dir/cargo2rulesmk* .
+fi
 
 file_counter=0
 total_files=$(ls $tmp_dir/patches | grep -Ei '(diff|patch)$' | wc -l)
@@ -66,6 +73,8 @@ do
   then
       [ "$(basename $p)" != "Android.bp.diff" ] || continue
       [ "$(basename $p)" != "Android.bp.patch" ] || continue
+      [ "$(basename $p)" != "rules.mk.diff" ] || continue
+      [ "$(basename $p)" != "rules.mk.patch" ] || continue
   fi
   echo "Applying patch [$file_counter/$total_files] $p..."
   patch -p1 -d $tmp_dir --no-backup-if-mismatch < $p;
