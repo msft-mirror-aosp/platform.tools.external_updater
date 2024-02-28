@@ -15,7 +15,6 @@
 
 import json
 import os
-# pylint: disable=g-importing-member
 from pathlib import Path
 import re
 import shutil
@@ -170,7 +169,6 @@ class CratesUpdater(Updater):
             return True
         return False
 
-    # pylint: disable=no-self-use
     def update_metadata(self, metadata: metadata_pb2.MetaData) -> metadata_pb2:
         """Updates METADATA content."""
         # copy only HOMEPAGE url, and then add new ARCHIVE url.
@@ -214,7 +212,7 @@ class CratesUpdater(Updater):
     def _get_cargo_description(self, cargo_toml: str) -> str:
         """Return the description in Cargo.toml or empty string."""
         if os.path.isfile(cargo_toml) and os.access(cargo_toml, os.R_OK):
-            with open(cargo_toml, "r") as toml_file:
+            with open(cargo_toml, "r", encoding="utf-8") as toml_file:
                 for line in toml_file:
                     match = DESCRIPTION_RE.match(line)
                     if match:

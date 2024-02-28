@@ -26,8 +26,8 @@ import git_utils
 from .gitrepo import GitRepo
 
 
-class IsAncestorTest(unittest.TestCase):
-    """Tests for git_utils.is_ancestor."""
+class GitRepoTestCase(unittest.TestCase):
+    """Common base for tests that operate on a git repo."""
 
     def setUp(self) -> None:
         # Local test runs will probably pass without this since the caller
@@ -53,6 +53,16 @@ class IsAncestorTest(unittest.TestCase):
         os.environ.clear()
         os.environ.update(self._original_env)
 
+class IsAncestorTest(GitRepoTestCase):
+    """Tests for git_utils.is_ancestor."""
+
+    def test_if_commit_is_its_own_ancestor(self) -> None:
+        """Tests that False is returned when both commits are the same."""
+        self.repo.init()
+        self.repo.commit("Initial commit.", allow_empty=True)
+        initial_commit = self.repo.head()
+        assert not git_utils.is_ancestor(self.repo.path, initial_commit, initial_commit)
+
     def test_is_ancestor(self) -> None:
         """Tests that True is returned when the ref is an ancestor."""
         self.repo.init()
@@ -76,6 +86,37 @@ class IsAncestorTest(unittest.TestCase):
         self.repo.init()
         with self.assertRaises(CalledProcessError):
             git_utils.is_ancestor(self.repo.path, "not-a-ref", "not-a-ref")
+
+
+class GetMostRecentTagTest(GitRepoTestCase):
+    """Tests for git_utils.get_most_recent_tag."""
+
+    def test_find_tag_on_correct_branch(self) -> None:
+        """Tests that only tags on the given branch are found."""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        self.repo.tag("v1.0.0")
+        self.repo.switch_to_new_branch("release-2.0")
+        self.repo.commit("Second commit.", allow_empty=True)
+        self.repo.tag("v2.0.0")
+        self.assertEqual(
+            git_utils.get_most_recent_tag(self.repo.path, "main"), "v1.0.0"
+        )
+
+    def test_no_tags(self) -> None:
+        """Tests that None is returned when the repo has no tags."""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        self.assertIsNone(git_utils.get_most_recent_tag(self.repo.path, "main"))
+
+    def test_no_describing_tags(self) -> None:
+        """Tests that None is returned when no tags describe the ref."""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        self.repo.switch_to_new_branch("release-2.0")
+        self.repo.commit("Second commit.", allow_empty=True)
+        self.repo.tag("v2.0.0")
+        self.assertIsNone(git_utils.get_most_recent_tag(self.repo.path, "main"))
 
 
 if __name__ == "__main__":

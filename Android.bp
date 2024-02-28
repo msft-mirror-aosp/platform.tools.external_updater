@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_native_tools_libraries",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -131,6 +132,23 @@ python_test_host {
     main: "tests/test_gitrepo.py",
     srcs: ["tests/test_gitrepo.py"],
     libs: [
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+// This test is intentionally not in the tests/ directory. Everything in the
+// tests/ directory should be runnable with pytest, and this file is not because
+// it depends on the generated protobuf modules.
+python_test_host {
+    name: "external_updater_base_updater_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_base_updater.py",
+    srcs: ["test_base_updater.py"],
+    libs: [
+        "external_updater_lib",
         "external_updater_test_lib",
     ],
     test_options: {

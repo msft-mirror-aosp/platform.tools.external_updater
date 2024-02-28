@@ -136,7 +136,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         if args.build:
             try:
                 updater_utils.build(full_path)
-            except subprocess.CalledProcessError as err:
+            except subprocess.CalledProcessError:
                 logging.exception("Build failed, aborting upload")
                 return
     except Exception as err:
@@ -148,10 +148,93 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.push(full_path, args.remote_name, updater.has_errors)
 
 
+def has_new_version(updater: Updater) -> bool:
+    """Checks if a newer version of the project is available."""
+    if updater.current_version != updater.latest_version:
+        return True
+    return False
+
+
+def print_project_status(updater: Updater) -> None:
+    """Prints the current status of the project on console."""
+
+    current_version = updater.current_version
+    latest_version = updater.latest_version
+    alternative_latest_version = updater.alternative_latest_version
+
+    print(f'Current version: {current_version}')
+    print(f'Latest version: {latest_version}')
+    if alternative_latest_version is not None:
+        print(f'Alternative latest version: {alternative_latest_version}')
+    if has_new_version(updater):
+        print(color_string('Out of date!', Color.STALE))
+    else:
+        print(color_string('Up to date.', Color.FRESH))
+
+
+def find_ver_types(current_version: str) -> Tuple[str, str]:
+    if git_utils.is_commit(current_version):
+        alternative_ver_type = 'tag'
+        latest_ver_type = 'sha'
+    else:
+        alternative_ver_type = 'sha'
+        latest_ver_type = 'tag'
+    return latest_ver_type, alternative_ver_type
+
+
+def use_alternative_version(updater: Updater) -> bool:
+    """This function only runs when there is an alternative version available."""
+
+    latest_ver_type, alternative_ver_type = find_ver_types(updater.current_version)
+    latest_version = updater.latest_version
+    alternative_version = updater.alternative_latest_version
+    new_version_available = has_new_version(updater)
+
+    out_of_date_question = f'Would you like to upgrade to {alternative_ver_type} {alternative_version} instead of {latest_ver_type} {latest_version}? (yes/no)\n'
+    up_to_date_question = f'Would you like to upgrade to {alternative_ver_type} {alternative_version}? (yes/no)\n'
+    recom_message = color_string(f'We recommend upgrading to {alternative_ver_type} {alternative_version} instead. ', Color.FRESH)
+    not_recom_message = color_string(f'We DO NOT recommend upgrading to {alternative_ver_type} {alternative_version}. ', Color.STALE)
+
+    # If alternative_version is not None, there are ONLY three possible
+    # scenarios:
+    # Scenario 1, out of date, we recommend switching to tag:
+    # Current version: sha1
+    # Latest version: sha2
+    # Alternative latest version: tag
+
+    # Scenario 2, out of date, we DO NOT recommend switching to sha.
+    # Current version: tag1
+    # Latest version: tag2
+    # Alternative latest version: sha
+
+    # Scenario 3, up to date, we DO NOT recommend switching to sha.
+    # Current version: tag1
+    # Latest version: tag1
+    # Alternative latest version: sha
+
+    if alternative_ver_type == 'tag':
+        warning = out_of_date_question + recom_message
+    else:
+        if not new_version_available:
+            warning = up_to_date_question + not_recom_message
+        else:
+            warning = out_of_date_question + not_recom_message
+
+    answer = input(warning)
+    if "yes".startswith(answer.lower()):
+        return True
+    elif answer.lower().startswith("no"):
+        return False
+    # If user types something that is not "yes" or "no" or something similar, abort.
+    else:
+        raise ValueError(f"Invalid input: {answer}")
+
+
+
 def check_and_update(args: argparse.Namespace,
                      proj_path: Path,
                      update_lib=False) -> Union[Updater, str]:
-    """Checks updates for a project. Prints result on console.
+    """Checks updates for a project.
 
     Args:
       args: commandline arguments
@@ -165,38 +248,21 @@ def check_and_update(args: argparse.Namespace,
         updater, metadata = build_updater(proj_path)
         updater.check()
 
-        current_version = updater.current_version
-        latest_version = updater.latest_version
-        print(f'Current version: {current_version}\nLatest version: {latest_version}')
         alternative_version = updater.alternative_latest_version
-        if alternative_version is not None:
-            print(f'Alternative latest version: {alternative_version}')
+        new_version_available = has_new_version(updater)
+        print_project_status(updater)
 
-        has_new_version = current_version != latest_version
-        if has_new_version:
-            print(color_string('Out of date!', Color.STALE))
-        else:
-            print(color_string('Up to date.', Color.FRESH))
+        if update_lib:
+            if args.refresh:
+                print('Refreshing the current version')
+                updater.refresh_without_upgrading()
 
-        if update_lib and args.refresh:
-            print('Refreshing the current version')
-            updater.refresh_without_upgrading()
-
-        answer = 'n'
-        if update_lib and alternative_version is not None:
-            alternative_ver_type = (
-                'tag' if git_utils.is_commit(current_version) else 'SHA'
-            )
-            answer = input(
-                f'There is a new {alternative_ver_type} available:'
-                f' {alternative_version}. Would you like to switch to'
-                f' the latest {alternative_ver_type} instead? (y/n) '
-            )
-            if answer == 'y':
-                updater.set_new_version(alternative_version)
-
-        if update_lib and (has_new_version or args.force or args.refresh or answer == 'y'):
-            _do_update(args, updater, metadata)
+            if alternative_version is not None:
+                answer = use_alternative_version(updater)
+                if answer:
+                    updater.set_new_version(alternative_version)
+            if new_version_available or args.force or args.refresh or answer:
+                _do_update(args, updater, metadata)
         return updater
     # pylint: disable=broad-except
     except Exception as err:
@@ -232,7 +298,7 @@ def _list_all_metadata() -> Iterator[str]:
 
 def write_json(json_file: str, results: Dict[str, Dict[str, str]]) -> None:
     """Output a JSON report."""
-    with Path(json_file).open('w') as res_file:
+    with Path(json_file).open('w', encoding='utf-8') as res_file:
         json.dump(results, res_file, sort_keys=True, indent=4)
 
 
@@ -242,9 +308,9 @@ def validate(args: argparse.Namespace) -> None:
     try:
         canonical_path = fileutils.canonicalize_project_path(paths[0])
         print(f'Validating {canonical_path}')
-        updater, metadata = build_updater(paths[0])
+        updater, _ = build_updater(paths[0])
         print(updater.validate())
-    except Exception as err:
+    except Exception:  # pylint: disable=broad-exception-caught
         logging.exception("Failed to check or update %s", paths)
 
 

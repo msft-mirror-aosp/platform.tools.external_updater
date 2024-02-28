@@ -146,7 +146,7 @@ def canonicalize_project_path(proj_path: Path) -> Path:
     """
     try:
         return get_relative_project_path(proj_path)
-    except ValueError:
+    except ValueError as ex:
         # A less common use case, but the path might be to a non-local tree,
         # in which case the path will not be relative to our tree. This
         # happens when using external_updater in another project like the NDK
@@ -158,7 +158,7 @@ def canonicalize_project_path(proj_path: Path) -> Path:
         # hasn't existed before, so it has no canonical form.
         raise ValueError(
             f"{proj_path} must be either an absolute path or relative to {external_path()}"
-        )
+        ) from ex
 
 
 def read_metadata(proj_path: Path) -> metadata_pb2.MetaData:
