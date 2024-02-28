@@ -24,7 +24,6 @@ from base_updater import Updater
 import git_utils
 # pylint: disable=import-error
 import updater_utils
-
 GITHUB_URL_PATTERN: str = (r'^https:\/\/github.com\/([-\w]+)\/([-\w]+)\/' +
                            r'(releases\/download\/|archive\/)')
 GITHUB_URL_RE: re.Pattern = re.compile(GITHUB_URL_PATTERN)
@@ -118,17 +117,13 @@ class GithubArchiveUpdater(Updater):
         if current_remote_url is None:
             git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME, homepage)
 
-        branch = git_utils.detect_default_branch(self._proj_path,
-                                                 self.UPSTREAM_REMOTE_NAME)
-
-        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
+        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME)
 
     def _fetch_latest_tag(self) -> Tuple[str, List[str]]:
         """We want to avoid hitting GitHub API rate limit by using alternative solutions."""
-        branch = git_utils.detect_default_branch(self._proj_path,
-                                                 self.UPSTREAM_REMOTE_NAME)
-        tag = git_utils.get_most_recent_tag(
-            self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
+        tags = git_utils.list_remote_tags(self._proj_path, self.UPSTREAM_REMOTE_NAME)
+        parsed_tags = [updater_utils.parse_remote_tag(tag) for tag in tags]
+        tag = updater_utils.get_latest_version(self._old_identifier.version, parsed_tags)
         return tag, []
 
     def _fetch_latest_version(self) -> None:
