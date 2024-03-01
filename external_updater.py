@@ -257,6 +257,7 @@ def check_and_update(args: argparse.Namespace,
                 print('Refreshing the current version')
                 updater.refresh_without_upgrading()
 
+            answer = False
             if alternative_version is not None:
                 answer = use_alternative_version(updater)
                 if answer:
