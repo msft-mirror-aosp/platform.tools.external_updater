@@ -82,6 +82,8 @@ VERSION_SPLITTER_PATTERN: str = r'[\.\-_]'
 VERSION_PATTERN: str = (r'^(?P<prefix>[^\d]*)' + r'(?P<version>\d+(' +
                         VERSION_SPLITTER_PATTERN + r'\d+)*)' +
                         r'(?P<suffix>.*)$')
+TAG_PATTERN: str = r".*refs/tags/(?P<tag>[^\^]*).*"
+TAG_RE: re.Pattern = re.compile(TAG_PATTERN)
 VERSION_RE: re.Pattern = re.compile(VERSION_PATTERN)
 VERSION_SPLITTER_RE: re.Pattern = re.compile(VERSION_SPLITTER_PATTERN)
 
@@ -114,7 +116,7 @@ def _match_and_get_version(old_ver: ParsedVersion,
     return right_format, right_length, new_ver[0]
 
 
-def get_latest_version(current_version: str, version_list: List[str]) -> str:
+def get_latest_stable_release_tag(current_version: str, version_list: List[str]) -> str:
     """Gets the latest version name from a list of versions.
 
     The new version must have the same prefix and suffix with old version.
@@ -129,6 +131,12 @@ def get_latest_version(current_version: str, version_list: List[str]) -> str:
     if not latest:
         raise ValueError('No matching version.')
     return latest
+
+
+def parse_remote_tag(line: str) -> str:
+    if (m := TAG_RE.match(line)) is not None:
+        return m.group("tag")
+    raise ValueError(f"Could not parse tag from {line}")
 
 
 def build(proj_path: Path) -> None:
