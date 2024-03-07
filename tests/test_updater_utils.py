@@ -4,13 +4,13 @@ import updater_utils
 
 
 class GetLatestVersionTest(unittest.TestCase):
-    """Tests for updater_utils.get_latest_version.
+    """Tests for updater_utils.get_latest_stable_release_tag.
 
     We don't care which branch a tag belongs to because we look for the latest
     tag in a list of all references of a remote repository.
     """
     def test_float_sort(self) -> None:
-        """ Tests if updater_utils.get_latest_version return the latest tag.
+        """ Tests if updater_utils.get_latest_stable_release_tag return the latest tag.
 
         This is the most common case where tags are in lexicographical order.
         """
