@@ -255,6 +255,14 @@ def is_valid_url(proj_path: Path, url: str) -> bool:
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                           start_new_session=True).returncode == 0
 
+def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
+    """Lists tags in a remote repository."""
+    cmd = ['git', "ls-remote", "--tags", remote_name]
+    out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
+                         text=True).stdout
+    lines = out.splitlines()
+    return lines
+
 
 def diff(proj_path: Path, sha_or_tag: str) -> str:
     files = []
