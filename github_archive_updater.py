@@ -123,7 +123,7 @@ class GithubArchiveUpdater(Updater):
         """We want to avoid hitting GitHub API rate limit by using alternative solutions."""
         tags = git_utils.list_remote_tags(self._proj_path, self.UPSTREAM_REMOTE_NAME)
         parsed_tags = [updater_utils.parse_remote_tag(tag) for tag in tags]
-        tag = updater_utils.get_latest_version(self._old_identifier.version, parsed_tags)
+        tag = updater_utils.get_latest_stable_release_tag(self._old_identifier.version, parsed_tags)
         return tag, []
 
     def _fetch_latest_version(self) -> None:
