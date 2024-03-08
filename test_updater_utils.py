@@ -73,6 +73,11 @@ class GetLatestVersionTest(unittest.TestCase):
         self.assertEqual(
             updater_utils.get_latest_stable_release_tag("r26", ["r26", "r26b"]), "r26b")
 
+    def test_no_tags(self) -> None:
+        """Tests that an error is raised when there are no tags."""
+        with self.assertRaises(ValueError):
+            updater_utils.get_latest_stable_release_tag("v1.0.0", [])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
