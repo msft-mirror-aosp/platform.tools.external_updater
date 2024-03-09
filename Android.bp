@@ -156,6 +156,21 @@ python_test_host {
     },
 }
 
+// Same as above. Needs protobuf.
+python_test_host {
+    name: "external_updater_updater_utils_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_updater_utils.py",
+    srcs: ["test_updater_utils.py"],
+    libs: [
+        "external_updater_lib",
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
 // The tests in tests/endtoend are not built as a Soong module because we can't
 // run those tests via python_test_host. It's an end-to-end test so it needs to
 // run `repo`, but `repo init` will try to clone the real repo source (the thing
