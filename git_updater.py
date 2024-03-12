@@ -16,6 +16,7 @@
 import base_updater
 import fileutils
 import git_utils
+import updater_utils
 # pylint: disable=import-error
 from manifest import Manifest
 
@@ -83,12 +84,7 @@ class GitUpdater(base_updater.Updater):
             git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME,
                                  self._old_identifier.value)
 
-        branch = git_utils.detect_default_branch(self._proj_path,
-                                                 self.UPSTREAM_REMOTE_NAME)
-
-        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
-        git_utils.fetch(self._proj_path, android_remote_name,
-                        self._determine_android_fetch_ref())
+        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME)
 
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
@@ -100,11 +96,11 @@ class GitUpdater(base_updater.Updater):
             # Some libraries don't have a tag. We only populate
             # _alternative_new_ver if there is a tag newer than _old_ver.
             # Checks if there is a tag newer than AOSP's SHA
-            if (tag := self.latest_tag_of_upstream_default_branch()) is not None:
+            if (tag := self.latest_tag_of_upstream()) is not None:
                 possible_alternative_new_ver = tag
         else:
             # Update to the latest version tag.
-            tag = self.latest_tag_of_upstream_default_branch()
+            tag = self.latest_tag_of_upstream()
             if tag is None:
                 project = fileutils.canonicalize_project_path(self.project_path)
                 raise RuntimeError(
@@ -121,11 +117,14 @@ class GitUpdater(base_updater.Updater):
         ):
             self._alternative_new_ver = possible_alternative_new_ver
 
-    def latest_tag_of_upstream_default_branch(self) -> str | None:
-        branch = git_utils.detect_default_branch(self._proj_path,
-                                                 self.UPSTREAM_REMOTE_NAME)
-        return git_utils.get_most_recent_tag(
-            self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
+    def latest_tag_of_upstream(self) -> str | None:
+        tags = git_utils.list_remote_tags(self._proj_path, self.UPSTREAM_REMOTE_NAME)
+        if not tags:
+            return None
+
+        parsed_tags = [updater_utils.parse_remote_tag(tag) for tag in tags]
+        tag = updater_utils.get_latest_stable_release_tag(self._old_identifier.version, parsed_tags)
+        return tag
 
     def current_head_of_upstream_default_branch(self) -> str:
         branch = git_utils.detect_default_branch(self._proj_path,
