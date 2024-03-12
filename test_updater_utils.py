@@ -1,16 +1,31 @@
+#
+# Copyright (C) 2024 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import unittest
 
 import updater_utils
 
 
 class GetLatestVersionTest(unittest.TestCase):
-    """Tests for updater_utils.get_latest_version.
+    """Tests for updater_utils.get_latest_stable_release_tag.
 
     We don't care which branch a tag belongs to because we look for the latest
     tag in a list of all references of a remote repository.
     """
     def test_float_sort(self) -> None:
-        """ Tests if updater_utils.get_latest_version return the latest tag.
+        """ Tests if updater_utils.get_latest_stable_release_tag return the latest tag.
 
         This is the most common case where tags are in lexicographical order.
         """
@@ -57,6 +72,11 @@ class GetLatestVersionTest(unittest.TestCase):
         # for, we're going to keep this test case anyway.
         self.assertEqual(
             updater_utils.get_latest_stable_release_tag("r26", ["r26", "r26b"]), "r26b")
+
+    def test_no_tags(self) -> None:
+        """Tests that an error is raised when there are no tags."""
+        with self.assertRaises(ValueError):
+            updater_utils.get_latest_stable_release_tag("v1.0.0", [])
 
 
 if __name__ == "__main__":

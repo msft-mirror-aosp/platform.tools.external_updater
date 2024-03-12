@@ -119,8 +119,11 @@ class GitUpdater(base_updater.Updater):
 
     def latest_tag_of_upstream(self) -> str | None:
         tags = git_utils.list_remote_tags(self._proj_path, self.UPSTREAM_REMOTE_NAME)
+        if not tags:
+            return None
+
         parsed_tags = [updater_utils.parse_remote_tag(tag) for tag in tags]
-        tag = updater_utils.get_latest_version(self._old_identifier.version, parsed_tags)
+        tag = updater_utils.get_latest_stable_release_tag(self._old_identifier.version, parsed_tags)
         return tag
 
     def current_head_of_upstream_default_branch(self) -> str:
