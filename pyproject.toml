@@ -17,8 +17,10 @@ pytest = "^8.0.0"
 disable = [
     "duplicate-code",
     "fixme",
+    "line-too-long",
     "missing-docstring",
     "refactoring",
+    "wrong-import-order",
 ]
 
 [build-system]
