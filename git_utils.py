@@ -21,12 +21,6 @@ from pathlib import Path
 import hashtags
 import reviewers
 
-ANDROID_SPECIFIC_FILES = ["*Android.bp", "Android.mk", "CleanSpec.mk", "LICENSE",
-                          "NOTICE", "METADATA", "TEST_MAPPING", ".git",
-                          ".gitignore", "patches", "post_update.sh", "OWNERS",
-                          "README.android", "cargo2android*", "MODULE_LICENSE_*",
-                          "rules.mk", "cargo2rulesmk*", "cargo_embargo*"]
-
 UNWANTED_TAGS = ["*alpha*", "*Alpha*", "*beta*", "*Beta*", "*rc*", "*RC*", "*test*"]
 
 
@@ -255,6 +249,7 @@ def is_valid_url(proj_path: Path, url: str) -> bool:
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                           start_new_session=True).returncode == 0
 
+
 def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
     """Lists tags in a remote repository."""
     cmd = ['git', "ls-remote", "--tags", remote_name]
@@ -264,13 +259,9 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
     return lines
 
 
-def diff(proj_path: Path, sha_or_tag: str) -> str:
-    files = []
-    for file in ANDROID_SPECIFIC_FILES:
-        file = ":!" + file
-        files.append(file)
+def diff(proj_path: Path, diff_filter: str, revision: str) -> str:
     try:
-        cmd = ['git', 'diff', sha_or_tag, '--stat', '--'] + files
+        cmd = ['git', 'diff', revision, '--stat', f'--diff-filter={diff_filter}']
         out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
                              check=True, text=True).stdout
         return out
