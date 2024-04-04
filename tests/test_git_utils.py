@@ -119,5 +119,20 @@ class GetMostRecentTagTest(GitRepoTestCase):
         self.assertIsNone(git_utils.get_most_recent_tag(self.repo.path, "main"))
 
 
+class DiffTest(GitRepoTestCase):
+    """Tests for git_utils.diff."""
+    def test_git_diff_added_filter(self) -> None:
+        self.repo.init("main")
+        self.repo.commit(
+            "Add README.md", update_files={"README.md": "Hello, world!"}
+        )
+        first_commit = self.repo.head()
+        self.repo.commit(
+            "Add OWNERS", update_files={"OWNERS": "nobody"}
+        )
+        diff = git_utils.diff(self.repo.path, 'A', first_commit)
+        self.assertIn('OWNERS', diff)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
