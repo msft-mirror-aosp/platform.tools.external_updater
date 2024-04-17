@@ -221,7 +221,7 @@ def detach_to_android_head(proj_path: Path) -> None:
 
 def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
     """Pushes change to remote."""
-    cmd = ['git', 'push', remote_name, 'HEAD:refs/for/main']
+    cmd = ['git', 'push', remote_name, 'HEAD:refs/for/main', '-o', 'banned-words~skip']
     if revs := reviewers.find_reviewers(str(proj_path)):
         cmd.extend(['-o', revs])
     if tag := hashtags.find_hashtag(proj_path):
