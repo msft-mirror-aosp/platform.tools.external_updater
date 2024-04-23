@@ -81,6 +81,7 @@ message Identifier {
   optional string type = 1;
   optional string value = 3;
   optional string version = 4;
+  optional bool primary_source = 6;
 }
 
 message Date {
