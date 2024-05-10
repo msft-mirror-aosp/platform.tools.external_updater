@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_native_tools_libraries",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -21,6 +22,13 @@ python_binary_host {
     main: "external_updater.py",
     srcs: ["external_updater.py"],
     libs: ["external_updater_lib"],
+    required: ["cargo_embargo"],
+    data: [":bpfmt"],
+    version: {
+        py3: {
+            embedded_launcher: false,
+        },
+    },
 }
 
 python_binary_host {
@@ -40,12 +48,12 @@ python_library_host {
         "git_utils.py",
         "github_archive_updater.py",
         "hashtags.py",
+        "manifest.py",
         "metadata.proto",
         "reviewers.py",
         "updater_utils.py",
     ],
     libs: [
-        "python-symbol",
         "libprotobuf-python",
     ],
     proto: {
@@ -66,11 +74,32 @@ python_defaults {
     },
 }
 
+python_library_host {
+    name: "external_updater_test_lib",
+    srcs: [
+        "tests/gitrepo.py",
+    ],
+    proto: {
+        canonical_path_from_root: false,
+    },
+}
+
 python_test_host {
-    name: "external_updater_test",
+    name: "external_updater_fileutils_test",
     defaults: ["external_updater_test_defaults"],
-    main: "external_updater_test.py",
-    srcs: ["external_updater_test.py"],
+    main: "test_fileutils.py",
+    srcs: ["test_fileutils.py"],
+    libs: ["external_updater_lib"],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+python_test_host {
+    name: "external_updater_github_archive_updater_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_github_archive_updater.py",
+    srcs: ["test_github_archive_updater.py"],
     libs: ["external_updater_lib"],
     test_options: {
         unit_test: true,
@@ -87,3 +116,69 @@ python_test_host {
         unit_test: true,
     },
 }
+
+python_test_host {
+    name: "external_updater_git_utils_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "tests/test_git_utils.py",
+    srcs: ["tests/test_git_utils.py"],
+    libs: [
+        "external_updater_lib",
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+python_test_host {
+    name: "external_updater_gitrepo_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "tests/test_gitrepo.py",
+    srcs: ["tests/test_gitrepo.py"],
+    libs: [
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+// This test is intentionally not in the tests/ directory. Everything in the
+// tests/ directory should be runnable with pytest, and this file is not because
+// it depends on the generated protobuf modules.
+python_test_host {
+    name: "external_updater_base_updater_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_base_updater.py",
+    srcs: ["test_base_updater.py"],
+    libs: [
+        "external_updater_lib",
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+// Same as above. Needs protobuf.
+python_test_host {
+    name: "external_updater_updater_utils_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_updater_utils.py",
+    srcs: ["test_updater_utils.py"],
+    libs: [
+        "external_updater_lib",
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
+// The tests in tests/endtoend are not built as a Soong module because we can't
+// run those tests via python_test_host. It's an end-to-end test so it needs to
+// run `repo`, but `repo init` will try to clone the real repo source (the thing
+// in PATH is just a launcher), which our Python can't do (the SSL module's
+// certificate validation is not configured for that). Run those tests with
+// `pytest tests/endtoend`.

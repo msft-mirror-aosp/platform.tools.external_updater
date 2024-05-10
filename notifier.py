@@ -67,18 +67,17 @@ def _read_owner_file(proj):
     owner_file = os.path.join(_get_android_top(), 'external', proj, 'OWNERS')
     if not os.path.isfile(owner_file):
         return None
-    with open(owner_file, 'r') as f:
+    with open(owner_file, 'r', encoding='utf-8') as f:
         return f.read().strip()
 
 
 def _send_email(proj, latest_ver, recipient, upgrade_log):
-    print('Sending email for {}: {}'.format(proj, latest_ver))
+    print(f'Sending email for {proj}: {latest_ver}')
     msg = ""
     match = CHANGE_URL_RE.search(upgrade_log)
     if match is not None:
         subject = "[Succeeded]"
-        msg = 'An upgrade change is generated at:\n{}'.format(
-            match.group(1))
+        msg = f'An upgrade change is generated at:\n{match.group(1)}'
     else:
         subject = "[Failed]"
         msg = 'Failed to generate upgrade change. See logs below for details.'
@@ -151,9 +150,9 @@ def _process_results(args, history, results):
                 proj_history[latest_ver] = int(time.time())
                 proj_history[NOTIFIED_TIME_KEY_NAME] = int(time.time())
             except subprocess.CalledProcessError as err:
-                msg = """Failed to send email for {} ({}).
-stdout: {}
-stderr: {}""".format(proj, latest_ver, err.stdout, err.stderr)
+                msg = f"""Failed to send email for {proj} ({latest_ver}).
+stdout: {err.stdout}
+stderr: {err.stderr}"""
                 print(msg)
 
 
@@ -163,18 +162,18 @@ RESULT_FILE_PATH = '/tmp/update_check_result.json'
 def send_notification(args):
     """Compare results and send notification."""
     results = {}
-    with open(RESULT_FILE_PATH, 'r') as f:
+    with open(RESULT_FILE_PATH, 'r', encoding='utf-8') as f:
         results = json.load(f)
     history = {}
     try:
-        with open(args.history, 'r') as f:
+        with open(args.history, 'r', encoding='utf-8') as f:
             history = json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         pass
 
     _process_results(args, history, results)
 
-    with open(args.history, 'w') as f:
+    with open(args.history, 'w', encoding='utf-8') as f:
         json.dump(history, f, sort_keys=True, indent=4)
 
 
@@ -188,16 +187,16 @@ def _upgrade(proj):
                          cwd=_get_android_top())
     stdout = out.stdout.decode('utf-8')
     stderr = out.stderr.decode('utf-8')
-    return """
+    return f"""
 ====================
 |    Debug Info    |
 ====================
 -=-=-=-=stdout=-=-=-=-
-{}
+{stdout}
 
 -=-=-=-=stderr=-=-=-=-
-{}
-""".format(stdout, stderr)
+{stderr}
+"""
 
 
 def _check_updates(args):

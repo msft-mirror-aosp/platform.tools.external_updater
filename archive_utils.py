@@ -105,11 +105,11 @@ def download_and_extract(url):
         Path to the temporary directory.
     """
 
-    print('Downloading {}'.format(url))
+    print(f'Downloading {url}')
     archive_file, _headers = urllib.request.urlretrieve(url)
 
     temporary_dir = tempfile.mkdtemp()
-    print('Extracting {} to {}'.format(archive_file, temporary_dir))
+    print(f'Extracting {archive_file} to {temporary_dir}')
     get_extract_func(url)(archive_file, temporary_dir)
 
     return temporary_dir
@@ -119,7 +119,7 @@ def find_archive_root(path):
     """Finds the real root of an extracted archive.
 
     Sometimes archives has additional layers of directories. This function tries
-    to guess the right 'root' path by entering all single sub-directories.
+    to guess the right 'root' path by entering all single subdirectories.
 
     Args:
         path: Path to the extracted archive.

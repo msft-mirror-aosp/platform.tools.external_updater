@@ -15,7 +15,6 @@
 
 import json
 import os
-# pylint: disable=g-importing-member
 from pathlib import Path
 import re
 import shutil
@@ -25,49 +24,74 @@ from typing import IO
 
 import archive_utils
 from base_updater import Updater
+import git_utils
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 import updater_utils
 
-LIBRARY_NAME_PATTERN: str = (r"([-\w]+)")
+LIBRARY_NAME_PATTERN: str = r"([-\w]+)"
 
-ALPHA_BETA_PATTERN: str = (r"^.*[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta).*")
+ALPHA_BETA_PATTERN: str = r"^.*[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta).*"
 
 ALPHA_BETA_RE: re.Pattern = re.compile(ALPHA_BETA_PATTERN)
 
-VERSION_PATTERN: str = (r"([0-9]+)\.([0-9]+)\.([0-9]+)")
+"""Match both x.y.z and x.y.z+a.b.c which is used by some Vulkan binding libraries"""
+VERSION_PATTERN: str = r"([0-9]+)\.([0-9]+)\.([0-9]+)(\+([0-9]+)\.([0-9]+)\.([0-9]+))?"
 
-VERSION_MATCHER: re.Pattern = re.compile(VERSION_PATTERN)
+VERSION_RE: re.Pattern = re.compile(VERSION_PATTERN)
 
 CRATES_IO_ARCHIVE_URL_PATTERN: str = (r"^https:\/\/static.crates.io\/crates\/" +
                                       LIBRARY_NAME_PATTERN + "/" +
                                       LIBRARY_NAME_PATTERN + "-" +
-                                      VERSION_PATTERN + ".crate")
+                                      "(.*?)" + ".crate")
 
 CRATES_IO_ARCHIVE_URL_RE: re.Pattern = re.compile(CRATES_IO_ARCHIVE_URL_PATTERN)
 
-DESCRIPTION_PATTERN: str = (r"^description *= *(\".+\")")
+DESCRIPTION_PATTERN: str = r"^description *= *(\".+\")"
 
-DESCRIPTION_MATCHER: re.Pattern = re.compile(DESCRIPTION_PATTERN)
+DESCRIPTION_RE: re.Pattern = re.compile(DESCRIPTION_PATTERN)
 
 
 class CratesUpdater(Updater):
     """Updater for crates.io packages."""
 
+    UPSTREAM_REMOTE_NAME: str = "update_origin"
     download_url: str
     package: str
     package_dir: str
     temp_file: IO
 
     def is_supported_url(self) -> bool:
-        match = CRATES_IO_ARCHIVE_URL_RE.match(self._old_url.value)
+        match = CRATES_IO_ARCHIVE_URL_RE.match(self._old_identifier.value)
         if match is None:
             return False
         self.package = match.group(1)
         return True
 
+    def setup_remote(self) -> None:
+        url = "https://crates.io/api/v1/crates/" + self.package
+        with urllib.request.urlopen(url) as request:
+            data = json.loads(request.read().decode())
+        homepage = data["crate"]["repository"]
+        remotes = git_utils.list_remotes(self._proj_path)
+        current_remote_url = None
+        for name, url in remotes.items():
+            if name == self.UPSTREAM_REMOTE_NAME:
+                current_remote_url = url
+
+        if current_remote_url is not None and current_remote_url != homepage:
+            git_utils.remove_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME)
+            current_remote_url = None
+
+        if current_remote_url is None:
+            git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME, homepage)
+
+        branch = git_utils.detect_default_branch(self._proj_path,
+                                                 self.UPSTREAM_REMOTE_NAME)
+        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
+
     def _get_version_numbers(self, version: str) -> tuple[int, int, int]:
-        match = VERSION_MATCHER.match(version)
+        match = VERSION_RE.match(version)
         if match is not None:
             return (
                 int(match.group(1)),
@@ -83,18 +107,18 @@ class CratesUpdater(Updater):
                 (self._get_version_numbers(prev_version), prev_id))
 
     def _find_latest_non_test_version(self) -> None:
-        url = "https://crates.io/api/v1/crates/{}/versions".format(self.package)
+        url = f"https://crates.io/api/v1/crates/{self.package}/versions"
         with urllib.request.urlopen(url) as request:
             data = json.loads(request.read().decode())
         last_id = 0
-        self._new_ver = ""
+        self._new_identifier.version = ""
         for v in data["versions"]:
             version = v["num"]
             if (not v["yanked"] and not ALPHA_BETA_RE.match(version) and
                 self._is_newer_version(
-                    self._new_ver, last_id, version, int(v["id"]))):
+                    self._new_identifier.version, last_id, version, int(v["id"]))):
                 last_id = int(v["id"])
-                self._new_ver = version
+                self._new_identifier.version = version
                 self.download_url = "https://crates.io" + v["dl_path"]
 
     def check(self) -> None:
@@ -102,23 +126,22 @@ class CratesUpdater(Updater):
         url = "https://crates.io/api/v1/crates/" + self.package
         with urllib.request.urlopen(url) as request:
             data = json.loads(request.read().decode())
-            self._new_ver = data["crate"]["max_version"]
+            self._new_identifier.version = data["crate"]["max_version"]
         # Skip d.d.d-{alpha,beta}* versions
-        if ALPHA_BETA_RE.match(self._new_ver):
-            print("Ignore alpha or beta release: {}-{}."
-                  .format(self.package, self._new_ver))
+        if ALPHA_BETA_RE.match(self._new_identifier.version):
+            print(f"Ignore alpha or beta release:{self.package}-{self._new_identifier.version}.")
             self._find_latest_non_test_version()
         else:
-            url = url + "/" + self._new_ver
+            url = url + "/" + self._new_identifier.version
             with urllib.request.urlopen(url) as request:
                 data = json.loads(request.read().decode())
                 self.download_url = "https://crates.io" + data["version"]["dl_path"]
 
-    def use_current_as_latest(self):
-        Updater.use_current_as_latest(self)
+    def set_new_version_to_old(self):
+        super().refresh_without_upgrading()
         # A shortcut to use the static download path.
-        self.download_url = "https://static.crates.io/crates/{}/{}-{}.crate".format(
-            self.package, self.package, self._new_ver)
+        self.download_url = f"https://static.crates.io/crates/{self.package}/" \
+                            f"{self.package}-{self._new_identifier.version}.crate"
 
     def update(self) -> None:
         """Updates the package.
@@ -146,28 +169,24 @@ class CratesUpdater(Updater):
             return True
         return False
 
-    # pylint: disable=no-self-use
-    def update_metadata(self, metadata: metadata_pb2.MetaData,
-                        full_path: Path) -> None:
+    def update_metadata(self, metadata: metadata_pb2.MetaData) -> metadata_pb2:
         """Updates METADATA content."""
         # copy only HOMEPAGE url, and then add new ARCHIVE url.
-        new_url_list = []
-        for url in metadata.third_party.url:
-            if url.type == metadata_pb2.URL.HOMEPAGE:
-                new_url_list.append(url)
-        new_url = metadata_pb2.URL()
-        new_url.type = metadata_pb2.URL.ARCHIVE
-        new_url.value = "https://static.crates.io/crates/{}/{}-{}.crate".format(
-            metadata.name, metadata.name, metadata.third_party.version)
-        new_url_list.append(new_url)
-        del metadata.third_party.url[:]
-        metadata.third_party.url.extend(new_url_list)
+        updated_metadata = super().update_metadata(metadata)
+        for identifier in updated_metadata.third_party.identifier:
+            if identifier.version:
+                identifier.value = f"https://static.crates.io/crates/" \
+                                   f"{updated_metadata.name}/"\
+                                   f"{updated_metadata.name}" \
+                                   f"-{self.latest_identifier.version}.crate"
+                break
         # copy description from Cargo.toml to METADATA
-        cargo_toml = os.path.join(full_path, "Cargo.toml")
+        cargo_toml = os.path.join(self.project_path, "Cargo.toml")
         description = self._get_cargo_description(cargo_toml)
-        if description and description != metadata.description:
+        if description and description != updated_metadata.description:
             print("New METADATA description:", description)
-            metadata.description = description
+            updated_metadata.description = description
+        return updated_metadata
 
     def check_for_errors(self) -> None:
         # Check for .rej patches from failing to apply patches.
@@ -176,16 +195,8 @@ class CratesUpdater(Updater):
         # track which files existed before the patching.
         rejects = list(self._proj_path.glob('**/*.rej'))
         if len(rejects) > 0:
-            print("Error: Found patch reject files: %s" % str(rejects))
+            print(f"Error: Found patch reject files: {str(rejects)}")
             self._has_errors = True
-        # Check for Cargo errors embedded in Android.bp.
-        # Note that this should stay in sync with cargo2android.py.
-        with open('%s/Android.bp' % self._proj_path, 'r') as bp_file:
-            for line in bp_file:
-                if line.strip() == "Errors in cargo.out:":
-                    print("Error: Found Cargo errors in Android.bp")
-                    self._has_errors = True
-                    return
 
     def _toml2str(self, line: str) -> str:
         """Convert a quoted toml string to a Python str without quotes."""
@@ -201,9 +212,9 @@ class CratesUpdater(Updater):
     def _get_cargo_description(self, cargo_toml: str) -> str:
         """Return the description in Cargo.toml or empty string."""
         if os.path.isfile(cargo_toml) and os.access(cargo_toml, os.R_OK):
-            with open(cargo_toml, "r") as toml_file:
+            with open(cargo_toml, "r", encoding="utf-8") as toml_file:
                 for line in toml_file:
-                    match = DESCRIPTION_MATCHER.match(line)
+                    match = DESCRIPTION_RE.match(line)
                     if match:
                         return self._toml2str(match.group(1))
         return ""

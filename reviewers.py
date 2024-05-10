@@ -82,7 +82,6 @@ def create_rust_reviewer_list() -> List[str]:
             add_proj_count(projects, value, 1)
             continue
         # multiple reviewers share one project, count only rust_reviewers
-        # pylint: disable=bad-builtin
         reviewers = set(filter(lambda x: x in rust_reviewers, value))
         if reviewers:
             count = 1.0 / len(reviewers)  # shared among all reviewers
@@ -117,7 +116,6 @@ def find_reviewers(proj_path: str) -> str:
         if isinstance(reviewers, List):  # pick any one reviewer
             return 'r=' + random.choice(reviewers)
         if isinstance(reviewers, Set):  # add all reviewers in sorted order
-            # pylint: disable=bad-builtin
             return ','.join(map(lambda x: 'r=' + x, sorted(reviewers)))
         # reviewers must be a string
         return 'r=' + reviewers
