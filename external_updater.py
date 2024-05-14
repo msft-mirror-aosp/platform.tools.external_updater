@@ -90,6 +90,19 @@ def build_updater(proj_path: Path) -> Tuple[Updater, metadata_pb2.MetaData]:
     return updater, metadata
 
 
+def commit_message_generator(project_name: str, version: str, path: str, bug: int | None = None) -> str:
+    header = f"Upgrade {project_name} to {version}\n"
+    body = textwrap.dedent(f"""
+    This project was upgraded with external_updater.
+    Usage: tools/external_updater/updater.sh update external/{path}
+    For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md\n\n""")
+    if bug is None:
+        footer = "Test: TreeHugger"
+    else:
+        footer = f"Bug: {bug}\nTest: TreeHugger"
+    return header + body + footer
+
+
 def _do_update(args: argparse.Namespace, updater: Updater,
                metadata: metadata_pb2.MetaData) -> None:
     full_path = updater.project_path
@@ -116,17 +129,10 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             # not portable instructions for upgrading that project, since the path will
             # differ between machines (or checkouts).
             rel_proj_path = "<absolute path to project>"
-        msg = textwrap.dedent(f"""\
-        Upgrade {metadata.name} to {updater.latest_version}
-
-        This project was upgraded with external_updater.
-        Usage: tools/external_updater/updater.sh update external/{rel_proj_path}
-        For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md
-
-        Test: TreeHugger""")
+        commit_message = commit_message_generator(metadata.name, updater.latest_version, rel_proj_path, args.bug)
         git_utils.remove_gitmodules(full_path)
         git_utils.add_file(full_path, '*')
-        git_utils.commit(full_path, msg, args.no_verify)
+        git_utils.commit(full_path, commit_message, args.no_verify)
 
         if not args.skip_post_update:
             updater_utils.run_post_update(full_path, full_path)
@@ -416,6 +422,9 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--no-verify',
                                action='store_true',
                                help='Pass --no-verify to git commit')
+    update_parser.add_argument('--bug',
+                               type=int,
+                               help='Bug number for this update')
     update_parser.add_argument('--remote-name',
                                default='aosp',
                                required=False,
