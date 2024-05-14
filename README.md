@@ -50,8 +50,14 @@ Update a library without building:
 tools/external_updater/updater.sh update --no-build $PROJECT_PATH
 ```
 
-LIBNAME can be the path to a library under external/, e.g. kotlinc, or
-python/cpython3.
+Update a library and add bug number to the commit message:
+
+```shell
+tools/external_updater/updater.sh update --bug $BUG_NUMBER $PROJECT_PATH
+```
+
+PROJECT_PATH can be the path to a library under external/, e.g.
+external/kotlinc, or external/python/cpython3.
 
 ## Configure
 
