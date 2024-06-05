@@ -15,22 +15,23 @@
 
 import datetime
 import re
-import shutil
 import subprocess
 from pathlib import Path
 
 import hashtags
 import reviewers
 
+UNWANTED_TAGS = ["*alpha*", "*Alpha*", "*beta*", "*Beta*", "*rc*", "*RC*", "*test*"]
 
-def fetch(proj_path: Path, remote_names: list[str]) -> None:
+
+def fetch(proj_path: Path, remote_name: str, branch: str | None = None) -> None:
     """Runs git fetch.
 
     Args:
         proj_path: Path to Git repository.
-        remote_names: Array of string to specify remote names.
+        remote_name: A string to specify remote names.
     """
-    cmd = ['git', 'fetch', '--tags', '--multiple'] + remote_names
+    cmd = ['git', 'fetch', '--tags', remote_name] + ([branch] if branch is not None else [])
     subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True)
 
 
@@ -93,15 +94,20 @@ def get_sha_for_branch(proj_path: Path, branch: str):
                           text=True).stdout.strip()
 
 
-def get_commits_ahead(proj_path: Path, branch: str,
-                      base_branch: str) -> list[str]:
-    """Lists commits in `branch` but not `base_branch`."""
-    cmd = [
-        'git', 'rev-list', '--left-only', '--ancestry-path', 'f{branch}...{base_branch}'
-    ]
-    out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
-                         text=True).stdout
-    return out.splitlines()
+def get_most_recent_tag(proj_path: Path, branch: str) -> str | None:
+    """Finds the most recent tag that is reachable from HEAD."""
+    cmd = ['git', 'describe', '--tags', branch, '--abbrev=0'] + \
+          [f'--exclude={unwanted_tag}' for unwanted_tag in UNWANTED_TAGS]
+    try:
+        out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
+                            text=True).stdout.strip()
+        return out
+    except subprocess.CalledProcessError as ex:
+        if "fatal: No names found" in ex.stderr:
+            return None
+        if "fatal: No tags can describe" in ex.stderr:
+            return None
+        raise
 
 
 # pylint: disable=redefined-outer-name
@@ -132,22 +138,6 @@ def list_local_branches(proj_path: Path) -> list[str]:
     lines = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
                            text=True).stdout.splitlines()
     return lines
-
-
-def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
-    """Lists all tags for a remote."""
-    regex = re.compile(r".*refs/tags/(?P<tag>[^\^]*).*")
-
-    def parse_remote_tag(line: str) -> str:
-        if (m := regex.match(line)) is not None:
-            return m.group("tag")
-        raise ValueError(f"Could not parse tag from {line}")
-
-    cmd = ['git', "ls-remote", "--tags", remote_name]
-    lines = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
-                           text=True).stdout.splitlines()
-    tags = [parse_remote_tag(line) for line in lines]
-    return list(set(tags))
 
 
 COMMIT_PATTERN = r'^[a-f0-9]{40}$'
@@ -198,35 +188,20 @@ def delete_branch(proj_path: Path, branch_name: str) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
-def tree_uses_pore(proj_path: Path) -> bool:
-    """Returns True if the tree uses pore rather than repo.
-
-    https://github.com/jmgao/pore
-    """
-    if shutil.which("pore") is None:
-        # Fast path for users that don't have pore installed, since that's almost
-        # everyone.
-        return False
-
-    if proj_path == Path(proj_path.root):
-        return False
-    if (proj_path / ".pore").exists():
-        return True
-    return tree_uses_pore(proj_path.parent)
-
-
 def start_branch(proj_path: Path, branch_name: str) -> None:
     """Starts a new repo branch."""
-    repo = 'repo'
-    if tree_uses_pore(proj_path):
-        repo = 'pore'
-    cmd = [repo, 'start', branch_name]
+    subprocess.run(['repo', 'start', branch_name], cwd=proj_path, check=True)
+
+
+def commit(proj_path: Path, message: str, no_verify: bool) -> None:
+    """Commits changes."""
+    cmd = ['git', 'commit', '-m', message] + (['--no-verify'] if no_verify is True else [])
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
-def commit(proj_path: Path, message: str) -> None:
+def commit_amend(proj_path: Path) -> None:
     """Commits changes."""
-    cmd = ['git', 'commit', '-m', message]
+    cmd = ['git', 'commit', '--amend', '--no-edit']
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
@@ -236,9 +211,17 @@ def checkout(proj_path: Path, branch_name: str) -> None:
     subprocess.run(cmd, cwd=proj_path, check=True)
 
 
+def detach_to_android_head(proj_path: Path) -> None:
+    """Detaches the project HEAD back to the manifest revision."""
+    # -d detaches the project back to the manifest revision without updating.
+    # -l avoids fetching new revisions from the remote. This might be superfluous with
+    # -d, but I'm not sure, and it certainly doesn't harm anything.
+    subprocess.run(['repo', 'sync', '-l', '-d', proj_path], cwd=proj_path, check=True)
+
+
 def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
     """Pushes change to remote."""
-    cmd = ['git', 'push', remote_name, 'HEAD:refs/for/master']
+    cmd = ['git', 'push', remote_name, 'HEAD:refs/for/main', '-o', 'banned-words~skip']
     if revs := reviewers.find_reviewers(str(proj_path)):
         cmd.extend(['-o', revs])
     if tag := hashtags.find_hashtag(proj_path):
@@ -262,6 +245,49 @@ def clean(proj_path: Path) -> None:
 
 def is_valid_url(proj_path: Path, url: str) -> bool:
     cmd = ['git', "ls-remote", url]
-    return subprocess.run(cmd, cwd=proj_path, stdin=subprocess.DEVNULL,
+    return subprocess.run(cmd, cwd=proj_path, check=False, stdin=subprocess.DEVNULL,
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                           start_new_session=True).returncode == 0
+
+
+def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
+    """Lists tags in a remote repository."""
+    cmd = ['git', "ls-remote", "--tags", remote_name]
+    out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
+                         text=True).stdout
+    lines = out.splitlines()
+    return lines
+
+
+def diff(proj_path: Path, diff_filter: str, revision: str) -> str:
+    try:
+        cmd = ['git', 'diff', revision, '--stat', f'--diff-filter={diff_filter}']
+        out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
+                             check=True, text=True).stdout
+        return out
+    except subprocess.CalledProcessError as err:
+        return f"Could not calculate the diff: {err}"
+
+
+def is_ancestor(proj_path: Path, ancestor: str, child: str) -> bool:
+    cmd = ['git', 'merge-base', '--is-ancestor', ancestor, child]
+    # https://git-scm.com/docs/git-merge-base#Documentation/git-merge-base.txt---is-ancestor
+    # Exit status of 0 means yes, 1 means no, and all others mean an error occurred.
+    # Although a commit is an ancestor of itself, we don't want to return True
+    # if ancestor points to the same commit as child.
+    if get_sha_for_branch(proj_path, ancestor) == child:
+        return False
+    try:
+        subprocess.run(
+            cmd,
+            cwd=proj_path,
+            text=True,
+            stderr=subprocess.STDOUT,
+            check=True,
+            stdout=subprocess.PIPE
+        )
+        return True
+    except subprocess.CalledProcessError as ex:
+        if ex.returncode == 1:
+            return False
+        raise

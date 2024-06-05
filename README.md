@@ -2,47 +2,69 @@
 
 external updater is a tool to automatically update libraries in external/.
 
+The documentation on this page is for users of `external_updater`. If you're
+looking for developer docs, see [docs/dev.md](docs/dev.md).
+
 ## Usage
+
+In each of the examples below, `$PROJECT_PATH` is the path to the project to
+operate on. If more than one path is given, external_updater will operate on
+each in turn.
+
+Note: Older versions of external_updater used a different path resolution
+method. Relative paths were resolved relative to `//external` rather than the
+CWD, which meant tab-completed paths would only work if the CWD was
+`//external`, and that wildcards had to be escaped for processing by
+external_updater rather than the shell (e.g.
+`updater.sh 'check rust/crates/*'`). That behavior was removed to support CWD
+relative paths. If you want the old behavior back, leave a comment on
+http://b/243685332 or https://r.android.com/2855445.
 
 Check updates for a library or verify METADATA is valid:
 
 ```shell
-tools/external_updater/updater.sh check ${LIBNAME}
+tools/external_updater/updater.sh check $PROJECT_PATH
 ```
 
 Update a library, commit, and upload the change to Gerrit:
 
 ```shell
-tools/external_updater/updater.sh update ${LIBNAME}
+tools/external_updater/updater.sh update $PROJECT_PATH
 ```
 
 Update a library without committing and uploading to Gerrit:
 
 ```shell
-tools/external_updater/updater.sh update --no-upload ${LIBNAME}
+tools/external_updater/updater.sh update --no-upload $PROJECT_PATH
 ```
 
 Update a library on top of the local changes in the current branch, commit, and upload the change to Gerrit:
 
 ```shell
-tools/external_updater/updater.sh update --keep-local-changes ${LIBNAME}
+tools/external_updater/updater.sh update --keep-local-changes $PROJECT_PATH
 ```
 
 Update a library without building:
 
 ```shell
-tools/external_updater/updater.sh update --no-build ${LIBNAME}
+tools/external_updater/updater.sh update --no-build $PROJECT_PATH
 ```
 
-LIBNAME can be the path to a library under external/, e.g. kotlinc, or
-python/cpython3.
+Update a library and add bug number to the commit message:
+
+```shell
+tools/external_updater/updater.sh update --bug $BUG_NUMBER $PROJECT_PATH
+```
+
+PROJECT_PATH can be the path to a library under external/, e.g.
+external/kotlinc, or external/python/cpython3.
 
 ## Configure
 
 To use this tool, a METADATA file must present at the root of the 
 repository. The full definition can be found
-[here](https://android.googlesource.com/platform/tools/external_updater/+/refs/heads/master/metadata.proto).
-Or see example [here](https://android.googlesource.com/platform/external/ImageMagick/+/refs/heads/master/METADATA)
+[here](https://android.googlesource.com/platform/tools/external_updater/+/refs/heads/main/metadata.proto).
+Or see example [here](https://android.googlesource.com/platform/external/ImageMagick/+/refs/heads/main/METADATA)
 
 The most important part in the file is a list of urls.
 `external_updater` will go through all urls and uses the first
@@ -57,7 +79,7 @@ version tag or sha based on it.
 
 When upgrade, the tool will simply run `git merge tag/sha`.
 
-IMPORTANT: It is suggested to set up a `upstream-master` branch to
+IMPORTANT: It is suggested to set up a `upstream-main` branch to
 replicate upstream. Because most users don't have the privilege to
 upload changes not authored by themselves. This can be done by
 filing a bug to componentid:99104.
@@ -111,16 +133,16 @@ If there are multiple archives in one GitHub release, the one most
 
 After upgrade, files not present in the new tarball will be removed. But we
 explicitly keep files famous in Android tree.
-See [here](https://android.googlesource.com/platform/tools/external_updater/+/refs/heads/master/update_package.sh).
+See [here](https://android.googlesource.com/platform/tools/external_updater/+/refs/heads/main/update_package.sh).
 
 If more files need to be reserved, a post_update.sh can be created to copy
 these files over.
-See [example](https://android.googlesource.com/platform/external/kotlinc/+/refs/heads/master/post_update.sh).
+See [example](https://android.googlesource.com/platform/external/kotlinc/+/refs/heads/main/post_update.sh).
 
 #### Local patches
 
 Local patches can be kept as patches/*.diff. They will be applied after
-upgrade. [example](https://cs.android.com/android/platform/superproject/+/master:external/jsmn/patches/header.diff)
+upgrade. [example](https://cs.android.com/android/platform/superproject/+/main:external/jsmn/patches/header.diff)
 
 ## Email notification
 

@@ -31,7 +31,7 @@ cd $tmp_dir
 
 function CopyIfPresent() {
   if [ -e $external_dir/$1 ]; then
-    cp -a -n $external_dir/$1 .
+    cp -a --update=none $external_dir/$1 .
   fi
 }
 
@@ -41,18 +41,25 @@ CopyIfPresent "Android.mk"
 CopyIfPresent "CleanSpec.mk"
 CopyIfPresent "LICENSE"
 CopyIfPresent "NOTICE"
-cp -a -f -n $external_dir/MODULE_LICENSE_* .
+cp -a -f --update=none $external_dir/MODULE_LICENSE_* .
 CopyIfPresent "METADATA"
 CopyIfPresent "TEST_MAPPING"
 CopyIfPresent ".git"
 CopyIfPresent ".gitignore"
 if compgen -G "$external_dir/cargo2android*"; then
-    cp -a -f -n $external_dir/cargo2android* .
+    cp -a -f --update=none $external_dir/cargo2android* .
+fi
+if compgen -G "$external_dir/cargo_embargo*"; then
+    cp -a -f --update=none $external_dir/cargo_embargo* .
 fi
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
 CopyIfPresent "OWNERS"
 CopyIfPresent "README.android"
+CopyIfPresent "rules.mk"
+if compgen -G "$external_dir/cargo2rulesmk*"; then
+    cp -a -f --update=none $external_dir/cargo2rulesmk* .
+fi
 
 file_counter=0
 total_files=$(ls $tmp_dir/patches | grep -Ei '(diff|patch)$' | wc -l)
@@ -66,6 +73,8 @@ do
   then
       [ "$(basename $p)" != "Android.bp.diff" ] || continue
       [ "$(basename $p)" != "Android.bp.patch" ] || continue
+      [ "$(basename $p)" != "rules.mk.diff" ] || continue
+      [ "$(basename $p)" != "rules.mk.patch" ] || continue
   fi
   echo "Applying patch [$file_counter/$total_files] $p..."
   patch -p1 -d $tmp_dir --no-backup-if-mismatch < $p;

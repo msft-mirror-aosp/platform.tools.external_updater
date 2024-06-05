@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for external updater."""
+"""Unit tests for github_archive_updater."""
 
 import unittest
 
 import github_archive_updater
 
 
-class ExternalUpdaterTest(unittest.TestCase):
-    """Unit tests for external updater."""
+class ChooseBestUrlTest(unittest.TestCase):
+    """Unit tests for choose_best_url."""
 
     def test_url_selection(self):
         """Tests that GithubArchiveUpdater can choose the right url."""
