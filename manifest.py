@@ -51,10 +51,11 @@ class Project:
     ) -> Project:
         """Parses a Project from the given XML node."""
         try:
-            path = node.attrib["path"]
+            # Path is optional, defaults to project name per manifest spec
+            path = x if (x := node.attrib.get("path")) is not None else node.attrib["name"]
         except KeyError as ex:
             raise RuntimeError(
-                f"<project /> element missing required path attribute: {node}"
+                f"<project /> element missing required name attribute: {node}"
             ) from ex
 
         return Project(
