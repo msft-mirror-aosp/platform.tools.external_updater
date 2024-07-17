@@ -37,6 +37,7 @@ function CopyIfPresent() {
 
 echo "Copying preserved files..."
 CopyIfPresent "Android.mk"
+CopyIfPresent "Android.bp"
 CopyIfPresent "CleanSpec.mk"
 CopyIfPresent "LICENSE"
 CopyIfPresent "NOTICE"
@@ -51,8 +52,10 @@ fi
 if compgen -G "$external_dir/cargo_embargo*"; then
     cp -a -f --update=none $external_dir/cargo_embargo* .
 fi
-if compgen -G "$external_dir/*.bp"; then
-    cp -a -f --update=none $external_dir/**/*.bp .
+if compgen -G "$external_dir/**/*.bp"; then
+    pushd "$external_dir"
+    cp -a -f --update=none --parents **/*.bp "$tmp_dir"
+    popd
 fi
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
