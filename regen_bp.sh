@@ -39,8 +39,8 @@ function main() {
     cargo_embargo generate cargo_embargo.json
   fi
   if [[ "$C2R" = 'true' ]]; then
-    echo "Updating rules.mk: $SANDBOX $SANDBOX_FLAGS $SANDBOX_RULESMK_FLAGS -- $C2R_SCRIPT_FLAGS"
-    $SANDBOX $SANDBOX_FLAGS $SANDBOX_RULESMK_FLAGS -- $C2R_SCRIPT_FLAGS
+    echo "Updating rules.mk: cargo2rulesmk.py $C2R_SCRIPT_FLAGS"
+    cargo2rulesmk.py $C2R_SCRIPT_FLAGS
   fi
   copy_cargo_out_files $*
   rm -rf target.tmp cargo.metadata cargo.out Cargo.lock
