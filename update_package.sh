@@ -18,6 +18,7 @@
 # invoke directly.
 
 set -e
+shopt -s globstar
 
 tmp_dir=$1
 external_dir=$2
@@ -37,7 +38,6 @@ function CopyIfPresent() {
 
 echo "Copying preserved files..."
 CopyIfPresent "Android.mk"
-CopyIfPresent "Android.bp"
 CopyIfPresent "CleanSpec.mk"
 CopyIfPresent "LICENSE"
 CopyIfPresent "NOTICE"
