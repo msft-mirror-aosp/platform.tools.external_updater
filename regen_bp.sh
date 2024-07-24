@@ -35,12 +35,12 @@ function main() {
   # Save Cargo.lock if it existed before this update.
   [ ! -f Cargo.lock ] || mv Cargo.lock Cargo.lock.saved
   if [[ "$CARGO_EMBARGO" = 'true' ]]; then
-    echo "Updating Android.bp: cargo_embargo generate cargo_embargo.json"
+    echo "Updating Android.bp or rules.mk: cargo_embargo generate cargo_embargo.json"
     cargo_embargo generate cargo_embargo.json
   fi
-  if [ -f rules.mk ]; then
-    echo "Updating rules.mk: $SANDBOX $SANDBOX_FLAGS $SANDBOX_RULESMK_FLAGS -- $C2R_SCRIPT_FLAGS"
-    $SANDBOX $SANDBOX_FLAGS $SANDBOX_RULESMK_FLAGS -- $C2R_SCRIPT_FLAGS
+  if [[ "$C2R" = 'true' ]]; then
+    echo "Updating rules.mk: cargo2rulesmk.py $C2R_SCRIPT_FLAGS"
+    cargo2rulesmk.py $C2R_SCRIPT_FLAGS
   fi
   copy_cargo_out_files $*
   rm -rf target.tmp cargo.metadata cargo.out Cargo.lock
@@ -60,22 +60,27 @@ function check_files() {
     EXTERNAL_DIR="$2"  # e.g. rust/crates/bytes
   fi
   [ -f "$SANDBOX" ] || abort "ERROR: cannot find $SANDBOX"
-  LINE1=`head -1 Android.bp || abort "ERROR: cannot find Android.bp"`
-  if [[ "$LINE1" =~ ^.*cargo_embargo.*$ ]]; then
-    CARGO_EMBARGO='true'
-  else
-    echo 'Android.bp header does not contain "cargo_embargo"; skip regen_bp'
-    exit 0
+  if [ -f Android.bp ]; then
+    LINE1=`head -1 Android.bp`
+    if [[ "$LINE1" =~ ^.*cargo_embargo.*$ ]]; then
+      CARGO_EMBARGO='true'
+    fi
   fi
   [ -f Cargo.toml ] || abort "ERROR: cannot find ./Cargo.toml."
 
   if [ -f rules.mk ]; then
     LINE1=`head -1 rules.mk`
-    if [[ ! "$LINE1" =~ ^.*cargo2rulesmk.py.*$ ]]; then
-      echo 'rules.mk header does not contain "cargo2rulesmk.py"; skip regen_bp'
-      exit 0
+    if [[ "$LINE1" =~ ^.*cargo_embargo.*$ ]]; then
+      CARGO_EMBARGO='true'
+    elif [[ "$LINE1" =~ ^.*cargo2rulesmk.py.*$ ]]; then
+      C2R='true'
+      C2R_SCRIPT_FLAGS=`echo "$LINE1" | sed -e 's:^.*cargo2rulesmk.py ::;s:\.$::'`
     fi
-    C2R_SCRIPT_FLAGS=`echo "$LINE1" | sed -e 's:^.*cargo2rulesmk.py ::;s:\.$::'`
+  fi
+
+  if [ ! "$CARGO_EMBARGO" = 'true' ] && [ ! "$C2R" = 'true']; then
+    echo 'No need to run cargo_embargo or cargo2rules.mk.py; skip regen_bp'
+    exit 0
   fi
 }
 

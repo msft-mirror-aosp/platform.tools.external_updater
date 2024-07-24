@@ -16,6 +16,7 @@
 import base_updater
 import fileutils
 import git_utils
+import updater_utils
 # pylint: disable=import-error
 from manifest import Manifest
 
@@ -27,53 +28,12 @@ class GitUpdater(base_updater.Updater):
     def is_supported_url(self) -> bool:
         return git_utils.is_valid_url(self._proj_path, self._old_identifier.value)
 
-    @staticmethod
-    def _is_likely_android_remote(url: str) -> bool:
-        """Returns True if the URL is likely to be the project's Android remote."""
-        # There isn't a strict rule for finding the correct remote for
-        # upstream-master/main, so we have to guess. Be careful to filter out
-        # things that look almost right but aren't. Here's an example of a
-        # project that has a lot of false positives:
-        #
-        # aosp    /usr/local/google/home/danalbert/src/mirrors/android/refs/aosp/toolchain/rr.git (fetch)
-        # aosp    persistent-https://android.git.corp.google.com/toolchain/rr (push)
-        # origin  https://github.com/DanAlbert/rr.git (fetch)
-        # origin  https://github.com/DanAlbert/rr.git (push)
-        # unmirrored      persistent-https://android.git.corp.google.com/toolchain/rr (fetch)
-        # unmirrored      persistent-https://android.git.corp.google.com/toolchain/rr (push)
-        # update_origin   https://github.com/rr-debugger/rr (fetch)
-        # update_origin   https://github.com/rr-debugger/rr (push)
-        # upstream        https://github.com/rr-debugger/rr.git (fetch)
-        # upstream        https://github.com/rr-debugger/rr.git (push)
-        #
-        # unmirrored is the correct remote here. It's not a local path,
-        # and contains either /platform/external/ or /toolchain/ (the two
-        # common roots for third- party Android imports).
-        if '://' not in url:
-            # Skip anything that's likely a local GoB mirror.
-            return False
-        if '/platform/external/' in url:
-            return True
-        if '/toolchain/' in url:
-            return True
-        return False
-
     def setup_remote(self) -> None:
         remotes = git_utils.list_remotes(self._proj_path)
         current_remote_url = None
-        android_remote_name: str | None = None
         for name, url in remotes.items():
             if name == self.UPSTREAM_REMOTE_NAME:
                 current_remote_url = url
-
-            if self._is_likely_android_remote(url):
-                android_remote_name = name
-
-        if android_remote_name is None:
-            remotes_formatted = "\n".join(f"{k} {v}" for k, v in remotes.items())
-            raise RuntimeError(
-                f"Could not determine android remote for {self._proj_path}. Tried:\n"
-                f"{remotes_formatted}")
 
         if current_remote_url is not None and current_remote_url != self._old_identifier.value:
             git_utils.remove_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME)
@@ -83,12 +43,7 @@ class GitUpdater(base_updater.Updater):
             git_utils.add_remote(self._proj_path, self.UPSTREAM_REMOTE_NAME,
                                  self._old_identifier.value)
 
-        branch = git_utils.detect_default_branch(self._proj_path,
-                                                 self.UPSTREAM_REMOTE_NAME)
-
-        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME, branch)
-        git_utils.fetch(self._proj_path, android_remote_name,
-                        self._determine_android_fetch_ref())
+        git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME)
 
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
@@ -100,11 +55,11 @@ class GitUpdater(base_updater.Updater):
             # Some libraries don't have a tag. We only populate
             # _alternative_new_ver if there is a tag newer than _old_ver.
             # Checks if there is a tag newer than AOSP's SHA
-            if (tag := self.latest_tag_of_upstream_default_branch()) is not None:
+            if (tag := self.latest_tag_of_upstream()) is not None:
                 possible_alternative_new_ver = tag
         else:
             # Update to the latest version tag.
-            tag = self.latest_tag_of_upstream_default_branch()
+            tag = self.latest_tag_of_upstream()
             if tag is None:
                 project = fileutils.canonicalize_project_path(self.project_path)
                 raise RuntimeError(
@@ -121,11 +76,14 @@ class GitUpdater(base_updater.Updater):
         ):
             self._alternative_new_ver = possible_alternative_new_ver
 
-    def latest_tag_of_upstream_default_branch(self) -> str | None:
-        branch = git_utils.detect_default_branch(self._proj_path,
-                                                 self.UPSTREAM_REMOTE_NAME)
-        return git_utils.get_most_recent_tag(
-            self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
+    def latest_tag_of_upstream(self) -> str | None:
+        tags = git_utils.list_remote_tags(self._proj_path, self.UPSTREAM_REMOTE_NAME)
+        if not tags:
+            return None
+
+        parsed_tags = [updater_utils.parse_remote_tag(tag) for tag in tags]
+        tag = updater_utils.get_latest_stable_release_tag(self._old_identifier.version, parsed_tags)
+        return tag
 
     def current_head_of_upstream_default_branch(self) -> str:
         branch = git_utils.detect_default_branch(self._proj_path,
