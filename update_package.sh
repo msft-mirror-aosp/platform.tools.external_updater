@@ -18,6 +18,7 @@
 # invoke directly.
 
 set -e
+shopt -s globstar
 
 tmp_dir=$1
 external_dir=$2
@@ -36,7 +37,6 @@ function CopyIfPresent() {
 }
 
 echo "Copying preserved files..."
-CopyIfPresent "Android.bp"
 CopyIfPresent "Android.mk"
 CopyIfPresent "CleanSpec.mk"
 CopyIfPresent "LICENSE"
@@ -51,6 +51,11 @@ if compgen -G "$external_dir/cargo2android*"; then
 fi
 if compgen -G "$external_dir/cargo_embargo*"; then
     cp -a -f --update=none $external_dir/cargo_embargo* .
+fi
+if compgen -G "$external_dir/**/*.bp"; then
+    pushd "$external_dir"
+    cp -a -f --update=none --parents **/*.bp "$tmp_dir"
+    popd
 fi
 CopyIfPresent "patches"
 CopyIfPresent "post_update.sh"
