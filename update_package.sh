@@ -92,12 +92,6 @@ then
   /bin/bash `dirname $0`/regen_bp.sh $root_dir $external_dir
 fi
 
-if [ -f $tmp_dir/post_update.sh ]
-then
-  echo "Running post update script"
-  $tmp_dir/post_update.sh $tmp_dir $external_dir
-fi
-
 echo "Swapping old and new..."
 second_tmp_dir=`mktemp -d`
 mv $external_dir $second_tmp_dir

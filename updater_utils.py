@@ -73,6 +73,7 @@ def run_post_update(source_dir: Path, target_dir: Path) -> None:
     """
     post_update_path = os.path.join(source_dir, 'post_update.sh')
     if os.path.isfile(post_update_path):
+        print("Running post update script")
         cmd: Sequence[str | Path] = ['bash', post_update_path, source_dir, target_dir]
         print(f'Running {post_update_path}')
         subprocess.check_call(cmd)
