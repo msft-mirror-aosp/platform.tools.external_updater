@@ -142,7 +142,7 @@ See [example](https://android.googlesource.com/platform/external/kotlinc/+/refs/
 #### Local patches
 
 Local patches can be kept as patches/*.diff. They will be applied after
-upgrade. [example](https://cs.android.com/android/platform/superproject/+/main:external/jsmn/patches/header.diff)
+upgrade. [example](https://cs.android.com/android/platform/superproject/main/+/main:external/jsmn/patches/header.diff)
 
 ## Email notification
 
