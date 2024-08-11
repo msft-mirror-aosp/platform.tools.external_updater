@@ -95,7 +95,7 @@ def commit_message_generator(project_name: str, version: str, path: str, bug: in
     body = textwrap.dedent(f"""
     This project was upgraded with external_updater.
     Usage: tools/external_updater/updater.sh update external/{path}
-    For more info, check https://cs.android.com/android/platform/superproject/+/main:tools/external_updater/README.md\n\n""")
+    For more info, check https://cs.android.com/android/platform/superproject/main/+/main:tools/external_updater/README.md\n\n""")
     if bug is None:
         footer = "Test: TreeHugger"
     else:
