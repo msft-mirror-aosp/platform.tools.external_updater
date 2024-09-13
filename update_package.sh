@@ -18,6 +18,7 @@
 # invoke directly.
 
 set -e
+shopt -s globstar
 
 tmp_dir=$1
 external_dir=$2
@@ -37,7 +38,6 @@ function CopyIfPresent() {
 
 echo "Copying preserved files..."
 CopyIfPresent "Android.mk"
-CopyIfPresent "Android.bp"
 CopyIfPresent "CleanSpec.mk"
 CopyIfPresent "LICENSE"
 CopyIfPresent "NOTICE"
@@ -90,12 +90,6 @@ then
     # regenerate Android.bp after local patches, as they may
     # have deleted files that it uses.
   /bin/bash `dirname $0`/regen_bp.sh $root_dir $external_dir
-fi
-
-if [ -f $tmp_dir/post_update.sh ]
-then
-  echo "Running post update script"
-  $tmp_dir/post_update.sh $tmp_dir $external_dir
 fi
 
 echo "Swapping old and new..."
