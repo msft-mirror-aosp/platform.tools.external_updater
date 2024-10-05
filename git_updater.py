@@ -45,36 +45,34 @@ class GitUpdater(base_updater.Updater):
 
         git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME)
 
+    def set_new_versions_for_commit(self, latest_sha: str, latest_tag: str | None = None) -> None:
+        self._new_identifier.version = latest_sha
+        if latest_tag is not None and git_utils.is_ancestor(
+            self._proj_path, self._old_identifier.version, latest_tag):
+            self._alternative_new_ver = latest_tag
+
+    def set_new_versions_for_tag(self, latest_sha: str, latest_tag: str | None = None) -> None:
+        if latest_tag is None:
+            project = fileutils.canonicalize_project_path(self.project_path)
+            raise RuntimeError(
+                f"{project} is currently tracking upstream tags but no tags were "
+                "found in the upstream repository"
+            )
+        self._new_identifier.version = latest_tag
+        if git_utils.is_ancestor(
+            self._proj_path, self._old_identifier.version, latest_sha):
+            self._alternative_new_ver = latest_sha
+
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
         self.setup_remote()
-        possible_alternative_new_ver: str | None = None
+        latest_sha = self.current_head_of_upstream_default_branch()
+        latest_tag = self.latest_tag_of_upstream()
+
         if git_utils.is_commit(self._old_identifier.version):
-            # Update to remote head.
-            self._new_identifier.version = self.current_head_of_upstream_default_branch()
-            # Some libraries don't have a tag. We only populate
-            # _alternative_new_ver if there is a tag newer than _old_ver.
-            # Checks if there is a tag newer than AOSP's SHA
-            if (tag := self.latest_tag_of_upstream()) is not None:
-                possible_alternative_new_ver = tag
+            self.set_new_versions_for_commit(latest_sha, latest_tag)
         else:
-            # Update to the latest version tag.
-            tag = self.latest_tag_of_upstream()
-            if tag is None:
-                project = fileutils.canonicalize_project_path(self.project_path)
-                raise RuntimeError(
-                    f"{project} is currently tracking upstream tags but no tags were "
-                    "found in the upstream repository"
-                )
-            self._new_identifier.version = tag
-            # Checks if there is a SHA newer than AOSP's tag
-            possible_alternative_new_ver = self.current_head_of_upstream_default_branch()
-        if possible_alternative_new_ver is not None and git_utils.is_ancestor(
-            self._proj_path,
-            self._old_identifier.version,
-            possible_alternative_new_ver
-        ):
-            self._alternative_new_ver = possible_alternative_new_ver
+            self.set_new_versions_for_tag(latest_sha, latest_tag)
 
     def latest_tag_of_upstream(self) -> str | None:
         tags = git_utils.list_remote_tags(self._proj_path, self.UPSTREAM_REMOTE_NAME)
