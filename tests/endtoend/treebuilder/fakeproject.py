@@ -46,7 +46,7 @@ class FakeProject:  # pylint: disable=too-few-public-methods
         repo.init(branch_name="main")
         repo.commit("Initial commit.", allow_empty=True)
 
-    def initial_import(self) -> None:
+    def initial_import(self, upstream_is_tag: bool = False) -> None:
         """Perform the initial import of the upstream repo into the mirror repo.
 
         These are an approximation of the steps that would be taken for the initial
@@ -61,7 +61,9 @@ class FakeProject:  # pylint: disable=too-few-public-methods
         self.android_mirror.init()
         self.android_mirror.commit("Initial commit.", allow_empty=True)
 
-        upstream_sha = self.upstream.head()
+        upstream_version = self.upstream.head()
+        if upstream_is_tag:
+            upstream_version = self.upstream.describe(upstream_version)
         self.android_mirror.fetch(self.upstream)
         self.android_mirror.merge(
             "FETCH_HEAD", allow_fast_forward=False, allow_unrelated_histories=True
@@ -83,9 +85,9 @@ class FakeProject:  # pylint: disable=too-few-public-methods
                         day: 1
                       }}
                       identifier {{
-                        type: "GIT"
+                        type: "Git"
                         value: "{self.upstream.path.as_uri()}"
-                        version: "{upstream_sha}"
+                        version: "{upstream_version}"
                       }}
                     }}
                     """
