@@ -291,3 +291,13 @@ def is_ancestor(proj_path: Path, ancestor: str, child: str) -> bool:
         if ex.returncode == 1:
             return False
         raise
+
+
+def list_branches_with_commit(proj_path: Path, commit: str, remote_name: str) -> list[str]:
+    """Lists upstream branches which contain the specified commit"""
+    cmd = ['git', 'branch', '-r', '--contains', commit]
+    out = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
+                         text=True).stdout
+    lines = out.splitlines()
+    remote_branches = [line for line in lines if remote_name in line]
+    return remote_branches
