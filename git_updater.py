@@ -18,7 +18,9 @@ import fileutils
 import git_utils
 import updater_utils
 # pylint: disable=import-error
+from color import Color, color_string
 from manifest import Manifest
+import metadata_pb2  # type: ignore
 
 
 class GitUpdater(base_updater.Updater):
@@ -54,10 +56,14 @@ class GitUpdater(base_updater.Updater):
     def set_new_versions_for_tag(self, latest_sha: str, latest_tag: str | None = None) -> None:
         if latest_tag is None:
             project = fileutils.canonicalize_project_path(self.project_path)
-            raise RuntimeError(
-                f"{project} is currently tracking upstream tags but no tags were "
-                "found in the upstream repository"
-            )
+            print(color_string(
+                f"{project} is currently tracking upstream tags but either no "
+                "tags were found in the upstream repository or the tag does not "
+                "belong to any branch. No latest tag available", Color.STALE
+            ))
+            self._new_identifier = metadata_pb2.Identifier()
+            self._alternative_new_ver = latest_sha
+            return
         self._new_identifier.version = latest_tag
         if git_utils.is_ancestor(
             self._proj_path, self._old_identifier.version, latest_sha):
@@ -81,6 +87,9 @@ class GitUpdater(base_updater.Updater):
 
         parsed_tags = [updater_utils.parse_remote_tag(tag) for tag in tags]
         tag = updater_utils.get_latest_stable_release_tag(self._old_identifier.version, parsed_tags)
+        if not git_utils.list_branches_with_commit(self._proj_path, tag, self.UPSTREAM_REMOTE_NAME):
+            return None
+
         return tag
 
     def current_head_of_upstream_default_branch(self) -> str:
