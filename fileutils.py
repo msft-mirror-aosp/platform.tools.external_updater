@@ -179,6 +179,7 @@ def read_metadata(proj_path: Path) -> metadata_pb2.MetaData:
         metadata = metadata_file.read()
         return text_format.Parse(metadata, metadata_pb2.MetaData())
 
+
 def convert_url_to_identifier(metadata: metadata_pb2.MetaData) -> metadata_pb2.MetaData:
     """Converts the old style METADATA to the new style"""
     for url in metadata.third_party.url:

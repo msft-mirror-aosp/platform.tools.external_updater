@@ -22,18 +22,17 @@ updater.sh update --refresh --keep_date rust/crates/libc
 
 import argparse
 from collections.abc import Iterable
-import enum
 import json
 import logging
 import os
 import subprocess
-import sys
 import textwrap
 import time
 from typing import Dict, Iterator, List, Union, Tuple, Type
 from pathlib import Path
 
 from base_updater import Updater
+from color import Color, color_string
 from crates_updater import CratesUpdater
 from git_updater import GitUpdater
 from github_archive_updater import GithubArchiveUpdater
@@ -50,25 +49,6 @@ UPDATERS: List[Type[Updater]] = [
 ]
 
 TMP_BRANCH_NAME = 'tmp_auto_upgrade'
-USE_COLOR = sys.stdout.isatty()
-
-
-@enum.unique
-class Color(enum.Enum):
-    """Colors for output to console."""
-    FRESH = '\x1b[32m'
-    STALE = '\x1b[31;1m'
-    ERROR = '\x1b[31m'
-
-
-END_COLOR = '\033[0m'
-
-
-def color_string(string: str, color: Color) -> str:
-    """Changes the color of a string when print to terminal."""
-    if not USE_COLOR:
-        return string
-    return color.value + string + END_COLOR
 
 
 def build_updater(proj_path: Path) -> Tuple[Updater, metadata_pb2.MetaData]:
@@ -156,7 +136,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
 
 def has_new_version(updater: Updater) -> bool:
     """Checks if a newer version of the project is available."""
-    if updater.current_version != updater.latest_version:
+    if updater.latest_version is not None and updater.current_version != updater.latest_version:
         return True
     return False
 
@@ -169,7 +149,11 @@ def print_project_status(updater: Updater) -> None:
     alternative_latest_version = updater.alternative_latest_version
 
     print(f'Current version: {current_version}')
-    print(f'Latest version: {latest_version}')
+    print('Latest version: ', end='')
+    if not latest_version:
+        print(color_string('Not available', Color.STALE))
+    else:
+        print(latest_version)
     if alternative_latest_version is not None:
         print(f'Alternative latest version: {alternative_latest_version}')
     if has_new_version(updater):
@@ -201,21 +185,26 @@ def use_alternative_version(updater: Updater) -> bool:
     recom_message = color_string(f'We recommend upgrading to {alternative_ver_type} {alternative_version} instead. ', Color.FRESH)
     not_recom_message = color_string(f'We DO NOT recommend upgrading to {alternative_ver_type} {alternative_version}. ', Color.STALE)
 
-    # If alternative_version is not None, there are ONLY three possible
+    # If alternative_version is not None, there are four possible
     # scenarios:
     # Scenario 1, out of date, we recommend switching to tag:
     # Current version: sha1
     # Latest version: sha2
     # Alternative latest version: tag
 
-    # Scenario 2, out of date, we DO NOT recommend switching to sha.
+    # Scenario 2, up to date, we DO NOT recommend switching to sha.
+    # Current version: tag1
+    # Latest version: tag1
+    # Alternative latest version: sha
+
+    # Scenario 3, out of date, we DO NOT recommend switching to sha.
     # Current version: tag1
     # Latest version: tag2
     # Alternative latest version: sha
 
-    # Scenario 3, up to date, we DO NOT recommend switching to sha.
-    # Current version: tag1
-    # Latest version: tag1
+    # Scenario 4, out of date, no recommendations at all
+    # Current version: sha1
+    # Latest version: No tag found or a tag that doesn't belong to any branch
     # Alternative latest version: sha
 
     if alternative_ver_type == 'tag':
@@ -224,7 +213,10 @@ def use_alternative_version(updater: Updater) -> bool:
         if not new_version_available:
             warning = up_to_date_question + not_recom_message
         else:
-            warning = out_of_date_question + not_recom_message
+            if not latest_version:
+                warning = up_to_date_question
+            else:
+                warning = out_of_date_question + not_recom_message
 
     answer = input(warning)
     if "yes".startswith(answer.lower()):
@@ -234,7 +226,6 @@ def use_alternative_version(updater: Updater) -> bool:
     # If user types something that is not "yes" or "no" or something similar, abort.
     else:
         raise ValueError(f"Invalid input: {answer}")
-
 
 
 def check_and_update(args: argparse.Namespace,

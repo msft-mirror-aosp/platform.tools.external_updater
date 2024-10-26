@@ -114,6 +114,16 @@ class GitRepo:
             args.append(start_point)
         self.run(args)
 
+    def checkout(self, branch: str) -> None:
+        """Checks out a branch."""
+        args = ["checkout", branch]
+        self.run(args)
+
+    def delete_branch(self, name: str) -> None:
+        """Deletes a branch"""
+        args = ["branch", "-D", name]
+        self.run(args)
+
     def tag(self, name: str, ref: str | None = None) -> None:
         """Creates a tag at the given ref, or HEAD if not provided."""
         args = ["tag", name]
@@ -134,3 +144,8 @@ class GitRepo:
         # %B is the raw commit body
         # %- eats the separator newline
         return self.run(["show", "--format=%B%-", f"{revision}:{path}"])
+
+    def describe(self, sha: str) -> str:
+        """Returns the nearest tag to a given commit."""
+        cmd = ["describe", "--contains", sha]
+        return self.run(cmd).strip()

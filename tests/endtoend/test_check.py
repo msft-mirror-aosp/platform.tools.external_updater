@@ -88,3 +88,23 @@ class TestCheck:
             f"Latest version: {latest_version}\n"
             "Out of date!\n"
         )
+
+    def test_not_suggest_tag_that_is_not_on_any_branch(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """Tests that out-of-date projects are identified."""
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        a.upstream.tag("v1.0.0")
+        tree.create_manifest_repo()
+        a.initial_import(True)
+        tree.init_and_sync()
+        a.upstream.commit("Second commit.", allow_empty=True)
+        a.upstream.switch_to_new_branch("new_branch")
+        a.upstream.commit("Third commit.", allow_empty=True)
+        a.upstream.tag("v2.0.0")
+        a.upstream.checkout("main")
+        a.upstream.delete_branch("new_branch")
+        output = self.check(updater_cmd, [a.local.path])
+        assert "Latest version: Not available" in output
