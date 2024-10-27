@@ -42,6 +42,7 @@ python_library_host {
     srcs: [
         "archive_utils.py",
         "base_updater.py",
+        "color.py",
         "crates_updater.py",
         "fileutils.py",
         "git_updater.py",
