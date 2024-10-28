@@ -245,23 +245,24 @@ def check_and_update(args: argparse.Namespace,
         updater, metadata = build_updater(proj_path)
         updater.check()
 
-        alternative_version = updater.alternative_latest_version
         new_version_available = has_new_version(updater)
         print_project_status(updater)
 
         if update_lib:
-            if args.refresh:
-                print('Refreshing the current version')
+            if args.custom_version is not None:
+                updater.set_custom_version(args.custom_version)
+                print(f"Upgrading to custom version {args.custom_version}")
+            elif args.refresh:
                 updater.refresh_without_upgrading()
-
-            answer = False
-            if alternative_version is not None:
-                answer = use_alternative_version(updater)
-                if answer:
-                    updater.set_new_version(alternative_version)
-            if new_version_available or args.force or args.refresh or answer:
-                _do_update(args, updater, metadata)
+            elif new_version_available:
+                if updater.alternative_latest_version is not None:
+                    if use_alternative_version(updater):
+                        updater.set_new_version(updater.alternative_latest_version)
+            else:
+                return updater
+            _do_update(args, updater, metadata)
         return updater
+
     # pylint: disable=broad-except
     except Exception as err:
         logging.exception("Failed to check or update %s", proj_path)
@@ -386,10 +387,6 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--json-output',
                                help='Path of a json file to write result to.')
     update_parser.add_argument(
-        '--force',
-        help='Run update even if there\'s no new version.',
-        action='store_true')
-    update_parser.add_argument(
         '--refresh',
         help='Run update and refresh to the current version.',
         action='store_true')
@@ -416,6 +413,9 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument('--bug',
                                type=int,
                                help='Bug number for this update')
+    update_parser.add_argument('--custom-version',
+                               type=str,
+                               help='Custom version we want to upgrade to.')
     update_parser.add_argument('--remote-name',
                                default='aosp',
                                required=False,
