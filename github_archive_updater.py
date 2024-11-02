@@ -119,6 +119,16 @@ class GithubArchiveUpdater(Updater):
 
         git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME)
 
+    def create_tar_gz_url(self) -> str:
+        url = f'https://github.com/{self.owner}/{self.repo}/archive/' \
+              f'{self._new_identifier.version}.tar.gz'
+        return url
+
+    def create_zip_url(self) -> str:
+        url = f'https://github.com/{self.owner}/{self.repo}/archive/' \
+              f'{self._new_identifier.version}.zip'
+        return url
+
     def _fetch_latest_tag(self) -> Tuple[str, List[str]]:
         """We want to avoid hitting GitHub API rate limit by using alternative solutions."""
         tags = git_utils.list_remote_tags(self._proj_path, self.UPSTREAM_REMOTE_NAME)
@@ -126,16 +136,14 @@ class GithubArchiveUpdater(Updater):
         tag = updater_utils.get_latest_stable_release_tag(self._old_identifier.version, parsed_tags)
         return tag, []
 
-    def _fetch_latest_version(self) -> None:
+    def _fetch_latest_tag_or_release(self) -> None:
         """Checks upstream and gets the latest release tag."""
         self._new_identifier.version, urls = (self._fetch_latest_release()
                                or self._fetch_latest_tag())
 
         # Adds source code urls.
-        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/'
-                    f'{self._new_identifier.version}.tar.gz')
-        urls.append(f'https://github.com/{self.owner}/{self.repo}/archive/'
-                    f'{self._new_identifier.version}.zip')
+        urls.append(self.create_tar_gz_url())
+        urls.append(self.create_zip_url())
 
         self._new_identifier.value = choose_best_url(urls, self._old_identifier.value)
 
@@ -152,16 +160,23 @@ class GithubArchiveUpdater(Updater):
             f'https://github.com/{self.owner}/{self.repo}/archive/{self._new_identifier.version}.zip'
         )
 
+    def set_custom_version(self, custom_version: str) -> None:
+        super().set_custom_version(custom_version)
+        tar_gz_url = self.create_tar_gz_url()
+        zip_url = self.create_zip_url()
+        self._new_identifier.value = choose_best_url([tar_gz_url, zip_url], self._old_identifier.value)
+
     def check(self) -> None:
         """Checks update for package.
 
         Returns True if a new version is available.
         """
         self.setup_remote()
+
         if git_utils.is_commit(self._old_identifier.version):
             self._fetch_latest_commit()
         else:
-            self._fetch_latest_version()
+            self._fetch_latest_tag_or_release()
 
     def update(self) -> None:
         """Updates the package.
