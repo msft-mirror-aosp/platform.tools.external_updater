@@ -119,3 +119,12 @@ class Updater:
     def set_new_version(self, version: str) -> None:
         """Uses the passed version as the latest to upgrade project."""
         self._new_identifier.version = version
+
+    def set_custom_version(self, custom_version: str) -> None:
+        """Uses the passed version as the latest to upgrade project if the
+        passed version is not older than the current version."""
+        if git_utils.is_ancestor(self._proj_path, self._old_identifier.version, custom_version):
+            self._new_identifier.version = custom_version
+        else:
+            raise RuntimeError(
+                f"Can not upgrade to {custom_version}. The current version is newer than {custom_version}.")
