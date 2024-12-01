@@ -67,7 +67,7 @@ class GitUpdater(base_updater.Updater):
                 "tags were found in the upstream repository or the tag does not "
                 "belong to any branch. No latest tag available", Color.STALE
             ))
-            self._new_identifier = metadata_pb2.Identifier()
+            self._new_identifier.ClearField("version")
             self._alternative_new_ver = latest_sha
             return
         self._new_identifier.version = latest_tag
