@@ -47,6 +47,12 @@ class GitUpdater(base_updater.Updater):
 
         git_utils.fetch(self._proj_path, self.UPSTREAM_REMOTE_NAME)
 
+    def set_custom_version(self, custom_version: str) -> None:
+        super().set_custom_version(custom_version)
+        if not git_utils.list_branches_with_commit(self._proj_path, custom_version, self.UPSTREAM_REMOTE_NAME):
+            raise RuntimeError(
+                f"Can not upgrade to {custom_version}. This version does not belong to any branches.")
+
     def set_new_versions_for_commit(self, latest_sha: str, latest_tag: str | None = None) -> None:
         self._new_identifier.version = latest_sha
         if latest_tag is not None and git_utils.is_ancestor(
@@ -61,7 +67,7 @@ class GitUpdater(base_updater.Updater):
                 "tags were found in the upstream repository or the tag does not "
                 "belong to any branch. No latest tag available", Color.STALE
             ))
-            self._new_identifier = metadata_pb2.Identifier()
+            self._new_identifier.ClearField("version")
             self._alternative_new_ver = latest_sha
             return
         self._new_identifier.version = latest_tag
@@ -72,6 +78,7 @@ class GitUpdater(base_updater.Updater):
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
         self.setup_remote()
+
         latest_sha = self.current_head_of_upstream_default_branch()
         latest_tag = self.latest_tag_of_upstream()
 
