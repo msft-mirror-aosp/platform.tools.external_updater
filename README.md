@@ -38,6 +38,12 @@ Update a library without committing and uploading to Gerrit:
 tools/external_updater/updater.sh update --no-upload $PROJECT_PATH
 ```
 
+Update a library to a specific version:
+
+```shell
+tools/external_updater/updater.sh update --custom-version $VERSION $PROJECT_PATH
+```
+
 Update a library on top of the local changes in the current branch, commit, and upload the change to Gerrit:
 
 ```shell
