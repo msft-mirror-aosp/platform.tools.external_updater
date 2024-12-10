@@ -43,6 +43,7 @@ enum LicenseType {
 
 enum DirectoryType {
   PACKAGE = 1;
+  GROUP = 2;
   GOOGLE_INTERNAL = 4;
 }
 
@@ -79,6 +80,7 @@ message URL {
 
 message Identifier {
   optional string type = 1;
+  optional string omission_reason = 2;
   optional string value = 3;
   optional string version = 4;
   optional bool primary_source = 6;
