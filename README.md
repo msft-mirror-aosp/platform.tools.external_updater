@@ -11,61 +11,13 @@ In each of the examples below, `$PROJECT_PATH` is the path to the project to
 operate on. If more than one path is given, external_updater will operate on
 each in turn.
 
-Note: Older versions of external_updater used a different path resolution
-method. Relative paths were resolved relative to `//external` rather than the
-CWD, which meant tab-completed paths would only work if the CWD was
-`//external`, and that wildcards had to be escaped for processing by
-external_updater rather than the shell (e.g.
-`updater.sh 'check rust/crates/*'`). That behavior was removed to support CWD
-relative paths. If you want the old behavior back, leave a comment on
-http://b/243685332 or https://r.android.com/2855445.
+Make sure you have initialized AOSP main source code. The default remote for
+external updater is AOSP.
 
-Check updates for a library or verify METADATA is valid:
-
-```shell
-tools/external_updater/updater.sh check $PROJECT_PATH
-```
-
-Update a library, commit, and upload the change to Gerrit:
-
-```shell
-tools/external_updater/updater.sh update $PROJECT_PATH
-```
-
-Update a library without committing and uploading to Gerrit:
-
-```shell
-tools/external_updater/updater.sh update --no-upload $PROJECT_PATH
-```
-
-Update a library to a specific version:
-
-```shell
-tools/external_updater/updater.sh update --custom-version $VERSION $PROJECT_PATH
-```
-
-Update a library on top of the local changes in the current branch, commit, and upload the change to Gerrit:
-
-```shell
-tools/external_updater/updater.sh update --keep-local-changes $PROJECT_PATH
-```
-
-Update a library without building:
-
-```shell
-tools/external_updater/updater.sh update --no-build $PROJECT_PATH
-```
-
-Update a library and add bug number to the commit message:
-
-```shell
-tools/external_updater/updater.sh update --bug $BUG_NUMBER $PROJECT_PATH
-```
-
-PROJECT_PATH can be the path to a library under external/, e.g.
-external/kotlinc, or external/python/cpython3.
-
-## Configure
+If you are trying to upgrade a project in other remotes, you can pass
+`--remote-name $REMOTE` to the `update` parser. We strongly recommend updating
+projects in AOSP and allowing automerger to merge the upgrade CL with other
+branches.
 
 To use this tool, a METADATA file must present at the root of the
 repository. The full definition can be found in
@@ -74,13 +26,63 @@ Or
 [external/toybox/METADATA](https://android.googlesource.com/platform/external/toybox/+/refs/heads/main/METADATA)
 is a concrete example.
 
+From within your working directory, source the `envsetup.sh` script to set up
+your build environment and pick a target to build with the `lunch` command. You
+can pass any target that you want. After upgrading a project, external_updater
+starts building for the selected lunch target:
+
+```shell
+source build/envsetup.sh
+lunch aosp_cf_x86_64_phone-trunk_staging-eng
+```
+
+Check updates for a library or verify METADATA is valid:
+
+```shell
+tools/external_updater/updater.sh check PROJECT_PATH
+```
+
+Update a library, commit, and upload the change to Gerrit:
+
+```shell
+tools/external_updater/updater.sh update PROJECT_PATH
+```
+
+PROJECT_PATH can be the path to a library under external/, e.g.
+external/kotlinc, or external/python/cpython3. You can press Tab to complete the
+path.
+
+The following options can be passed to `update` parser:
+```shell
+--no-build                        Skip building
+--no-upload                       Does not upload to Gerrit after upgrade
+--bug BUG                        Bug number for this update
+--custom-version CUSTOM_VERSION  Custom version we want to upgrade to.
+--skip-post-update                Skip post_update script if post_update script exists
+--keep-local-changes              Updates the current branch instead of creating a new branch
+--no-verify                       Pass --no-verify to git commit
+--remote-name REMOTE_NAME        Remote repository name, the default is set to aosp
+--exclude$EXCLUDE                Names of projects to exclude. These are just the final part of the path with no directories.
+--refresh                         Run update and refresh to the current version.
+--keep-date                       Run update and do not change date in METADATA.
+--json-output JSON_OUTPUT        Path of a json file to write result to.
+```
+
+For example:
+
+```shell
+tools/external_updater/updater.sh update --custom-version $VERSION $PROJECT_PATH
+```
+
+## Configure
+
 The most important part in the file is a list of urls.
 `external_updater` will go through all urls and uses the first
 supported url.
 
 ### Git upstream
 
-If type of a URL is set to GIT, the URL must be a git upstream
+If the url type is `Git`, the URL must be a git upstream
 (the one you can use with `git clone`). And the version field must
 be either a version tag, or SHA. The tool will find the latest
 version tag or sha based on it.
@@ -119,8 +121,8 @@ be done easily in Gerrit, by comparing parent2 and the patchset.
 
 ### GitHub archive
 
-If the url type is ARCHIVE, and the url is from GitHub, `external_updater`
-can upgrade a library based on GitHub releases.
+If the url type is `Archive`, and the url is from GitHub, `external_updater`
+will upgrade a library based on GitHub tags/releases.
 
 If you have the choice between archives and git tags, choose tags.
 Because that makes it easier to manage local changes.
