@@ -105,9 +105,9 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         try:
             rel_proj_path = str(fileutils.get_relative_project_path(full_path))
         except ValueError:
-            # Absolute paths to other trees will not be relative to our tree. There are
-            # not portable instructions for upgrading that project, since the path will
-            # differ between machines (or checkouts).
+            # Absolute paths to other trees will not be relative to our tree.
+            # There are not portable instructions for upgrading that project,
+            # since the path will differ between machines (or checkouts).
             rel_proj_path = "<absolute path to project>"
         commit_message = commit_message_generator(metadata.name, updater.latest_version, rel_proj_path, args.bug)
         git_utils.remove_gitmodules(full_path)
@@ -347,25 +347,18 @@ def parse_args() -> argparse.Namespace:
     subparsers = parser.add_subparsers(dest='cmd')
     subparsers.required = True
 
-    diff_parser = subparsers.add_parser('validate',
-                                        help='Check if aosp version is what it claims to be.')
-    diff_parser.add_argument(
-        'paths',
-        nargs='*',
-        help='Paths of the project. '
-             'Relative paths will be resolved from external/.')
-    diff_parser.set_defaults(func=validate)
-
     # Creates parser for check command.
-    check_parser = subparsers.add_parser('check',
-                                         help='Check update for one project.')
+    check_parser = subparsers.add_parser(
+        'check',
+        help='Check update for one project.')
     check_parser.add_argument(
         'paths',
         nargs='*',
         help='Paths of the project. '
-        'Relative paths will be resolved from external/.')
-    check_parser.add_argument('--json-output',
-                              help='Path of a json file to write result to.')
+             'Relative paths will be resolved from external/.')
+    check_parser.add_argument(
+        '--json-output',
+        help='Path of a json file to write result to.')
     check_parser.add_argument(
         '--all',
         action='store_true',
@@ -378,14 +371,53 @@ def parse_args() -> argparse.Namespace:
     check_parser.set_defaults(func=check)
 
     # Creates parser for update command.
-    update_parser = subparsers.add_parser('update', help='Update one project.')
+    update_parser = subparsers.add_parser(
+        'update',
+        help='Update one project.')
     update_parser.add_argument(
         'paths',
         nargs='*',
-        help='Paths of the project as globs. '
-        'Relative paths will be resolved from external/.')
-    update_parser.add_argument('--json-output',
-                               help='Path of a json file to write result to.')
+        help='Paths of the project as globs.')
+    update_parser.add_argument(
+        '--no-build',
+        action='store_false',
+        dest='build',
+        help='Skip building')
+    update_parser.add_argument(
+        '--no-upload',
+        action='store_true',
+        help='Does not upload to Gerrit after upgrade')
+    update_parser.add_argument(
+        '--bug',
+        type=int,
+        help='Bug number for this update')
+    update_parser.add_argument(
+        '--custom-version',
+        type=str,
+        help='Custom version we want to upgrade to.')
+    update_parser.add_argument(
+        '--skip-post-update',
+        action='store_true',
+        help='Skip post_update script if post_update script exists')
+    update_parser.add_argument(
+        '--keep-local-changes',
+        action='store_true',
+        help='Updates the current branch instead of creating a new branch')
+    update_parser.add_argument(
+        '--no-verify',
+        action='store_true',
+        help='Pass --no-verify to git commit')
+    update_parser.add_argument(
+        '--remote-name',
+        default='aosp',
+        required=False,
+        help='Remote repository name, the default is set to aosp')
+    update_parser.add_argument(
+        '--exclude',
+        action='append',
+        help='Names of projects to exclude. '
+             'These are just the final part of the path '
+             'with no directories.')
     update_parser.add_argument(
         '--refresh',
         help='Run update and refresh to the current version.',
@@ -394,38 +426,20 @@ def parse_args() -> argparse.Namespace:
         '--keep-date',
         help='Run update and do not change date in METADATA.',
         action='store_true')
-    update_parser.add_argument('--no-upload',
-                               action='store_true',
-                               help='Does not upload to Gerrit after upgrade')
-    update_parser.add_argument('--keep-local-changes',
-                               action='store_true',
-                               help='Updates the current branch')
-    update_parser.add_argument('--skip-post-update',
-                               action='store_true',
-                               help='Skip post_update script')
-    update_parser.add_argument('--no-build',
-                               action='store_false',
-                               dest='build',
-                               help='Skip building')
-    update_parser.add_argument('--no-verify',
-                               action='store_true',
-                               help='Pass --no-verify to git commit')
-    update_parser.add_argument('--bug',
-                               type=int,
-                               help='Bug number for this update')
-    update_parser.add_argument('--custom-version',
-                               type=str,
-                               help='Custom version we want to upgrade to.')
-    update_parser.add_argument('--remote-name',
-                               default='aosp',
-                               required=False,
-                               help='Upstream remote name.')
-    update_parser.add_argument('--exclude',
-                               action='append',
-                               help='Names of projects to exclude. '
-                               'These are just the final part of the path '
-                               'with no directories.')
+    update_parser.add_argument(
+        '--json-output',
+        help='Path of a json file to write result to.')
     update_parser.set_defaults(func=update)
+
+    diff_parser = subparsers.add_parser(
+        'validate',
+        help='Check if aosp version is what it claims to be.')
+    diff_parser.add_argument(
+        'paths',
+        nargs='*',
+        help='Paths of the project.'
+             'Relative paths will be resolved from external/.')
+    diff_parser.set_defaults(func=validate)
 
     return parser.parse_args()
 
