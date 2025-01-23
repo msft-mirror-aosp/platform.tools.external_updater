@@ -145,7 +145,7 @@ def build(proj_path: Path) -> None:
     cmd = [
         str(tree / 'build/soong/soong_ui.bash'),
         "--build-mode",
-        "--modules-in-a-dir-no-deps",
+        "--modules-in-a-dir",
         f"--dir={str(proj_path)}",
     ]
     print('Building...')
