@@ -14,9 +14,11 @@
 """Module to update packages from GitHub archive."""
 
 import json
+import os
 import re
 import urllib.request
 import urllib.error
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import archive_utils
@@ -178,7 +180,7 @@ class GithubArchiveUpdater(Updater):
         else:
             self._fetch_latest_tag_or_release()
 
-    def update(self) -> None:
+    def update(self) -> Path:
         """Updates the package.
 
         Has to call check() before this function.
@@ -189,6 +191,9 @@ class GithubArchiveUpdater(Updater):
                 self._new_identifier.value)
             package_dir = archive_utils.find_archive_root(temporary_dir)
             updater_utils.replace_package(package_dir, self._proj_path)
+            # package_dir contains the old version of the project. This is
+            # returned in case a project needs a post_update.sh script.
+            return os.path.normpath(package_dir)
         finally:
             # Don't remove the temporary directory, or it'll be impossible
             # to debug the failure...
