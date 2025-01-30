@@ -52,10 +52,11 @@ class Updater:
         """Checks whether a new version is available."""
         raise NotImplementedError()
 
-    def update(self) -> None:
+    def update(self) -> Path | None:
         """Updates the package.
 
-        Has to call check() before this function.
+        Has to call check() before this function. Returns either the temporary
+        dir it stored the old version in after upgrading or None.
         """
         raise NotImplementedError()
 

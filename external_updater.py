@@ -96,7 +96,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
 
     try:
-        updater.update()
+        tmp_dir_of_old_version = updater.update()
 
         updated_metadata = updater.update_metadata(metadata)
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
@@ -106,7 +106,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             rel_proj_path = str(fileutils.get_relative_project_path(full_path))
         except ValueError:
             # Absolute paths to other trees will not be relative to our tree.
-            # There are not portable instructions for upgrading that project,
+            # There are no portable instructions for upgrading that project,
             # since the path will differ between machines (or checkouts).
             rel_proj_path = "<absolute path to project>"
         commit_message = commit_message_generator(metadata.name, updater.latest_version, rel_proj_path, args.bug)
@@ -115,7 +115,10 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         git_utils.commit(full_path, commit_message, args.no_verify)
 
         if not args.skip_post_update:
-            updater_utils.run_post_update(full_path, full_path)
+            if tmp_dir_of_old_version:
+                updater_utils.run_post_update(full_path, tmp_dir_of_old_version)
+            else:
+                updater_utils.run_post_update(full_path)
             git_utils.add_file(full_path, '*')
             git_utils.commit_amend(full_path)
 
