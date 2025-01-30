@@ -6,7 +6,7 @@ EXTERNAL_UPDATER=$(pwd)
 
 cd $TOP
 
-repo init -u sso://android/platform/manifest -b main --depth=1 < /dev/null
+repo init -u https://android.googlesource.com/platform/manifest -b main --depth=1 < /dev/null
 repo sync -c
 
 source build/envsetup.sh
