@@ -18,7 +18,7 @@ package {
 }
 
 python_binary_host {
-    name: "external_updater",
+    name: "external_updater_kokoro",
     main: "external_updater.py",
     srcs: ["external_updater.py"],
     libs: ["external_updater_lib"],
@@ -32,13 +32,13 @@ python_binary_host {
 }
 
 python_binary_host {
-    name: "external_updater_notifier",
+    name: "external_updater_notifier_kokoro",
     main: "notifier.py",
     srcs: ["notifier.py"],
 }
 
 python_library_host {
-    name: "external_updater_lib",
+    name: "external_updater_lib_kokoro",
     srcs: [
         "archive_utils.py",
         "base_updater.py",
@@ -66,7 +66,7 @@ python_library_host {
 }
 
 python_defaults {
-    name: "external_updater_test_defaults",
+    name: "external_updater_test_defaults_kokoro",
     version: {
         py3: {
             embedded_launcher: true,
@@ -75,7 +75,7 @@ python_defaults {
 }
 
 python_library_host {
-    name: "external_updater_test_lib",
+    name: "external_updater_test_lib_kokoro",
     srcs: [
         "tests/gitrepo.py",
     ],
@@ -85,7 +85,7 @@ python_library_host {
 }
 
 python_test_host {
-    name: "external_updater_fileutils_test",
+    name: "external_updater_fileutils_test_kokoro",
     defaults: ["external_updater_test_defaults"],
     main: "test_fileutils.py",
     srcs: ["test_fileutils.py"],
@@ -96,7 +96,7 @@ python_test_host {
 }
 
 python_test_host {
-    name: "external_updater_github_archive_updater_test",
+    name: "external_updater_github_archive_updater_test_kokoro",
     defaults: ["external_updater_test_defaults"],
     main: "test_github_archive_updater.py",
     srcs: ["test_github_archive_updater.py"],
@@ -107,7 +107,7 @@ python_test_host {
 }
 
 python_test_host {
-    name: "external_updater_reviewers_test",
+    name: "external_updater_reviewers_test_kokoro",
     defaults: ["external_updater_test_defaults"],
     main: "external_updater_reviewers_test.py",
     srcs: ["external_updater_reviewers_test.py"],
@@ -118,7 +118,7 @@ python_test_host {
 }
 
 python_test_host {
-    name: "external_updater_git_utils_test",
+    name: "external_updater_git_utils_test_kokoro",
     defaults: ["external_updater_test_defaults"],
     main: "tests/test_git_utils.py",
     srcs: ["tests/test_git_utils.py"],
@@ -132,7 +132,7 @@ python_test_host {
 }
 
 python_test_host {
-    name: "external_updater_gitrepo_test",
+    name: "external_updater_gitrepo_test_kokoro",
     defaults: ["external_updater_test_defaults"],
     main: "tests/test_gitrepo.py",
     srcs: ["tests/test_gitrepo.py"],
@@ -148,7 +148,7 @@ python_test_host {
 // tests/ directory should be runnable with pytest, and this file is not because
 // it depends on the generated protobuf modules.
 python_test_host {
-    name: "external_updater_base_updater_test",
+    name: "external_updater_base_updater_test_kokoro",
     defaults: ["external_updater_test_defaults"],
     main: "test_base_updater.py",
     srcs: ["test_base_updater.py"],
@@ -163,7 +163,7 @@ python_test_host {
 
 // Same as above. Needs protobuf.
 python_test_host {
-    name: "external_updater_updater_utils_test",
+    name: "external_updater_updater_utils_test_kokoro",
     defaults: ["external_updater_test_defaults"],
     main: "test_updater_utils.py",
     srcs: ["test_updater_utils.py"],
