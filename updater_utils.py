@@ -66,16 +66,23 @@ def replace_package(source_dir, target_dir, temp_file=None) -> None:
                            "" if temp_file is None else temp_file])
 
 
-def run_post_update(source_dir: Path, target_dir: Path) -> None:
+def run_post_update(proj_path: Path, old_project_path: Path | None = None) -> None:
+    """ Runs the post_update.sh script if exists.
+
+    Args:
+      proj_path: The path to the project in Android source tree. Note that this
+      project is now updated.
+      old_project_path: Temp dir to where it stored the old version after
+      upgrading the project.
     """
-      source_dir: Path to the new downloaded and extracted package.
-      target_dir: The path to the project in Android source tree.
-    """
-    post_update_path = os.path.join(source_dir, 'post_update.sh')
+    post_update_path = os.path.join(proj_path, 'post_update.sh')
     if os.path.isfile(post_update_path):
-        print("Running post update script")
-        cmd: Sequence[str | Path] = ['bash', post_update_path, source_dir, target_dir]
-        print(f'Running {post_update_path}')
+        print(f"Running post update script {post_update_path}")
+        cmd: Sequence[str | Path]
+        if old_project_path:
+            cmd = ['bash', post_update_path, proj_path, old_project_path]
+        else:
+            cmd = ['bash', post_update_path, proj_path]
         subprocess.check_call(cmd)
 
 
