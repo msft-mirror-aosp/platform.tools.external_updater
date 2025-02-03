@@ -21,5 +21,5 @@ set -e
 # work, and there are few things worse in life than bad tab completion.
 THIS_DIR=$(dirname "$0")
 TOP=$THIS_DIR/../..
-$TOP/build/soong/soong_ui.bash --make-mode external_updater
+$TOP/build/soong/soong_ui.bash --make-mode external_updater_kokoro
 $TOP/out/host/linux-x86/bin/external_updater $@

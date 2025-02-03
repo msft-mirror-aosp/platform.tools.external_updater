@@ -21,9 +21,8 @@ python_binary_host {
     name: "external_updater_kokoro",
     main: "external_updater.py",
     srcs: ["external_updater.py"],
-    libs: ["external_updater_lib"],
+    libs: ["external_updater_lib_kokoro"],
     required: ["cargo_embargo"],
-    data: [":bpfmt"],
     version: {
         py3: {
             embedded_launcher: false,
@@ -86,10 +85,10 @@ python_library_host {
 
 python_test_host {
     name: "external_updater_fileutils_test_kokoro",
-    defaults: ["external_updater_test_defaults"],
+    defaults: ["external_updater_test_defaults_kokoro"],
     main: "test_fileutils.py",
     srcs: ["test_fileutils.py"],
-    libs: ["external_updater_lib"],
+    libs: ["external_updater_lib_kokoro"],
     test_options: {
         unit_test: true,
     },
@@ -97,10 +96,10 @@ python_test_host {
 
 python_test_host {
     name: "external_updater_github_archive_updater_test_kokoro",
-    defaults: ["external_updater_test_defaults"],
+    defaults: ["external_updater_test_defaults_kokoro"],
     main: "test_github_archive_updater.py",
     srcs: ["test_github_archive_updater.py"],
-    libs: ["external_updater_lib"],
+    libs: ["external_updater_lib_kokoro"],
     test_options: {
         unit_test: true,
     },
@@ -108,10 +107,10 @@ python_test_host {
 
 python_test_host {
     name: "external_updater_reviewers_test_kokoro",
-    defaults: ["external_updater_test_defaults"],
+    defaults: ["external_updater_test_defaults_kokoro"],
     main: "external_updater_reviewers_test.py",
     srcs: ["external_updater_reviewers_test.py"],
-    libs: ["external_updater_lib"],
+    libs: ["external_updater_lib_kokoro"],
     test_options: {
         unit_test: true,
     },
@@ -119,12 +118,12 @@ python_test_host {
 
 python_test_host {
     name: "external_updater_git_utils_test_kokoro",
-    defaults: ["external_updater_test_defaults"],
+    defaults: ["external_updater_test_defaults_kokoro"],
     main: "tests/test_git_utils.py",
     srcs: ["tests/test_git_utils.py"],
     libs: [
-        "external_updater_lib",
-        "external_updater_test_lib",
+        "external_updater_lib_kokoro",
+        "external_updater_test_lib_kokoro",
     ],
     test_options: {
         unit_test: true,
@@ -133,11 +132,11 @@ python_test_host {
 
 python_test_host {
     name: "external_updater_gitrepo_test_kokoro",
-    defaults: ["external_updater_test_defaults"],
+    defaults: ["external_updater_test_defaults_kokoro"],
     main: "tests/test_gitrepo.py",
     srcs: ["tests/test_gitrepo.py"],
     libs: [
-        "external_updater_test_lib",
+        "external_updater_test_lib_kokoro",
     ],
     test_options: {
         unit_test: true,
@@ -149,12 +148,12 @@ python_test_host {
 // it depends on the generated protobuf modules.
 python_test_host {
     name: "external_updater_base_updater_test_kokoro",
-    defaults: ["external_updater_test_defaults"],
+    defaults: ["external_updater_test_defaults_kokoro"],
     main: "test_base_updater.py",
     srcs: ["test_base_updater.py"],
     libs: [
-        "external_updater_lib",
-        "external_updater_test_lib",
+        "external_updater_lib_kokoro",
+        "external_updater_test_lib_kokoro",
     ],
     test_options: {
         unit_test: true,
@@ -164,12 +163,12 @@ python_test_host {
 // Same as above. Needs protobuf.
 python_test_host {
     name: "external_updater_updater_utils_test_kokoro",
-    defaults: ["external_updater_test_defaults"],
+    defaults: ["external_updater_test_defaults_kokoro"],
     main: "test_updater_utils.py",
     srcs: ["test_updater_utils.py"],
     libs: [
-        "external_updater_lib",
-        "external_updater_test_lib",
+        "external_updater_lib_kokoro",
+        "external_updater_test_lib_kokoro",
     ],
     test_options: {
         unit_test: true,
