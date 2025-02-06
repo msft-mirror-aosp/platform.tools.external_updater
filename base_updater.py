@@ -52,10 +52,11 @@ class Updater:
         """Checks whether a new version is available."""
         raise NotImplementedError()
 
-    def update(self) -> None:
+    def update(self) -> Path | None:
         """Updates the package.
 
-        Has to call check() before this function.
+        Has to call check() before this function. Returns either the temporary
+        dir it stored the old version in after upgrading or None.
         """
         raise NotImplementedError()
 
@@ -127,4 +128,6 @@ class Updater:
             self._new_identifier.version = custom_version
         else:
             raise RuntimeError(
-                f"Can not upgrade to {custom_version}. The current version is newer than {custom_version}.")
+                f"Cannot upgrade to {custom_version}. "
+                f"Either the current version is newer than {custom_version} "
+                f"or the current version in the METADATA file is not correct.")
