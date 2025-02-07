@@ -1,2 +1,3 @@
+curl
 libxml2
 toybox

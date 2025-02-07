@@ -1,21 +1,18 @@
 #!/bin/bash
 set -e
 
-TOP=$(cd $(dirname $0)/../../.. && pwd)
-EXTERNAL_UPDATER=$(pwd)
+TOP=$(cd $(dirname $0)/../../../.. && pwd)
+EXTERNAL_UPDATER=$(pwd)/../..
 
 cd $TOP
-
 repo init -u https://android.googlesource.com/platform/manifest -b main --depth=1 < /dev/null
 repo sync -c
 
 source build/envsetup.sh
 lunch aosp_cf_x86_64_phone-trunk_staging-eng
-mm -j tools/external_updater
+m
 
-cd $EXTERNAL_UPDATER
-
-input="compatible_repositories.txt"
+input=$EXTERNAL_UPDATER/kokoro/gcp_ubuntu/"compatible_repositories.txt"
 
 while IFS= read -r line; do
     PROJ_PATH=$TOP/external/$line
