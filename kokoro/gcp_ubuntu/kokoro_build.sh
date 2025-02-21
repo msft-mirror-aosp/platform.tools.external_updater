@@ -2,9 +2,10 @@
 set -e
 
 TOP=$(cd $(dirname $0)/../../../.. && pwd)
-EXTERNAL_UPDATER=$(pwd)/../..
+EXTERNAL_UPDATER=$TOP/tools/external_updater
 
 cd $TOP
+echo Current directory: $PWD
 echo "Initializing Android tree and syncing"
 repo init -u https://android.googlesource.com/platform/manifest -b main --depth=1 < /dev/null
 repo sync -c
@@ -13,6 +14,8 @@ source build/envsetup.sh
 lunch aosp_cf_x86_64_phone-trunk_staging-eng
 
 cd $EXTERNAL_UPDATER
+echo Current directory: $PWD
+
 echo "Building external_updater"
 mm -j
 
