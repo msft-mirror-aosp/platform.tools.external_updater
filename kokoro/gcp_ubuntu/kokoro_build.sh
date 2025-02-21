@@ -20,12 +20,13 @@ echo "Building external_updater"
 mm -j
 
 echo "Checking compatible projects"
-input=$EXTERNAL_UPDATER/kokoro/gcp_ubuntu/"compatible_repositories.txt"
 
-while IFS= read -r line; do
-    PROJ_PATH=$TOP/external/$line
-    echo "$PROJ_PATH"
-    $TOP/out/host/linux-x86/bin/external_updater check $PROJ_PATH
-done < "$input"
+compatible_repositories=("libxml2")
+
+for project in "${compatible_repositories[@]}"; do
+  PROJ_PATH=$TOP/external/$project
+  echo "Trying to upgrade $PROJ_PATH"
+  $TOP/out/host/linux-x86/bin/external_updater update --no-build --skip-post-update $PROJ_PATH
+done
 
 trap 'rm -rf $TOP' EXIT
