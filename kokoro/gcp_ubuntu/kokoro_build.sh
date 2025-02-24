@@ -7,8 +7,7 @@ EXTERNAL_UPDATER=$TOP/tools/external_updater
 cd $TOP
 echo Current directory: $PWD
 echo "Initializing Android tree and syncing"
-repo init -u https://android.googlesource.com/platform/manifest -b main --depth=1 < /dev/null
-repo sync -c
+REPO_ALLOW_SHALLOW=0 repo init -c -u https://android.googlesource.com/platform/manifest -b main --use-superproject --partial-clone --partial-clone-exclude=platform/frameworks/base --clone-filter=blob:limit=10M && repo sync -c -j32
 
 source build/envsetup.sh
 lunch aosp_cf_x86_64_phone-trunk_staging-eng
