@@ -22,6 +22,36 @@ from tempfile import TemporaryDirectory
 
 import fileutils
 
+UNSORTED_BP_FILE = """\
+cc_library_shared {
+    name: "test",
+    srcs: [
+        "source2.c",
+        "source1.c",
+    ],
+    cflags: [
+        "-Wno-error=ignored-attributes",
+        "-Wall",
+        "-Werror",
+    ],
+}
+"""
+
+SORTED_BP_FILE = """\
+cc_library_shared {
+    name: "test",
+    srcs: [
+        "source1.c",
+        "source2.c",
+    ],
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-Wno-error=ignored-attributes",
+    ],
+}
+"""
+
 
 class ResolveCommandLinePathsTest(unittest.TestCase):
     """Unit tests for resolve_command_line_paths."""
@@ -117,6 +147,25 @@ class FindTreeContainingTest(unittest.TestCase):
         """Tests that an error is raised when no tree is found."""
         with self.assertRaises(FileNotFoundError):
             fileutils.find_tree_containing(self.temp_dir)
+
+
+class BpfmtTest(unittest.TestCase):
+    """Unit tests for bpfmt."""
+
+    def setUp(self) -> None:
+        self._temp_dir = TemporaryDirectory()
+        self.temp_dir = Path(self._temp_dir.name)
+        (self.temp_dir / "Android.bp").write_text(UNSORTED_BP_FILE)
+
+    def tearDown(self) -> None:
+        self._temp_dir.cleanup()
+
+    def test_unsorted_bpfmt(self) -> None:
+        """Tests that bpfmt formats and sorts the bp file."""
+        results = fileutils.bpfmt(self.temp_dir, ['Android.bp'])
+        content = (self.temp_dir / "Android.bp").read_text()
+        if results:
+            self.assertEqual(content, SORTED_BP_FILE)
 
 
 if __name__ == "__main__":
