@@ -24,11 +24,7 @@ python_binary_host {
     libs: ["external_updater_lib"],
     required: ["cargo_embargo"],
     data: [":bpfmt"],
-    version: {
-        py3: {
-            embedded_launcher: false,
-        },
-    },
+    embedded_launcher: false,
 }
 
 python_binary_host {
@@ -68,11 +64,6 @@ python_library_host {
 
 python_defaults {
     name: "external_updater_test_defaults",
-    version: {
-        py3: {
-            embedded_launcher: true,
-        },
-    },
 }
 
 python_library_host {
