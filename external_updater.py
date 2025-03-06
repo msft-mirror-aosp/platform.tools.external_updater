@@ -346,6 +346,7 @@ def parse_args() -> argparse.Namespace:
     """Parses commandline arguments."""
 
     parser = argparse.ArgumentParser(
+        prog='tools/external_updater/updater.sh',
         description='Check updates for third party projects in external/.')
     subparsers = parser.add_subparsers(dest='cmd')
     subparsers.required = True
