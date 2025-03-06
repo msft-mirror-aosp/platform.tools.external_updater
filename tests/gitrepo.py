@@ -114,9 +114,9 @@ class GitRepo:
             args.append(start_point)
         self.run(args)
 
-    def checkout(self, branch: str) -> None:
-        """Checks out a branch."""
-        args = ["checkout", branch]
+    def checkout(self, revision_or_branch: str) -> None:
+        """Checks out a revision or a branch."""
+        args = ["checkout", revision_or_branch]
         self.run(args)
 
     def delete_branch(self, name: str) -> None:
