@@ -259,9 +259,19 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
     return lines
 
 
-def diff(proj_path: Path, diff_filter: str, revision: str) -> str:
+def diff_stat(proj_path: Path, diff_filter: str, revision: str) -> str:
     try:
         cmd = ['git', 'diff', revision, '--stat', f'--diff-filter={diff_filter}']
+        out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
+                             check=True, text=True).stdout
+        return out
+    except subprocess.CalledProcessError as err:
+        return f"Could not calculate the diff: {err}"
+
+
+def diff_name_only(proj_path: Path, diff_filter: str, revision: str) -> str:
+    try:
+        cmd = ['git', 'diff', revision, '--name-only', f'--diff-filter={diff_filter}']
         out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
                              check=True, text=True).stdout
         return out
