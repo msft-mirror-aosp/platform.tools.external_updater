@@ -53,6 +53,7 @@ class GitRepoTestCase(unittest.TestCase):
         os.environ.clear()
         os.environ.update(self._original_env)
 
+
 class IsAncestorTest(GitRepoTestCase):
     """Tests for git_utils.is_ancestor."""
 
@@ -120,18 +121,33 @@ class GetMostRecentTagTest(GitRepoTestCase):
 
 
 class DiffTest(GitRepoTestCase):
-    """Tests for git_utils.diff."""
-    def test_git_diff_added_filter(self) -> None:
+    def test_diff_stat_A_filter(self) -> None:
+        """Tests for git_utils.diff_stat."""
         self.repo.init("main")
         self.repo.commit(
             "Add README.md", update_files={"README.md": "Hello, world!"}
         )
         first_commit = self.repo.head()
         self.repo.commit(
-            "Add OWNERS", update_files={"OWNERS": "nobody"}
+            "Add OWNERS and METADATA",
+            update_files={"OWNERS": "nobody"}
         )
-        diff = git_utils.diff(self.repo.path, 'A', first_commit)
-        self.assertIn('OWNERS', diff)
+        diff = git_utils.diff_stat(self.repo.path, 'A', first_commit)
+        assert 'OWNERS | 1 +' in diff
+
+    def test_diff_name_only_A_filter(self) -> None:
+        """Tests for git_utils.diff_name_only."""
+        self.repo.init("main")
+        self.repo.commit(
+            "Add README.md", update_files={"README.md": "Hello, world!"}
+        )
+        first_commit = self.repo.head()
+        self.repo.commit(
+            "Add OWNERS and METADATA",
+            update_files={"OWNERS": "nobody", "METADATA": "name: 'foo'"}
+        )
+        diff = git_utils.diff_name_only(self.repo.path, 'A', first_commit)
+        assert diff == 'METADATA\nOWNERS\n'
 
 
 if __name__ == "__main__":
