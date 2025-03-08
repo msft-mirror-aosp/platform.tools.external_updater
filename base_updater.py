@@ -46,7 +46,7 @@ class Updater:
     def validate(self) -> str:
         """Checks whether aosp version is what it claims to be."""
         self.setup_remote()
-        return git_utils.diff(self._proj_path, 'a', self._old_identifier.version)
+        return git_utils.diff_stat(self._proj_path, 'a', self._old_identifier.version)
 
     def check(self) -> None:
         """Checks whether a new version is available."""
