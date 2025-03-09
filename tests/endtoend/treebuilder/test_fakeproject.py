@@ -56,6 +56,6 @@ class TestFakeProject:
             == "Add metadata files.\n"
         )
         metadata = project.android_mirror.file_contents_at_revision("HEAD", "METADATA")
-        assert 'type: "GIT"' in metadata
+        assert 'type: "Git"' in metadata
         assert f'value: "{project.upstream.path.as_uri()}"' in metadata
         assert f'version: "{upstream_sha}"' in metadata

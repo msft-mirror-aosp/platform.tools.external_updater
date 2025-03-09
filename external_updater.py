@@ -25,6 +25,7 @@ from collections.abc import Iterable
 import json
 import logging
 import os
+import shutil
 import subprocess
 import textwrap
 import time
@@ -94,13 +95,12 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             git_utils.reset_hard(full_path)
             git_utils.clean(full_path)
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
-
     try:
         tmp_dir_of_old_version = updater.update()
-
+        bp_files = fileutils.find_local_bp_files(full_path, updater.latest_version)
+        fileutils.bpfmt(full_path, bp_files)
         updated_metadata = updater.update_metadata(metadata)
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
-        git_utils.add_file(full_path, 'METADATA')
 
         try:
             rel_proj_path = str(fileutils.get_relative_project_path(full_path))

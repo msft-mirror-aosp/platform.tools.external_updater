@@ -16,6 +16,8 @@
 import datetime
 import enum
 import os
+import shutil
+import subprocess
 from pathlib import Path
 import textwrap
 
@@ -25,8 +27,10 @@ from google.protobuf import text_format  # type: ignore
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
+import git_utils
 
 METADATA_FILENAME = 'METADATA'
+ANDROID_BP_FILENAME = 'Android.bp'
 
 
 @enum.unique
@@ -237,3 +241,44 @@ def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: 
 
             """))
         metadata_file.write(text_metadata)
+
+
+def find_local_bp_files(proj_path: Path, latest_version: str) -> list[str]:
+    """Finds the bp files that are in the local project but not upstream.
+
+    Args:
+        proj_path: Path to the project.
+        latest_version: To compare upstream's latest_version to current working dir
+    """
+    added_files = git_utils.diff_name_only(proj_path, 'A', latest_version).splitlines()
+    bp_files = [file for file in added_files if ANDROID_BP_FILENAME in file]
+    return bp_files
+
+
+def bpfmt(proj_path: Path, bp_files: list[str]) -> bool:
+    """Runs bpfmt with sort flag.
+
+    It only runs bpfmt on Android.bp files that are not in upstream to prevent
+    merge conflicts.
+
+    Args:
+        proj_path: Path to the project.
+        bp_files: List of bp files to run bpfmt on
+    """
+    cmd = ['bpfmt', '-s', '-w']
+
+    if shutil.which("bpfmt") is None:
+        print("bpfmt is not in your PATH. You may need to run lunch, or run 'm bpfmt' first.")
+        return False
+
+    if not bp_files:
+        print("Did not find any Android.bp files to format")
+        return False
+
+    try:
+        for file in bp_files:
+            subprocess.run(cmd + [file], capture_output=True, cwd=proj_path, check=True)
+            return True
+    except subprocess.CalledProcessError as ex:
+        print(f"bpfmt failed: {ex}")
+        return False
