@@ -25,6 +25,7 @@ from collections.abc import Iterable
 import json
 import logging
 import os
+import shutil
 import subprocess
 import textwrap
 import time
@@ -62,7 +63,7 @@ def build_updater(proj_path: Path) -> Tuple[Updater, metadata_pb2.MetaData]:
     Returns:
       The updater object built. None if there's any error.
     """
-
+    git_utils.repo_sync(proj_path)
     proj_path = fileutils.get_absolute_project_path(proj_path)
     metadata = fileutils.read_metadata(proj_path)
     metadata = fileutils.convert_url_to_identifier(metadata)
@@ -94,13 +95,12 @@ def _do_update(args: argparse.Namespace, updater: Updater,
             git_utils.reset_hard(full_path)
             git_utils.clean(full_path)
         git_utils.start_branch(full_path, TMP_BRANCH_NAME)
-
     try:
         tmp_dir_of_old_version = updater.update()
-
+        bp_files = fileutils.find_local_bp_files(full_path, updater.latest_version)
+        fileutils.bpfmt(full_path, bp_files)
         updated_metadata = updater.update_metadata(metadata)
         fileutils.write_metadata(full_path, updated_metadata, args.keep_date)
-        git_utils.add_file(full_path, 'METADATA')
 
         try:
             rel_proj_path = str(fileutils.get_relative_project_path(full_path))
@@ -346,6 +346,7 @@ def parse_args() -> argparse.Namespace:
     """Parses commandline arguments."""
 
     parser = argparse.ArgumentParser(
+        prog='tools/external_updater/updater.sh',
         description='Check updates for third party projects in external/.')
     subparsers = parser.add_subparsers(dest='cmd')
     subparsers.required = True

@@ -193,6 +193,11 @@ def start_branch(proj_path: Path, branch_name: str) -> None:
     subprocess.run(['repo', 'start', branch_name], cwd=proj_path, check=True)
 
 
+def repo_sync(proj_path: Path,) -> None:
+    """Downloads new changes and updates the working files in the local environment."""
+    subprocess.run(['repo', 'sync', '.'], cwd=proj_path, check=True)
+
+
 def commit(proj_path: Path, message: str, no_verify: bool) -> None:
     """Commits changes."""
     cmd = ['git', 'commit', '-m', message] + (['--no-verify'] if no_verify is True else [])
@@ -259,9 +264,19 @@ def list_remote_tags(proj_path: Path, remote_name: str) -> list[str]:
     return lines
 
 
-def diff(proj_path: Path, diff_filter: str, revision: str) -> str:
+def diff_stat(proj_path: Path, diff_filter: str, revision: str) -> str:
     try:
         cmd = ['git', 'diff', revision, '--stat', f'--diff-filter={diff_filter}']
+        out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
+                             check=True, text=True).stdout
+        return out
+    except subprocess.CalledProcessError as err:
+        return f"Could not calculate the diff: {err}"
+
+
+def diff_name_only(proj_path: Path, diff_filter: str, revision: str) -> str:
+    try:
+        cmd = ['git', 'diff', revision, '--name-only', f'--diff-filter={diff_filter}']
         out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
                              check=True, text=True).stdout
         return out
