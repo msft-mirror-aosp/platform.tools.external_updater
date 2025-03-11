@@ -193,6 +193,11 @@ def start_branch(proj_path: Path, branch_name: str) -> None:
     subprocess.run(['repo', 'start', branch_name], cwd=proj_path, check=True)
 
 
+def repo_sync(proj_path: Path,) -> None:
+    """Downloads new changes and updates the working files in the local environment."""
+    subprocess.run(['repo', 'sync', '.'], cwd=proj_path, check=True)
+
+
 def commit(proj_path: Path, message: str, no_verify: bool) -> None:
     """Commits changes."""
     cmd = ['git', 'commit', '-m', message] + (['--no-verify'] if no_verify is True else [])
