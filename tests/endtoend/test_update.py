@@ -17,6 +17,7 @@
 import subprocess
 from pathlib import Path
 
+import git_utils
 from .treebuilder import TreeBuilder
 
 UNSORTED_BP_FILE = """\
@@ -192,3 +193,32 @@ class TestUpdate:
         latest_sha = a.local.head()
         bp_content = a.local.file_contents_at_revision(latest_sha, 'Android.bp')
         assert bp_content == UNSORTED_BP_FILE
+
+    def test_repo_sync(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """Tests if updater is fooled by checking out an older commit.
+
+        We want to see if we checkout an older update commit, external_updater
+        knows we are up to date and it is not fooled by the fake out of date
+        state.
+        """
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        tree.create_manifest_repo()
+        a.initial_import()
+        tree.init_and_sync()
+        head_after_import = a.android_mirror.head()
+        a.upstream.commit("Second commit.", allow_empty=True)
+        commit_two = a.upstream.head()
+        self.update(updater_cmd, [a.local.path])
+        a.android_mirror.checkout(head_after_import)
+        output = self.update(updater_cmd, [a.local.path])
+        assert output == (
+            f"repo sync has finished successfully.\n"
+            f"Checking {a.local.path}...\n"
+            f"Current version: {commit_two}\n"
+            f"Latest version: {commit_two}\n"
+            "Up to date.\n"
+        )

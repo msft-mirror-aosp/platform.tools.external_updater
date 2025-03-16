@@ -63,7 +63,7 @@ def build_updater(proj_path: Path) -> Tuple[Updater, metadata_pb2.MetaData]:
     Returns:
       The updater object built. None if there's any error.
     """
-
+    git_utils.repo_sync(proj_path)
     proj_path = fileutils.get_absolute_project_path(proj_path)
     metadata = fileutils.read_metadata(proj_path)
     metadata = fileutils.convert_url_to_identifier(metadata)
@@ -346,6 +346,7 @@ def parse_args() -> argparse.Namespace:
     """Parses commandline arguments."""
 
     parser = argparse.ArgumentParser(
+        prog='tools/external_updater/updater.sh',
         description='Check updates for third party projects in external/.')
     subparsers = parser.add_subparsers(dest='cmd')
     subparsers.required = True
