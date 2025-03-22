@@ -256,7 +256,7 @@ def find_local_bp_files(proj_path: Path, latest_version: str) -> list[str]:
 
 
 def bpfmt(proj_path: Path, bp_files: list[str]) -> bool:
-    """Runs bpfmt with sort flag.
+    """Runs bpfmt.
 
     It only runs bpfmt on Android.bp files that are not in upstream to prevent
     merge conflicts.
@@ -265,7 +265,7 @@ def bpfmt(proj_path: Path, bp_files: list[str]) -> bool:
         proj_path: Path to the project.
         bp_files: List of bp files to run bpfmt on
     """
-    cmd = ['bpfmt', '-s', '-w']
+    cmd = ['bpfmt', '-w']
 
     if shutil.which("bpfmt") is None:
         print("bpfmt is not in your PATH. You may need to run lunch, or run 'm bpfmt' first.")
