@@ -17,7 +17,6 @@
 import subprocess
 from pathlib import Path
 
-import git_utils
 from .treebuilder import TreeBuilder
 
 UNFORMATTED_BP_FILE = """\

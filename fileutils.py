@@ -52,7 +52,7 @@ def find_tree_containing(project: Path) -> Path:
     finding this directory won't necessarily work:
 
     * Using ANDROID_BUILD_TOP might find the wrong tree (if external_updater
-    is used to manage a project that is not in AOSP, as it does for CMake,
+    is used to manage a project that is not in Android, as it does for CMake,
     rr, and a few others), since ANDROID_BUILD_TOP will be the one that built
     external_updater rather than the given project.
     * Paths relative to __file__ are no good because we'll run from a "built"
