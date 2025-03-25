@@ -25,7 +25,6 @@ from collections.abc import Iterable
 import json
 import logging
 import os
-import shutil
 import subprocess
 import textwrap
 import time
@@ -134,7 +133,7 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         raise err
 
     if not args.no_upload:
-        git_utils.push(full_path, args.remote_name, updater.has_errors)
+        git_utils.push(full_path, updater.has_errors)
 
 
 def has_new_version(updater: Updater) -> bool:
@@ -412,11 +411,6 @@ def parse_args() -> argparse.Namespace:
         action='store_true',
         help='Pass --no-verify to git commit')
     update_parser.add_argument(
-        '--remote-name',
-        default='aosp',
-        required=False,
-        help='Remote repository name, the default is set to aosp')
-    update_parser.add_argument(
         '--exclude',
         action='append',
         help='Names of projects to exclude. '
@@ -437,7 +431,7 @@ def parse_args() -> argparse.Namespace:
 
     diff_parser = subparsers.add_parser(
         'validate',
-        help='Check if aosp version is what it claims to be.')
+        help='Check if Android version is what it claims to be.')
     diff_parser.add_argument(
         'paths',
         nargs='*',

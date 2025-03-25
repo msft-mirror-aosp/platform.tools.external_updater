@@ -42,7 +42,7 @@ class TestFindManifestXmlForTree:
 class TestManifestParser:
     """Tests for ManifestParser."""
 
-    def test_default_missing(self, tmp_path: Path) -> None:
+    def test_manifest_default_missing(self, tmp_path: Path) -> None:
         """Tests that an error is raised when the default node is missing."""
         manifest_path = tmp_path / "manifest.xml"
         manifest_path.write_text(
@@ -58,7 +58,7 @@ class TestManifestParser:
         with pytest.raises(RuntimeError):
             ManifestParser(manifest_path).parse()
 
-    def test_name_missing(self, tmp_path: Path) -> None:
+    def test_project_name_missing(self, tmp_path: Path) -> None:
         """Tests that an error is raised when neither name nor path is defined for a project."""
         manifest_path = tmp_path / "manifest.xml"
         manifest_path.write_text(
@@ -66,7 +66,7 @@ class TestManifestParser:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default revision="main" remote="aosp" />
+                    <default revision="main" remote="testremote" />
 
                     <project />
                 </manifest>
@@ -76,8 +76,7 @@ class TestManifestParser:
         with pytest.raises(RuntimeError):
             ManifestParser(manifest_path).parse()
 
-
-    def test_multiple_default(self, tmp_path: Path) -> None:
+    def test_multiple_manifest_default(self, tmp_path: Path) -> None:
         """Tests that an error is raised when there is more than one default node."""
         manifest = tmp_path / "manifest.xml"
         manifest.write_text(
@@ -85,8 +84,8 @@ class TestManifestParser:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default revision="main" remote="aosp" />
-                    <default revision="main" remote="aosp" />
+                    <default revision="main" remote="testremote" />
+                    <default revision="main" remote="testremote" />
 
                     <project path="external/project" revision="master" />
                 </manifest>
@@ -96,7 +95,26 @@ class TestManifestParser:
         with pytest.raises(RuntimeError):
             ManifestParser(manifest).parse()
 
-    def test_remote_default(self, tmp_path: Path) -> None:
+    def test_manifest_remote(self, tmp_path: Path) -> None:
+        """Tests that the correct remote name of the manifest is found."""
+        manifest_path = tmp_path / "manifest.xml"
+        manifest_path.write_text(
+            textwrap.dedent(
+                """\
+                <?xml version="1.0" encoding="UTF-8"?>
+                <manifest>
+                    <remote name="testremote" />
+                    <default revision="main" remote="testremote" />
+
+                    <project path="external/project" remote="origin" />
+                </manifest>
+                """
+            )
+        )
+        manifest = ManifestParser(manifest_path).parse()
+        assert manifest.remote == "testremote"
+
+    def test_project_remote_default(self, tmp_path: Path) -> None:
         """Tests that the default remote is used when not defined by the project."""
         manifest_path = tmp_path / "manifest.xml"
         manifest_path.write_text(
@@ -104,8 +122,8 @@ class TestManifestParser:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <remote name="aosp" />
-                    <default revision="main" remote="aosp" />
+                    <remote name="testremote" />
+                    <default revision="main" remote="testremote" />
 
                     <project path="external/project" />
                 </manifest>
@@ -113,9 +131,9 @@ class TestManifestParser:
             )
         )
         manifest = ManifestParser(manifest_path).parse()
-        assert manifest.project_with_path("external/project").remote == "aosp"
+        assert manifest.project_with_path("external/project").remote == "testremote"
 
-    def test_revision_default(self, tmp_path: Path) -> None:
+    def test_project_revision_default(self, tmp_path: Path) -> None:
         """Tests that the default revision is used when not defined by the project."""
         manifest_path = tmp_path / "manifest.xml"
         manifest_path.write_text(
@@ -123,7 +141,7 @@ class TestManifestParser:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default revision="main" remote="aosp" />
+                    <default revision="main" remote="testremote" />
 
                     <project path="external/project" />
                 </manifest>
@@ -133,7 +151,7 @@ class TestManifestParser:
         manifest = ManifestParser(manifest_path).parse()
         assert manifest.project_with_path("external/project").revision == "main"
 
-    def test_path_default(self, tmp_path: Path) -> None:
+    def test_project_path_default(self, tmp_path: Path) -> None:
         """Tests that the default path is used when not defined by the project."""
         manifest_path = tmp_path / "manifest.xml"
         manifest_path.write_text(
@@ -141,7 +159,7 @@ class TestManifestParser:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default revision="main" remote="aosp" />
+                    <default revision="main" remote="testremote" />
 
                     <project name="external/project" />
                 </manifest>
@@ -151,7 +169,7 @@ class TestManifestParser:
         manifest = ManifestParser(manifest_path).parse()
         assert manifest.project_with_path("external/project") is not None
 
-    def test_remote_explicit(self, tmp_path: Path) -> None:
+    def test_project_remote_explicit(self, tmp_path: Path) -> None:
         """Tests that the project remote is used when defined."""
         manifest_path = tmp_path / "manifest.xml"
         manifest_path.write_text(
@@ -159,7 +177,7 @@ class TestManifestParser:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default revision="main" remote="aosp" />
+                    <default revision="main" remote="testremote" />
 
                     <project path="external/project" remote="origin" />
                 </manifest>
@@ -169,7 +187,7 @@ class TestManifestParser:
         manifest = ManifestParser(manifest_path).parse()
         assert manifest.project_with_path("external/project").remote == "origin"
 
-    def test_revision_explicit(self, tmp_path: Path) -> None:
+    def test_project_revision_explicit(self, tmp_path: Path) -> None:
         """Tests that the project revision is used when defined."""
         manifest_path = tmp_path / "manifest.xml"
         manifest_path.write_text(
@@ -177,7 +195,7 @@ class TestManifestParser:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default revision="main" remote="aosp" />
+                    <default revision="main" remote="testremote" />
 
                     <project path="external/project" revision="master" />
                 </manifest>
@@ -187,7 +205,7 @@ class TestManifestParser:
         manifest = ManifestParser(manifest_path).parse()
         assert manifest.project_with_path("external/project").revision == "master"
 
-    def test_path_explicit(self, tmp_path: Path) -> None:
+    def test_project_path_explicit(self, tmp_path: Path) -> None:
         """Tests that the project path is used when defined."""
         manifest_path = tmp_path / "manifest.xml"
         manifest_path.write_text(
@@ -195,7 +213,7 @@ class TestManifestParser:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default revision="main" remote="aosp" />
+                    <default revision="main" remote="testremote" />
 
                     <project name="external/project" path="other/path" />
                 </manifest>
@@ -204,6 +222,7 @@ class TestManifestParser:
         )
         manifest = ManifestParser(manifest_path).parse()
         assert manifest.project_with_path("other/path") is not None
+
 
 class TestManifest:
     """Tests for Manifest."""
@@ -217,7 +236,7 @@ class TestManifest:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default remote="aosp" revision="main" />
+                    <default remote="testremote" revision="main" />
 
                     <project path="external/a" />
                     <project path="external/b" />
@@ -238,7 +257,7 @@ class TestManifest:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default remote="aosp" revision="main" />
+                    <default remote="testremote" revision="main" />
 
                     <project path="external/a" />
                     <project path="external/b" />
@@ -259,7 +278,7 @@ class TestManifest:
                 """\
                 <?xml version="1.0" encoding="UTF-8"?>
                 <manifest>
-                    <default remote="aosp" revision="main" />
+                    <default remote="testremote" revision="main" />
 
                     <project path="external/a" />
                     <project path="external/b" />

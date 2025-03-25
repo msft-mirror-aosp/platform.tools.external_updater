@@ -88,6 +88,7 @@ class ManifestParser:  # pylint: disable=too-few-public-methods
 
         return Manifest(
             self.xml_path,
+            default_remote,
             [
                 Project.from_xml_node(p, default_remote, default_revision)
                 for p in root.findall("./project")
@@ -101,8 +102,9 @@ class Manifest:
     https://gerrit.googlesource.com/git-repo/+/master/docs/manifest-format.md
     """
 
-    def __init__(self, path: Path, projects: list[Project]) -> None:
+    def __init__(self, path: Path, remote: str, projects: list[Project]) -> None:
         self.path = path
+        self.remote = remote
         self.projects_by_path = {p.path: p for p in projects}
 
     @staticmethod
