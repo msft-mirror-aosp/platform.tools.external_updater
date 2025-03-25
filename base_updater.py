@@ -44,7 +44,7 @@ class Updater:
         raise NotImplementedError()
 
     def validate(self) -> str:
-        """Checks whether aosp version is what it claims to be."""
+        """Checks whether Android version is what it claims to be."""
         self.setup_remote()
         return git_utils.diff_stat(self._proj_path, 'a', self._old_identifier.version)
 

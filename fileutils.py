@@ -52,7 +52,7 @@ def find_tree_containing(project: Path) -> Path:
     finding this directory won't necessarily work:
 
     * Using ANDROID_BUILD_TOP might find the wrong tree (if external_updater
-    is used to manage a project that is not in AOSP, as it does for CMake,
+    is used to manage a project that is not in Android, as it does for CMake,
     rr, and a few others), since ANDROID_BUILD_TOP will be the one that built
     external_updater rather than the given project.
     * Paths relative to __file__ are no good because we'll run from a "built"
@@ -256,7 +256,7 @@ def find_local_bp_files(proj_path: Path, latest_version: str) -> list[str]:
 
 
 def bpfmt(proj_path: Path, bp_files: list[str]) -> bool:
-    """Runs bpfmt with sort flag.
+    """Runs bpfmt.
 
     It only runs bpfmt on Android.bp files that are not in upstream to prevent
     merge conflicts.
@@ -265,7 +265,7 @@ def bpfmt(proj_path: Path, bp_files: list[str]) -> bool:
         proj_path: Path to the project.
         bp_files: List of bp files to run bpfmt on
     """
-    cmd = ['bpfmt', '-s', '-w']
+    cmd = ['bpfmt', '-w']
 
     if shutil.which("bpfmt") is None:
         print("bpfmt is not in your PATH. You may need to run lunch, or run 'm bpfmt' first.")

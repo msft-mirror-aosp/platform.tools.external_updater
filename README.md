@@ -11,13 +11,12 @@ In each of the examples below, `$PROJECT_PATH` is the path to the project to
 operate on. If more than one path is given, external_updater will operate on
 each in turn.
 
-Make sure you have initialized AOSP main source code. The default remote for
-external updater is AOSP.
+Make sure you have initialized Android main source code:
 
-If you are trying to upgrade a project in other remotes, you can pass
-`--remote-name $REMOTE` to the `update` parser. We strongly recommend updating
-projects in AOSP and allowing automerger to merge the upgrade CL with other
-branches.
+```shell
+repo init -u URL [options]
+repo sync
+```
 
 To use this tool, a METADATA file must present at the root of the
 repository. The full definition can be found in
@@ -61,7 +60,6 @@ The following options can be passed to `update` parser:
 --skip-post-update                Skip post_update script if post_update script exists
 --keep-local-changes              Updates the current branch instead of creating a new branch
 --no-verify                       Pass --no-verify to git commit
---remote-name REMOTE_NAME        Remote repository name, the default is set to aosp
 --exclude$EXCLUDE                Names of projects to exclude. These are just the final part of the path with no directories.
 --refresh                         Run update and refresh to the current version.
 --keep-date                       Run update and do not change date in METADATA.

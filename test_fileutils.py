@@ -22,32 +22,28 @@ from tempfile import TemporaryDirectory
 
 import fileutils
 
-UNSORTED_BP_FILE = """\
+UNFORMATTED_BP_FILE = """\
 cc_library_shared {
     name: "test",
     srcs: [
         "source2.c",
         "source1.c",
     ],
-    cflags: [
-        "-Wno-error=ignored-attributes",
-        "-Wall",
-        "-Werror",
-    ],
+    cflags: ["-Wno-error=ignored-attributes", "-Wall", "-Werror"],
 }
 """
 
-SORTED_BP_FILE = """\
+FORMATTED_BP_FILE = """\
 cc_library_shared {
     name: "test",
     srcs: [
-        "source1.c",
         "source2.c",
+        "source1.c",
     ],
     cflags: [
+        "-Wno-error=ignored-attributes",
         "-Wall",
         "-Werror",
-        "-Wno-error=ignored-attributes",
     ],
 }
 """
@@ -155,17 +151,17 @@ class BpfmtTest(unittest.TestCase):
     def setUp(self) -> None:
         self._temp_dir = TemporaryDirectory()
         self.temp_dir = Path(self._temp_dir.name)
-        (self.temp_dir / "Android.bp").write_text(UNSORTED_BP_FILE)
+        (self.temp_dir / "Android.bp").write_text(UNFORMATTED_BP_FILE)
 
     def tearDown(self) -> None:
         self._temp_dir.cleanup()
 
-    def test_unsorted_bpfmt(self) -> None:
-        """Tests that bpfmt formats and sorts the bp file."""
+    def test_unformatted_bpfmt(self) -> None:
+        """Tests that bpfmt formats the bp file."""
         results = fileutils.bpfmt(self.temp_dir, ['Android.bp'])
         content = (self.temp_dir / "Android.bp").read_text()
         if results:
-            self.assertEqual(content, SORTED_BP_FILE)
+            self.assertEqual(content, FORMATTED_BP_FILE)
 
 
 if __name__ == "__main__":

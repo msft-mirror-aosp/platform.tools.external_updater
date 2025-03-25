@@ -17,35 +17,30 @@
 import subprocess
 from pathlib import Path
 
-import git_utils
 from .treebuilder import TreeBuilder
 
-UNSORTED_BP_FILE = """\
+UNFORMATTED_BP_FILE = """\
 cc_library_shared {
     name: "test",
     srcs: [
         "source2.c",
         "source1.c",
     ],
-    cflags: [
-        "-Wno-error=ignored-attributes",
-        "-Wall",
-        "-Werror",
-    ],
+    cflags: ["-Wno-error=ignored-attributes", "-Wall", "-Werror"],
 }
 """
 
-SORTED_BP_FILE = """\
+FORMATTED_BP_FILE = """\
 cc_library_shared {
     name: "test",
     srcs: [
-        "source1.c",
         "source2.c",
+        "source1.c",
     ],
     cflags: [
+        "-Wno-error=ignored-attributes",
         "-Wall",
         "-Werror",
-        "-Wno-error=ignored-attributes",
     ],
 }
 """
@@ -170,13 +165,13 @@ class TestUpdate:
         a.upstream.commit("Initial commit.", allow_empty=True)
         tree.create_manifest_repo()
         a.initial_import()
-        a.android_mirror.commit("Add Android.bp file", update_files={"Android.bp": UNSORTED_BP_FILE})
+        a.android_mirror.commit("Add Android.bp file", update_files={"Android.bp": UNFORMATTED_BP_FILE})
         tree.init_and_sync()
         a.upstream.commit("Second commit.", allow_empty=True)
         self.update(updater_cmd, [a.local.path])
         latest_sha = a.local.head()
         bp_content = a.local.file_contents_at_revision(latest_sha, 'Android.bp')
-        assert bp_content == SORTED_BP_FILE
+        assert bp_content == FORMATTED_BP_FILE
 
     def test_bpfmt_one_local_bp_file_one_upstream_bp_file(
         self, tree_builder: TreeBuilder, updater_cmd: list[str]
@@ -184,7 +179,7 @@ class TestUpdate:
         """Tests that bpfmt doesn't format the bp file because it's an upstream file."""
         tree = tree_builder.repo_tree("tree")
         a = tree.project("platform/external/foo", "external/foo")
-        a.upstream.commit("Initial commit and adding bp file", update_files={"Android.bp": UNSORTED_BP_FILE})
+        a.upstream.commit("Initial commit and adding bp file", update_files={"Android.bp": UNFORMATTED_BP_FILE})
         tree.create_manifest_repo()
         a.initial_import()
         tree.init_and_sync()
@@ -192,7 +187,7 @@ class TestUpdate:
         self.update(updater_cmd, [a.local.path])
         latest_sha = a.local.head()
         bp_content = a.local.file_contents_at_revision(latest_sha, 'Android.bp')
-        assert bp_content == UNSORTED_BP_FILE
+        assert bp_content == UNFORMATTED_BP_FILE
 
     def test_repo_sync(
         self, tree_builder: TreeBuilder, updater_cmd: list[str]
