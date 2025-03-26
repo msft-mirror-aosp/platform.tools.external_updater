@@ -18,8 +18,10 @@ import re
 import subprocess
 from pathlib import Path
 
+import fileutils
 import hashtags
 import reviewers
+from manifest import Manifest
 
 UNWANTED_TAGS = ["*alpha*", "*Alpha*", "*beta*", "*Beta*", "*rc*", "*RC*", "*test*"]
 
@@ -224,8 +226,9 @@ def detach_to_android_head(proj_path: Path) -> None:
     subprocess.run(['repo', 'sync', '-l', '-d', proj_path], cwd=proj_path, check=True)
 
 
-def push(proj_path: Path, remote_name: str, has_errors: bool) -> None:
+def push(proj_path: Path, has_errors: bool) -> None:
     """Pushes change to remote."""
+    remote_name = determine_remote_name(proj_path)
     cmd = ['git', 'push', remote_name, 'HEAD:refs/for/main', '-o', 'banned-words~skip']
     if revs := reviewers.find_reviewers(str(proj_path)):
         cmd.extend(['-o', revs])
@@ -316,3 +319,10 @@ def list_branches_with_commit(proj_path: Path, commit: str, remote_name: str) ->
     lines = out.splitlines()
     remote_branches = [line for line in lines if remote_name in line]
     return remote_branches
+
+
+def determine_remote_name(proj_path: Path) -> str:
+    """Returns the remote name in the manifest."""
+    root = fileutils.find_tree_containing(proj_path)
+    manifest = Manifest.for_tree(root)
+    return manifest.remote
