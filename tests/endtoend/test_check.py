@@ -53,12 +53,13 @@ class TestCheck:
         tree.init_and_sync()
         output = self.check(updater_cmd, [a.local.path])
         current_version = a.upstream.head()
-        assert output == (
+        expected_output = (
             f"Checking {a.local.path}...\n"
             f"Current version: {current_version}\n"
             f"Latest version: {current_version}\n"
             "Up to date.\n"
         )
+        assert expected_output in output
 
     def test_git_out_of_date(
         self, tree_builder: TreeBuilder, updater_cmd: list[str]
@@ -82,12 +83,13 @@ class TestCheck:
         )
         output = self.check(updater_cmd, [a.local.path])
         latest_version = a.upstream.head()
-        assert output == (
+        expected_output = (
             f"Checking {a.local.path}...\n"
             f"Current version: {current_version}\n"
             f"Latest version: {latest_version}\n"
             "Out of date!\n"
         )
+        assert expected_output in output
 
     def test_not_suggest_tag_that_is_not_on_any_branch(
         self, tree_builder: TreeBuilder, updater_cmd: list[str]

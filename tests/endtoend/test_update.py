@@ -53,6 +53,7 @@ class TestUpdate:
         updater_cmd: list[str],
         paths: list[Path],
         args: list[str] | None = None,
+        input: str | None = None,
     ) -> str:
         """Runs `external_updater update` with the given arguments.
 
@@ -66,6 +67,7 @@ class TestUpdate:
             check=True,
             capture_output=True,
             text=True,
+            input=input
         ).stdout
 
     def test_bug_number(
@@ -217,3 +219,204 @@ class TestUpdate:
             f"Latest version: {commit_two}\n"
             "Up to date.\n"
         )
+
+    def test_on_latest_sha(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """
+        METADATA has an up to date SHA.
+        """
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        commit_one = a.upstream.head()
+        tree.create_manifest_repo()
+        a.initial_import()
+        tree.init_and_sync()
+
+        output = self.update(updater_cmd, [a.local.path])
+        assert output == (
+            f"repo sync has finished successfully.\n"
+            f"Checking {a.local.path}...\n"
+            f"Current version: {commit_one}\n"
+            f"Latest version: {commit_one}\n"
+            "Up to date.\n"
+        )
+
+    def test_on_sha_latest_equal_sha_and_tag_available(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """
+        METADATA has an out of date SHA.
+        Upstream's latest SHA is tagged.
+        """
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        commit_one = a.upstream.head()
+        tree.create_manifest_repo()
+        a.initial_import()
+        tree.init_and_sync()
+
+        a.upstream.commit("Second commit.", allow_empty=True)
+        commit_two = a.upstream.head()
+        a.upstream.tag("tag1")
+
+        output = self.update(updater_cmd, [a.local.path], input='yes')
+        expected_output = (
+            f"Current version: {commit_one}\n"
+            f"Latest version: {commit_two}\n"
+            f"Alternative latest version: tag1\n"
+            "Out of date!\n"
+            f"Would you like to upgrade to tag tag1 instead of sha {commit_two}? (yes/no)\n"
+            "We recommend upgrading to tag tag1 instead."
+        )
+        assert expected_output in output
+
+    def test_on_sha_new_tag_newer_sha_available(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """
+        METADATA has an out of date SHA.
+        Upstream has a new tag and a newer SHA.
+        """
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        commit_one = a.upstream.head()
+        tree.create_manifest_repo()
+        a.initial_import()
+        tree.init_and_sync()
+
+        a.upstream.commit("Second commit.", allow_empty=True)
+        a.upstream.tag("tag1")
+
+        a.upstream.commit("Third commit.", allow_empty=True)
+        commit_three = a.upstream.head()
+
+        output = self.update(updater_cmd, [a.local.path], input='yes')
+        expected_output = (
+            f"Current version: {commit_one}\n"
+            f"Latest version: {commit_three}\n"
+            f"Alternative latest version: tag1\n"
+            "Out of date!\n"
+            f"Would you like to upgrade to tag tag1 instead of sha {commit_three}? (yes/no)\n"
+            "We recommend upgrading to tag tag1 instead."
+        )
+        assert expected_output in output
+
+    def test_on_tag_latest_equal_sha_and_tag_available(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """
+        METADATA has an out of date tag.
+        Upstream's latest SHA is tagged.
+        """
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        a.upstream.tag("tag1")
+        tree.create_manifest_repo()
+        a.initial_import(True)
+        tree.init_and_sync()
+
+        a.upstream.commit("Second commit.", allow_empty=True)
+        commit_two = a.upstream.head()
+        a.upstream.tag("tag2")
+
+        output = self.update(updater_cmd, [a.local.path], input='no')
+        expected_output = (
+            f"Current version: tag1\n"
+            f"Latest version: tag2\n"
+            f"Alternative latest version: {commit_two}\n"
+            "Out of date!\n"
+            f"Would you like to upgrade to sha {commit_two} instead of tag tag2? (yes/no)\n"
+            f"We DO NOT recommend upgrading to sha {commit_two}."
+        )
+        assert expected_output in output
+
+    def test_on_tag_equal_to_latest_sha_and_tag(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """
+        METADATA is on the latest tag.
+        Upstream's latest SHA is tagged.
+        """
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        a.upstream.tag("tag1")
+        tree.create_manifest_repo()
+        a.initial_import(True)
+        tree.init_and_sync()
+
+        output = self.update(updater_cmd, [a.local.path])
+        expected_output = (
+            "Current version: tag1\n"
+            "Latest version: tag1\n"
+            "Up to date.\n"
+        )
+        assert expected_output in output
+
+    def test_on_tag_new_tag_newer_sha_available(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """
+        METADATA has an out of date tag.
+        Upstream has a new tag and a newer SHA.
+        """
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        a.upstream.tag("tag1")
+
+        tree.create_manifest_repo()
+        a.initial_import(True)
+        tree.init_and_sync()
+
+        a.upstream.commit("Second commit.", allow_empty=True)
+        a.upstream.tag("tag2")
+
+        a.upstream.commit("Third commit.", allow_empty=True)
+        commit_three = a.upstream.head()
+
+        output = self.update(updater_cmd, [a.local.path], input='yes')
+        expected_output = (
+            f"Current version: tag1\n"
+            f"Latest version: tag2\n"
+            f"Alternative latest version: {commit_three}\n"
+            "Out of date!\n"
+            f"Would you like to upgrade to sha {commit_three} instead of tag tag2? (yes/no)\n"
+            f"We DO NOT recommend upgrading to sha {commit_three}."
+        )
+        assert expected_output in output
+
+    def test_on_latest_tag_but_newer_sha_available(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """
+        METADATA is on the latest tag.
+        Upstream has a newer SHA.
+        """
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        a.upstream.commit("Initial commit.", allow_empty=True)
+        a.upstream.tag("tag1")
+
+        tree.create_manifest_repo()
+        a.initial_import(True)
+        tree.init_and_sync()
+
+        a.upstream.commit("Second commit.", allow_empty=True)
+        commit_two = a.upstream.head()
+
+        output = self.update(updater_cmd, [a.local.path], input='yes')
+        expected_output = (
+            f"Current version: tag1\n"
+            f"Latest version: tag1\n"
+            f"Alternative latest version: {commit_two}\n"
+            "Up to date.\n"
+            f"Would you like to upgrade to sha {commit_two}? (yes/no)\n"
+            f"We DO NOT recommend upgrading to sha {commit_two}."
+        )
+        assert expected_output in output
