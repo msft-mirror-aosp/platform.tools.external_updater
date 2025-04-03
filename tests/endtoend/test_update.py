@@ -85,6 +85,20 @@ class TestUpdate:
         latest_commit_message = a.local.commit_message_at_revision(latest_sha)
         assert f"Bug: {bug_number}" in latest_commit_message
 
+    def test_no_bug_number(
+        self, tree_builder: TreeBuilder, updater_cmd: list[str]
+    ) -> None:
+        """Tests that bug: None is added to the commit message."""
+        tree = tree_builder.repo_tree("tree")
+        a = tree.project("platform/external/foo", "external/foo")
+        tree.create_manifest_repo()
+        a.initial_import()
+        tree.init_and_sync()
+        self.update(updater_cmd, [a.local.path], args=['--refresh'])
+        latest_sha = a.local.head()
+        latest_commit_message = a.local.commit_message_at_revision(latest_sha)
+        assert f"Bug: None" in latest_commit_message
+
     def test_custom_update_to_tag_successful(
         self, tree_builder: TreeBuilder, updater_cmd: list[str]
     ) -> None:

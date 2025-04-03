@@ -76,10 +76,8 @@ def commit_message_generator(project_name: str, version: str, path: str, bug: in
     This project was upgraded with external_updater.
     Usage: tools/external_updater/updater.sh update external/{path}
     For more info, check https://cs.android.com/android/platform/superproject/main/+/main:tools/external_updater/README.md\n\n""")
-    if bug is None:
-        footer = "Test: TreeHugger"
-    else:
-        footer = f"Bug: {bug}\nTest: TreeHugger"
+    bug_number = "None" if bug is None else bug
+    footer = f"Bug: {bug_number}\nTest: TreeHugger"
     return header + body + footer
 
 
