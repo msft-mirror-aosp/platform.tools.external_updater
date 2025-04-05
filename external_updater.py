@@ -76,10 +76,8 @@ def commit_message_generator(project_name: str, version: str, path: str, bug: in
     This project was upgraded with external_updater.
     Usage: tools/external_updater/updater.sh update external/{path}
     For more info, check https://cs.android.com/android/platform/superproject/main/+/main:tools/external_updater/README.md\n\n""")
-    if bug is None:
-        footer = "Test: TreeHugger"
-    else:
-        footer = f"Bug: {bug}\nTest: TreeHugger"
+    bug_number = "None" if bug is None else bug
+    footer = f"Bug: {bug_number}\nTest: TreeHugger"
     return header + body + footer
 
 
@@ -138,7 +136,15 @@ def _do_update(args: argparse.Namespace, updater: Updater,
 
 def has_new_version(updater: Updater) -> bool:
     """Checks if a newer version of the project is available."""
-    if updater.latest_version is not None and updater.current_version != updater.latest_version:
+    if updater.latest_version is not None:
+        if updater.current_version != updater.latest_version or updater.alternative_latest_version is not None:
+            return True
+    return False
+
+
+def check_if_on_latest_tag_but_newer_sha_available(updater: Updater) -> bool:
+    """This is an edge case where METADATA is on the latest tag but there is a newer SHA available."""
+    if updater.current_version == updater.latest_version and updater.alternative_latest_version is not None:
         return True
     return False
 
@@ -159,7 +165,10 @@ def print_project_status(updater: Updater) -> None:
     if alternative_latest_version is not None:
         print(f'Alternative latest version: {alternative_latest_version}')
     if has_new_version(updater):
-        print(color_string('Out of date!', Color.STALE))
+        if check_if_on_latest_tag_but_newer_sha_available(updater):
+            print(color_string('Up to date.', Color.FRESH))
+        else:
+            print(color_string('Out of date!', Color.STALE))
     else:
         print(color_string('Up to date.', Color.FRESH))
 
@@ -187,28 +196,6 @@ def use_alternative_version(updater: Updater) -> bool:
     recom_message = color_string(f'We recommend upgrading to {alternative_ver_type} {alternative_version} instead. ', Color.FRESH)
     not_recom_message = color_string(f'We DO NOT recommend upgrading to {alternative_ver_type} {alternative_version}. ', Color.STALE)
 
-    # If alternative_version is not None, there are four possible
-    # scenarios:
-    # Scenario 1, out of date, we recommend switching to tag:
-    # Current version: sha1
-    # Latest version: sha2
-    # Alternative latest version: tag
-
-    # Scenario 2, up to date, we DO NOT recommend switching to sha.
-    # Current version: tag1
-    # Latest version: tag1
-    # Alternative latest version: sha
-
-    # Scenario 3, out of date, we DO NOT recommend switching to sha.
-    # Current version: tag1
-    # Latest version: tag2
-    # Alternative latest version: sha
-
-    # Scenario 4, out of date, no recommendations at all
-    # Current version: sha1
-    # Latest version: No tag found or a tag that doesn't belong to any branch
-    # Alternative latest version: sha
-
     if alternative_ver_type == 'tag':
         warning = out_of_date_question + recom_message
     else:
@@ -217,6 +204,8 @@ def use_alternative_version(updater: Updater) -> bool:
         else:
             if not latest_version:
                 warning = up_to_date_question
+            elif check_if_on_latest_tag_but_newer_sha_available(updater):
+                warning = up_to_date_question + not_recom_message
             else:
                 warning = out_of_date_question + not_recom_message
 
