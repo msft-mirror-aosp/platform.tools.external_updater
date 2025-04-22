@@ -14,11 +14,34 @@
 """Base class for all updaters."""
 
 from pathlib import Path
+import re
 
-import git_utils
 import fileutils
+import git_utils
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
+
+
+VERSION_MATCH_PATTERN = r"^[^\d]*([\d].*)$"
+VERSION_WITH_UNDERSCORES_PATTERN = r"^[^\d]*([\d+_]+[\d])$"
+VERSION_WITH_DASHES_PATTERN = r"^[^\d]*([\d+-]+[\d])$"
+
+
+def _sanitize_version_for_cpe(version: str) -> str:
+        """Sanitizes a version in SemVer format by removing the prefix before the first digit.
+
+        This is necessary to match the CPE (go/metadata-cpe) version attribute
+        against the one in the National Vulnerability Database (NVD)."""
+        version_match = re.match(VERSION_MATCH_PATTERN, version)
+        version_with_underscore_match = re.match(VERSION_WITH_UNDERSCORES_PATTERN, version)
+        version_with_dashes_match = re.match(VERSION_WITH_DASHES_PATTERN, version)
+        if version_with_underscore_match is not None:
+            return version_with_underscore_match.group(1).replace("_", ".")
+        if version_with_dashes_match is not None:
+            return version_with_dashes_match.group(1).replace("-", ".")
+        if version_match is not None:
+            return version_match.group(1)
+        return version
 
 
 class Updater:
@@ -75,6 +98,33 @@ class Updater:
         for identifier in updated_metadata.third_party.identifier:
             if identifier == self.current_identifier:
                 identifier.CopyFrom(self.latest_identifier)
+
+        version_is_sha= git_utils.is_commit(self.latest_version)
+        # TODO: b/412615684 - Implement a way to track the closest version
+        # associated with a package that uses a commit hash as the version. For
+        # example, in a "Git" Identifier that tracks the version as a git
+        # commit, the closest version would be the git tag. This would allow CPE
+        # tags to be updated with the closest version if the version is a commit
+        # hash.
+
+        # Update CPE tags with the latest version (go/metadata-cpe).
+        if updated_metadata.third_party.HasField("security") and not version_is_sha:
+            copy_of_security = metadata_pb2.Security()
+            copy_of_security.CopyFrom(updated_metadata.third_party.security)
+            for tag in copy_of_security.tag:
+                old_tag = tag
+                updated_version = _sanitize_version_for_cpe(self.latest_version)
+                if tag.startswith("NVD-CPE2.3"):
+                    cpe_parts = tag.split(":")
+                    if len(cpe_parts) > 5:
+                        new_tag = cpe_parts[:5] + [updated_version] + cpe_parts[6:]
+                    elif len(cpe_parts) == 5:
+                        new_tag = cpe_parts + [updated_version]
+                    else:
+                        continue
+                    new_tag = ":".join(new_tag)
+                    updated_metadata.third_party.security.tag.remove(old_tag)
+                    updated_metadata.third_party.security.tag.append(new_tag)
         return updated_metadata
 
     @property
