@@ -13,6 +13,8 @@
 # limitations under the License.
 """Module to check updates from Git upstream."""
 
+from string import Template
+
 import base_updater
 import fileutils
 import git_utils
@@ -21,6 +23,18 @@ import updater_utils
 from color import Color, color_string
 from manifest import Manifest
 import metadata_pb2  # type: ignore
+
+BUGANIZER_LINK = "go/android-external-updater-bug"
+ARCHIVE_WARNING = f"This is most likely an Archive, not Git. Please consider " \
+                  f"editing the METADATA file or filing a bug {BUGANIZER_LINK}."
+
+ACCURATE_VERSION_IN_METADATA = "The version in METADATA file is accurate."
+
+INACCURATE_VERSION_IN_METADATA = f"The version in the METADATA file is not " \
+                                 f"correct. We suspect that it should be " \
+                                 f"$real_version. Please consider editing the" \
+                                 f" METADATA file or filing a bug" \
+                                 f"{BUGANIZER_LINK}."
 
 
 class GitUpdater(base_updater.Updater):
@@ -102,7 +116,7 @@ class GitUpdater(base_updater.Updater):
     def current_head_of_upstream_default_branch(self) -> str:
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        return git_utils.get_sha_for_branch(
+        return git_utils.get_sha_for_revision(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
 
     def update(self) -> None:
@@ -111,6 +125,48 @@ class GitUpdater(base_updater.Updater):
         """
         print(f"Running 'git merge {self._new_identifier.version}'...")
         git_utils.merge(self._proj_path, self._new_identifier.version)
+
+    def is_metadata_accurate(self, common_ancestor: str) -> bool:
+        sha_of_claimed_version = git_utils.get_sha_for_revision(self._proj_path, self._old_identifier.version)
+        if sha_of_claimed_version == common_ancestor:
+            return True
+        return False
+
+    def find_real_version(self, common_ancestor: str) -> str:
+        read_version = f"SHA {common_ancestor}"
+        tag = git_utils.get_tag_for_revision(self._proj_path, common_ancestor)
+        if tag is not None:
+            read_version = f"tag {tag} or SHA {common_ancestor}"
+        return read_version
+
+    def find_common_ancestor(self) -> str | None:
+        """Finds the most recent common ancestor of Android's main branch and upstream's default branch."""
+        upstream_default_branch = git_utils.detect_default_branch(self._proj_path, self.UPSTREAM_REMOTE_NAME)
+        local_remote_name = git_utils.determine_remote_name(self._proj_path)
+        local_default_branch = git_utils.detect_default_branch(self._proj_path, local_remote_name)
+        android_default_branch = local_remote_name + "/" + local_default_branch
+        upstream_default_branch = self.UPSTREAM_REMOTE_NAME + "/" + upstream_default_branch
+        common_ancestor = git_utils.merge_base(self._proj_path, android_default_branch, upstream_default_branch)
+        return common_ancestor
+
+    def validate(self) -> None:
+        """Checks whether Android version is what it claims to be."""
+        super().validate()
+
+        common_ancestor = self.find_common_ancestor()
+
+        if common_ancestor is None:
+            print(ARCHIVE_WARNING)
+            return
+
+        is_metadata_accurate = self.is_metadata_accurate(common_ancestor)
+        if is_metadata_accurate:
+            print(color_string(ACCURATE_VERSION_IN_METADATA, Color.FRESH))
+            return
+        real_version = self.find_real_version(common_ancestor)
+        template = Template(INACCURATE_VERSION_IN_METADATA)
+        print(template.substitute(real_version=real_version))
+        return
 
     def _determine_android_fetch_ref(self) -> str:
         """Returns the ref that should be fetched from the android remote."""

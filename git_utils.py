@@ -89,11 +89,14 @@ def detect_default_branch(proj_path: Path, remote_name: str) -> str:
     )
 
 
-def get_sha_for_branch(proj_path: Path, branch: str):
-    """Gets the hash SHA for a branch."""
-    cmd = ['git', 'rev-parse', branch]
-    return subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
-                          text=True).stdout.strip()
+def get_sha_for_revision(proj_path: Path, revision: str) -> str:
+    """Gets the hash SHA for a revision, whether it's a tag or a hash SHA"""
+    cmd = ['git', 'rev-parse', revision]
+    try:
+        return subprocess.run(cmd, capture_output=True, cwd=proj_path,
+                              check=True, text=True).stdout.strip()
+    except subprocess.CalledProcessError as ex:
+        return ex.stderr
 
 
 def get_most_recent_tag(proj_path: Path, branch: str) -> str | None:
@@ -293,7 +296,7 @@ def is_ancestor(proj_path: Path, ancestor: str, child: str) -> bool:
     # Exit status of 0 means yes, 1 means no, and all others mean an error occurred.
     # Although a commit is an ancestor of itself, we don't want to return True
     # if ancestor points to the same commit as child.
-    if get_sha_for_branch(proj_path, ancestor) == child:
+    if get_sha_for_revision(proj_path, ancestor) == child:
         return False
     try:
         subprocess.run(
@@ -319,6 +322,30 @@ def list_branches_with_commit(proj_path: Path, commit: str, remote_name: str) ->
     lines = out.splitlines()
     remote_branches = [line for line in lines if remote_name in line]
     return remote_branches
+
+
+def merge_base(proj_path: Path, branch1: str, branch2: str) -> str | None:
+    """Finds as good common ancestors as possible between branch1 and branch2"""
+    try:
+        cmd = ['git', 'merge-base', branch1, branch2]
+        out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
+                             check=True, text=True).stdout.strip()
+        return out
+    except:
+        return None
+
+
+def get_tag_for_revision(proj_path: Path, sha: str) -> str | None:
+    """Give an object a human-readable name based on an available ref.
+    using --tags to find any tag found in refs/tags namespace.
+    """
+    try:
+        cmd = ['git', 'describe', '--exact-match', '--tags', sha]
+        out = subprocess.run(cmd, capture_output=True, cwd=proj_path,
+                             check=True, text=True).stdout.strip()
+        return out
+    except:
+        return None
 
 
 def determine_remote_name(proj_path: Path) -> str:
