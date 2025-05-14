@@ -18,6 +18,7 @@ import re
 
 import fileutils
 import git_utils
+from color import Color, color_string
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
 
@@ -66,10 +67,11 @@ class Updater:
     def setup_remote(self) -> None:
         raise NotImplementedError()
 
-    def validate(self) -> str:
+    def validate(self) -> None:
         """Checks whether Android version is what it claims to be."""
         self.setup_remote()
-        return git_utils.diff_stat(self._proj_path, 'a', self._old_identifier.version)
+        diff = git_utils.diff_stat(self._proj_path, 'a', self._old_identifier.version)
+        print("No diff" if len(diff) == 0 else color_string(diff, Color.STALE))
 
     def check(self) -> None:
         """Checks whether a new version is available."""

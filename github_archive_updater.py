@@ -155,7 +155,7 @@ class GithubArchiveUpdater(Updater):
         # pylint: disable=line-too-long
         branch = git_utils.detect_default_branch(self._proj_path,
                                                  self.UPSTREAM_REMOTE_NAME)
-        self._new_identifier.version = git_utils.get_sha_for_branch(
+        self._new_identifier.version = git_utils.get_sha_for_revision(
             self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + branch)
         self._new_identifier.value = (
             # pylint: disable=line-too-long
