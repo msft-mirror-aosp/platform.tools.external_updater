@@ -281,4 +281,4 @@ def bpfmt(proj_path: Path, bp_files: list[str]) -> bool:
             return True
     except subprocess.CalledProcessError as ex:
         print(f"bpfmt failed: {ex}")
-        return False
+    return False

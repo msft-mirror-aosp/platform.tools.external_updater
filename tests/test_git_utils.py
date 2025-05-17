@@ -150,5 +150,68 @@ class DiffTest(GitRepoTestCase):
         assert diff == 'METADATA\nOWNERS\n'
 
 
+class GetShaForRevisionTest(GitRepoTestCase):
+    """Tests for git_utils.get_sha_for_revision."""
+
+    def test_get_sha_for_existing_tag(self) -> None:
+        """Tests if it can find the SHA of an existing tag"""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        first_commit = self.repo.head()
+        self.repo.tag("tag1")
+        out = git_utils.get_sha_for_revision(self.repo.path, "tag1")
+        assert first_commit == out
+
+    def test_get_sha_for_existing_sha(self) -> None:
+        """Tests if the same SHA is returned."""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        first_commit = self.repo.head()
+        out = git_utils.get_sha_for_revision(self.repo.path, first_commit)
+        assert first_commit == out
+
+    def test_get_sha_for_non_existent_tag(self) -> None:
+        """Tests if it prints error message if the tag doesn't exist."""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        out = git_utils.get_sha_for_revision(self.repo.path, "tag1")
+        assert "fatal: ambiguous argument" in out
+
+
+class GetTagForRevisionTest(GitRepoTestCase):
+    """Tests for git_utils.get_tag_for_revision."""
+
+    def test_describe_a_tagged_sha(self) -> None:
+        """Tests if it finds the tag of a SHA."""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        self.repo.tag("tag1")
+        first_commit = self.repo.head()
+        out = git_utils.get_tag_for_revision(self.repo.path, first_commit)
+        assert out == "tag1"
+
+    def test_describe_a_non_tagged_sha(self) -> None:
+        """Tests if None is returned if no tag is associated with a SHA."""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        first_commit = self.repo.head()
+        out = git_utils.get_tag_for_revision(self.repo.path, first_commit)
+        assert out is None
+
+
+class MergeBaseTest(GitRepoTestCase):
+    """Tests for git_utils.merge_base."""
+
+    def test_merge_base_with_common_ancestor(self) -> None:
+        """Tests if it finds the common ancestor of two branches."""
+        self.repo.init("main")
+        self.repo.commit("Initial commit on main branch.", allow_empty=True)
+        first_commit = self.repo.head()
+        self.repo.switch_to_new_branch("dev")
+        self.repo.commit("Second commit on dev", allow_empty=True)
+        out = git_utils.merge_base(self.repo.path, "main", "dev")
+        assert first_commit == out
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

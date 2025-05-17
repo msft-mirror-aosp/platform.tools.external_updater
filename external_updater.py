@@ -297,9 +297,10 @@ def validate(args: argparse.Namespace) -> None:
     paths = fileutils.resolve_command_line_paths(args.paths)
     try:
         canonical_path = fileutils.canonicalize_project_path(paths[0])
-        print(f'Validating {canonical_path}')
+        print(f'Validating {canonical_path}...')
         updater, _ = build_updater(paths[0])
-        print(updater.validate())
+        print('Difference with upstream:')
+        updater.validate()
     except Exception:  # pylint: disable=broad-exception-caught
         logging.exception("Failed to check or update %s", paths)
 
