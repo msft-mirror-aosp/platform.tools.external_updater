@@ -15,6 +15,7 @@
 
 from pathlib import Path
 
+
 def find_hashtag(proj_path: Path) -> str:
     """Returns an empty string or a hashtag for git push."""
     if str(proj_path).find('/external/rust/') != -1:

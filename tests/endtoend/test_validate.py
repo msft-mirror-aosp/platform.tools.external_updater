@@ -20,7 +20,6 @@ from string import Template
 
 from .treebuilder import TreeBuilder
 
-
 WRONG_METADATA_FILE = """\
 name: "test"
 description: "It's a test."

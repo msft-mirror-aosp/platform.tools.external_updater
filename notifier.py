@@ -21,13 +21,13 @@ external_updater_notifier \
     googletest
 """
 
-from datetime import timedelta, datetime
 import argparse
 import json
 import os
 import re
 import subprocess
 import time
+from datetime import datetime, timedelta
 
 # pylint: disable=invalid-name
 

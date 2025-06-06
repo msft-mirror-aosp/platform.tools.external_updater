@@ -16,16 +16,17 @@
 import json
 import os
 import re
-import urllib.request
 import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 import archive_utils
-from base_updater import Updater
 import git_utils
 # pylint: disable=import-error
 import updater_utils
+from base_updater import Updater
+
 GITHUB_URL_PATTERN: str = (r'^https:\/\/github.com\/([-\w]+)\/([-\w]+)\/' +
                            r'(releases\/download\/|archive\/)')
 GITHUB_URL_RE: re.Pattern = re.compile(GITHUB_URL_PATTERN)

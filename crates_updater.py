@@ -15,19 +15,20 @@
 
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import tempfile
 import urllib.request
+from pathlib import Path
 from typing import IO
 
-import archive_utils
-from base_updater import Updater
-import git_utils
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
+
+import archive_utils
+import git_utils
 import updater_utils
+from base_updater import Updater
 
 LIBRARY_NAME_PATTERN: str = r"([-\w]+)"
 
@@ -98,7 +99,7 @@ class CratesUpdater(Updater):
                 int(match.group(2)),
                 int(match.group(3)),
             )
-        return (0, 0, 0)
+        return 0, 0, 0
 
     def _is_newer_version(self, prev_version: str, prev_id: int,
                           check_version: str, check_id: int):
