@@ -213,5 +213,26 @@ class MergeBaseTest(GitRepoTestCase):
         assert first_commit == out
 
 
+class FindNonDefaultBranchTest(unittest.TestCase):
+    """Tests for git_utils.find_non_default_branch"""
+    def test_branch_in_github_url(self) -> None:
+        """Tests if the branch attached to the url is found."""
+        url = 'https://github.com/robolectric/robolectric/tree/google'
+        non_default_branch = git_utils.find_non_default_branch(url)
+        self.assertEqual(non_default_branch, "google")
+
+    def test_no_branch_in_url(self) -> None:
+        """Tests if None is returned when the url doesn't have a branch."""
+        url = 'https://github.com/GNOME/libxml2/'
+        non_default_branch = git_utils.find_non_default_branch(url)
+        self.assertIsNone(non_default_branch)
+
+    def test_branch_in_gitlab_url(self) -> None:
+        """Tests if None is returned when the url is non-GitHub git."""
+        url = 'https://gitlab.xiph.org/xiph/opus/-/tree/whitespace'
+        non_default_branch = git_utils.find_non_default_branch(url)
+        self.assertIsNone(non_default_branch)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
