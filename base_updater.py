@@ -13,15 +13,15 @@
 # limitations under the License.
 """Base class for all updaters."""
 
-from pathlib import Path
 import re
+from pathlib import Path
+
+# pylint: disable=import-error
+import metadata_pb2  # type: ignore
 
 import fileutils
 import git_utils
 from color import Color, color_string
-# pylint: disable=import-error
-import metadata_pb2  # type: ignore
-
 
 VERSION_MATCH_PATTERN = r"^[^\d]*([\d].*)$"
 VERSION_WITH_UNDERSCORES_PATTERN = r"^[^\d]*([\d+_]+[\d])$"
@@ -29,20 +29,20 @@ VERSION_WITH_DASHES_PATTERN = r"^[^\d]*([\d+-]+[\d])$"
 
 
 def _sanitize_version_for_cpe(version: str) -> str:
-        """Sanitizes a version in SemVer format by removing the prefix before the first digit.
+    """Sanitizes a version in SemVer format by removing the prefix before the first digit.
 
-        This is necessary to match the CPE (go/metadata-cpe) version attribute
-        against the one in the National Vulnerability Database (NVD)."""
-        version_match = re.match(VERSION_MATCH_PATTERN, version)
-        version_with_underscore_match = re.match(VERSION_WITH_UNDERSCORES_PATTERN, version)
-        version_with_dashes_match = re.match(VERSION_WITH_DASHES_PATTERN, version)
-        if version_with_underscore_match is not None:
-            return version_with_underscore_match.group(1).replace("_", ".")
-        if version_with_dashes_match is not None:
-            return version_with_dashes_match.group(1).replace("-", ".")
-        if version_match is not None:
-            return version_match.group(1)
-        return version
+    This is necessary to match the CPE (go/metadata-cpe) version attribute
+    against the one in the National Vulnerability Database (NVD)."""
+    version_match = re.match(VERSION_MATCH_PATTERN, version)
+    version_with_underscore_match = re.match(VERSION_WITH_UNDERSCORES_PATTERN, version)
+    version_with_dashes_match = re.match(VERSION_WITH_DASHES_PATTERN, version)
+    if version_with_underscore_match is not None:
+        return version_with_underscore_match.group(1).replace("_", ".")
+    if version_with_dashes_match is not None:
+        return version_with_dashes_match.group(1).replace("-", ".")
+    if version_match is not None:
+        return version_match.group(1)
+    return version
 
 
 class Updater:

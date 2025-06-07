@@ -18,9 +18,11 @@
 import unittest
 from pathlib import Path
 
-import base_updater
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
+
+import base_updater
+
 # pylint: enable=import-error
 
 
@@ -225,6 +227,7 @@ class UpdaterTest(unittest.TestCase):
             updated_metadata.third_party.security.tag[1],
             "NVD-CPE2.3:cpe:/a:test2_vendor:test2_product:2.0.1",
         )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

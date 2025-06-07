@@ -13,9 +13,9 @@
 # limitations under the License.
 """Find main reviewers for git push commands."""
 
-from collections.abc import MutableMapping
 import math
 import random
+from collections.abc import MutableMapping
 from typing import List, Set, Union
 
 # To randomly pick one of multiple reviewers, we put them in a List[str]

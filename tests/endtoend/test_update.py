@@ -97,7 +97,7 @@ class TestUpdate:
         self.update(updater_cmd, [a.local.path], args=['--refresh'])
         latest_sha = a.local.head()
         latest_commit_message = a.local.commit_message_at_revision(latest_sha)
-        assert f"Bug: None" in latest_commit_message
+        assert "Bug: None" in latest_commit_message
 
     def test_custom_update_to_tag_successful(
         self, tree_builder: TreeBuilder, updater_cmd: list[str]
