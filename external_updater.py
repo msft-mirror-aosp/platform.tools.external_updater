@@ -21,26 +21,27 @@ updater.sh update --refresh --keep_date rust/crates/libc
 """
 
 import argparse
-from collections.abc import Iterable
 import json
 import logging
 import os
 import subprocess
 import textwrap
 import time
-from typing import Dict, Iterator, List, Union, Tuple, Type
+from collections.abc import Iterable
 from pathlib import Path
+from typing import Dict, Iterator, List, Tuple, Type, Union
 
+# pylint: disable=import-error
+import metadata_pb2  # type: ignore
+
+import fileutils
+import git_utils
+import updater_utils
 from base_updater import Updater
 from color import Color, color_string
 from crates_updater import CratesUpdater
 from git_updater import GitUpdater
 from github_archive_updater import GithubArchiveUpdater
-import fileutils
-import git_utils
-# pylint: disable=import-error
-import metadata_pb2  # type: ignore
-import updater_utils
 
 UPDATERS: List[Type[Updater]] = [
     CratesUpdater,

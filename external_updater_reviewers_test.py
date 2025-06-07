@@ -13,8 +13,8 @@
 # limitations under the License.
 """Unit tests for external updater reviewers."""
 
-from typing import List, Mapping, Set
 import unittest
+from typing import List, Mapping, Set
 
 import reviewers
 

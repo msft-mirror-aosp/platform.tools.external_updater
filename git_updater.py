@@ -15,6 +15,8 @@
 
 from string import Template
 
+import metadata_pb2  # type: ignore
+
 import base_updater
 import fileutils
 import git_utils
@@ -22,7 +24,6 @@ import updater_utils
 # pylint: disable=import-error
 from color import Color, color_string
 from manifest import Manifest
-import metadata_pb2  # type: ignore
 
 BUGANIZER_LINK = "go/android-external-updater-bug"
 ARCHIVE_WARNING = f"This is most likely an Archive, not Git. Please consider " \

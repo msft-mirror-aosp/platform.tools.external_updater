@@ -13,18 +13,19 @@
 # limitations under the License.
 """Helper functions for updaters."""
 
-from collections.abc import Sequence
 import os
 import re
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import List, Tuple, Type
 
-from base_updater import Updater
-import fileutils
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
+
+import fileutils
+from base_updater import Updater
 
 
 def create_updater(metadata: metadata_pb2.MetaData, proj_path: Path,

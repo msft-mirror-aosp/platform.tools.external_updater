@@ -18,14 +18,13 @@ import enum
 import os
 import shutil
 import subprocess
-from pathlib import Path
 import textwrap
-
-# pylint: disable=import-error
-from google.protobuf import text_format  # type: ignore
+from pathlib import Path
 
 # pylint: disable=import-error
 import metadata_pb2  # type: ignore
+# pylint: disable=import-error
+from google.protobuf import text_format  # type: ignore
 
 import git_utils
 
