@@ -17,6 +17,7 @@ import datetime
 import re
 import subprocess
 from pathlib import Path
+from urllib.parse import urlparse
 
 import fileutils
 import hashtags
@@ -24,6 +25,12 @@ import reviewers
 from manifest import Manifest
 
 UNWANTED_TAGS = ["*alpha*", "*Alpha*", "*beta*", "*Beta*", "*rc*", "*RC*", "*test*"]
+
+COMMIT_PATTERN = r'^[a-f0-9]{40}$'
+COMMIT_RE = re.compile(COMMIT_PATTERN)
+
+GITHUB_NETLOC = 'github.com'
+GITHUB_BRANCH_DIVIDER = '/tree/'
 
 
 def fetch(proj_path: Path, remote_name: str, branch: str | None = None) -> None:
@@ -143,10 +150,6 @@ def list_local_branches(proj_path: Path) -> list[str]:
     lines = subprocess.run(cmd, capture_output=True, cwd=proj_path, check=True,
                            text=True).stdout.splitlines()
     return lines
-
-
-COMMIT_PATTERN = r'^[a-f0-9]{40}$'
-COMMIT_RE = re.compile(COMMIT_PATTERN)
 
 
 # pylint: disable=redefined-outer-name
@@ -353,3 +356,11 @@ def determine_remote_name(proj_path: Path) -> str:
     root = fileutils.find_tree_containing(proj_path)
     manifest = Manifest.for_tree(root)
     return manifest.remote
+
+
+def find_non_default_branch(identifier_value: str) -> str | None:
+    parsed_url = urlparse(identifier_value)
+    _, divider, branch = parsed_url.path.partition(GITHUB_BRANCH_DIVIDER)
+    if parsed_url.netloc == GITHUB_NETLOC and divider == GITHUB_BRANCH_DIVIDER:
+        return branch
+    return None

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Module to check updates from Git upstream."""
 
+from pathlib import Path
 from string import Template
 
 import metadata_pb2  # type: ignore
@@ -41,6 +42,16 @@ INACCURATE_VERSION_IN_METADATA = f"The version in the METADATA file is not " \
 class GitUpdater(base_updater.Updater):
     """Updater for Git upstream."""
     UPSTREAM_REMOTE_NAME: str = "update_origin"
+
+    def __init__(self, proj_path: Path, old_identifier: metadata_pb2.Identifier,
+        old_ver: str) -> None:
+        non_default_branch = git_utils.find_non_default_branch(old_identifier.value)
+        if non_default_branch is not None:
+            self.upstream_branch = non_default_branch
+            old_identifier.value = old_identifier.value.strip(f'tree/{self.upstream_branch}')
+        else:
+            self.upstream_branch = git_utils.detect_default_branch(proj_path, self.UPSTREAM_REMOTE_NAME)
+        super().__init__(proj_path, old_identifier, old_ver)
 
     def is_supported_url(self) -> bool:
         return git_utils.is_valid_url(self._proj_path, self._old_identifier.value)
@@ -94,7 +105,8 @@ class GitUpdater(base_updater.Updater):
         """Checks upstream and returns whether a new version is available."""
         self.setup_remote()
 
-        latest_sha = self.current_head_of_upstream_default_branch()
+        latest_sha = git_utils.get_sha_for_revision(
+            self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + self.upstream_branch)
         latest_tag = self.latest_tag_of_upstream()
 
         if git_utils.is_commit(self._old_identifier.version):
