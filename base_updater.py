@@ -57,7 +57,7 @@ class Updater:
         self._new_identifier.CopyFrom(old_identifier)
 
         self._alternative_new_ver: str | None = None
-
+        self._identifier_with_branch: str | None = None
         self._has_errors = False
 
     def is_supported_url(self) -> bool:
@@ -100,7 +100,9 @@ class Updater:
         for identifier in updated_metadata.third_party.identifier:
             if identifier == self.current_identifier:
                 identifier.CopyFrom(self.latest_identifier)
-
+                # Reset identifier.value to one that contains the branch name
+                if self.identifier_with_branch is not None:
+                    identifier.value = self.identifier_with_branch
         version_is_sha= git_utils.is_commit(self.latest_version)
         # TODO: b/412615684 - Implement a way to track the closest version
         # associated with a package that uses a commit hash as the version. For
@@ -163,6 +165,11 @@ class Updater:
     def alternative_latest_version(self) -> str | None:
         """Gets alternative latest version."""
         return self._alternative_new_ver
+
+    @property
+    def identifier_with_branch(self) -> str | None:
+        """Gets the identifier with branch name attached to it."""
+        return self._identifier_with_branch
 
     def refresh_without_upgrading(self) -> None:
         """Uses current version and url as the latest to refresh project."""
