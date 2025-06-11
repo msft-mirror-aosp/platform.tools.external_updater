@@ -45,13 +45,14 @@ class GitUpdater(base_updater.Updater):
 
     def __init__(self, proj_path: Path, old_identifier: metadata_pb2.Identifier,
         old_ver: str) -> None:
+        super().__init__(proj_path, old_identifier, old_ver)
         non_default_branch = git_utils.find_non_default_branch(old_identifier.value)
         if non_default_branch is not None:
             self.upstream_branch = non_default_branch
+            self._identifier_with_branch = old_identifier.value
             old_identifier.value = old_identifier.value.strip(f'tree/{self.upstream_branch}')
         else:
             self.upstream_branch = git_utils.detect_default_branch(proj_path, self.UPSTREAM_REMOTE_NAME)
-        super().__init__(proj_path, old_identifier, old_ver)
 
     def is_supported_url(self) -> bool:
         return git_utils.is_valid_url(self._proj_path, self._old_identifier.value)
