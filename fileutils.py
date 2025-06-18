@@ -27,6 +27,7 @@ import metadata_pb2  # type: ignore
 from google.protobuf import text_format  # type: ignore
 
 import git_utils
+from manifest import Manifest
 
 METADATA_FILENAME = 'METADATA'
 ANDROID_BP_FILENAME = 'Android.bp'
@@ -72,6 +73,13 @@ def find_tree_containing(project: Path) -> Path:
             f"Could not find a .repo directory in any parent of {project}"
         )
     return find_tree_containing(project.parent)
+
+
+def determine_remote_name(proj_path: Path) -> str:
+    """Returns the remote name in the manifest."""
+    root = find_tree_containing(proj_path)
+    manifest = Manifest.for_tree(root)
+    return manifest.remote
 
 
 def external_path() -> Path:

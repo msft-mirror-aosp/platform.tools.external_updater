@@ -132,7 +132,8 @@ def _do_update(args: argparse.Namespace, updater: Updater,
         raise err
 
     if not args.no_upload:
-        git_utils.push(full_path, updater.has_errors)
+        remote_name = fileutils.determine_remote_name(full_path)
+        git_utils.push(full_path, remote_name, updater.has_errors)
 
 
 def has_new_version(updater: Updater) -> bool:

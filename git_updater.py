@@ -51,8 +51,6 @@ class GitUpdater(base_updater.Updater):
             self.upstream_branch = non_default_branch
             self._identifier_with_branch = old_identifier.value
             old_identifier.value = old_identifier.value.strip(f'tree/{self.upstream_branch}')
-        else:
-            self.upstream_branch = git_utils.detect_default_branch(proj_path, self.UPSTREAM_REMOTE_NAME)
 
     def is_supported_url(self) -> bool:
         return git_utils.is_valid_url(self._proj_path, self._old_identifier.value)
@@ -105,9 +103,11 @@ class GitUpdater(base_updater.Updater):
     def check(self) -> None:
         """Checks upstream and returns whether a new version is available."""
         self.setup_remote()
-
-        latest_sha = git_utils.get_sha_for_revision(
-            self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + self.upstream_branch)
+        if self._identifier_with_branch is None:
+            latest_sha = self.current_head_of_upstream_default_branch()
+        else:
+            latest_sha = git_utils.get_sha_for_revision(
+                self._proj_path, self.UPSTREAM_REMOTE_NAME + '/' + self.upstream_branch)
         latest_tag = self.latest_tag_of_upstream()
 
         if git_utils.is_commit(self._old_identifier.version):
@@ -156,7 +156,7 @@ class GitUpdater(base_updater.Updater):
     def find_common_ancestor(self) -> str | None:
         """Finds the most recent common ancestor of Android's main branch and upstream's default branch."""
         upstream_default_branch = git_utils.detect_default_branch(self._proj_path, self.UPSTREAM_REMOTE_NAME)
-        local_remote_name = git_utils.determine_remote_name(self._proj_path)
+        local_remote_name = fileutils.determine_remote_name(self._proj_path)
         local_default_branch = git_utils.detect_default_branch(self._proj_path, local_remote_name)
         android_default_branch = local_remote_name + "/" + local_default_branch
         upstream_default_branch = self.UPSTREAM_REMOTE_NAME + "/" + upstream_default_branch
