@@ -73,7 +73,7 @@ class TestValidate:
         a.initial_import()
         tree.init_and_sync()
         output = self.validate(updater_cmd, [a.local.path])
-        assert "The version in METADATA file is accurate." in output
+        assert "No diff" in output
 
     def test_metadata_version_not_accurate(
         self, tree_builder: TreeBuilder, updater_cmd: list[str]
