@@ -201,15 +201,12 @@ def use_alternative_version(updater: Updater) -> bool:
     if alternative_ver_type == 'tag':
         warning = out_of_date_question + recom_message
     else:
-        if not new_version_available:
+        if not latest_version:
+            warning = up_to_date_question
+        elif check_if_on_latest_tag_but_newer_sha_available(updater):
             warning = up_to_date_question + not_recom_message
         else:
-            if not latest_version:
-                warning = up_to_date_question
-            elif check_if_on_latest_tag_but_newer_sha_available(updater):
-                warning = up_to_date_question + not_recom_message
-            else:
-                warning = out_of_date_question + not_recom_message
+            warning = out_of_date_question + not_recom_message
 
     answer = input(warning)
     if "yes".startswith(answer.lower()):
