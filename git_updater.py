@@ -36,7 +36,7 @@ INACCURATE_VERSION_IN_METADATA = f"The version in the METADATA file is not " \
                                  f"correct. We suspect that it should be " \
                                  f"$real_version. Please consider editing the" \
                                  f" METADATA file or filing a bug" \
-                                 f"{BUGANIZER_LINK}."
+                                 f" {BUGANIZER_LINK}."
 
 
 class GitUpdater(base_updater.Updater):

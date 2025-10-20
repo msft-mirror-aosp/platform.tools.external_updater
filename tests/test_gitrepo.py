@@ -150,24 +150,32 @@ class GitRepoTest(unittest.TestCase):
         repo.commit("Initial commit.", allow_empty=True)
         self.assertEqual(repo.sha_of_ref("heads/main"), repo.head())
 
-    def test_tag_head(self) -> None:
-        """Tests that tag creates a tag at HEAD."""
+    def test_lightweight_tag_head(self) -> None:
+        """Tests that lightweight_tag creates a lightweight tag at HEAD."""
         repo = GitRepo(self.tmp_path / "repo")
         repo.init()
         repo.commit("Initial commit.", allow_empty=True)
         repo.commit("Second commit.", allow_empty=True)
-        repo.tag("v1.0.0")
+        repo.lightweight_tag("v1.0.0")
         self.assertEqual(repo.sha_of_ref("tags/v1.0.0"), repo.head())
 
-    def test_tag_ref(self) -> None:
-        """Tests that tag creates a tag at the given ref."""
+    def test_lightweight_tag_ref(self) -> None:
+        """Tests that lightweight_tag creates a lightweight tag at the given ref."""
         repo = GitRepo(self.tmp_path / "repo")
         repo.init()
         repo.commit("Initial commit.", allow_empty=True)
         first_commit = repo.head()
         repo.commit("Second commit.", allow_empty=True)
-        repo.tag("v1.0.0", first_commit)
+        repo.lightweight_tag("v1.0.0", first_commit)
         self.assertEqual(repo.sha_of_ref("tags/v1.0.0"), first_commit)
+
+    def test_annotated_tag_tag(self) -> None:
+        """Tests that annotated_tag creates an annotated tag."""
+        repo = GitRepo(self.tmp_path / "repo")
+        repo.init()
+        repo.commit("Initial commit.", allow_empty=True)
+        repo.annotated_tag("v1.0.0", "Creating an annotated tag")
+        self.assertEqual(repo.sha_of_ref("tags/v1.0.0"), repo.head())
 
 
 if __name__ == "__main__":

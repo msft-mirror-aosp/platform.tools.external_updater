@@ -96,7 +96,7 @@ def detect_default_branch(proj_path: Path, remote_name: str) -> str:
 
 def get_sha_for_revision(proj_path: Path, revision: str) -> str:
     """Gets the hash SHA for a revision, whether it's a tag or a hash SHA"""
-    cmd = ['git', 'rev-parse', revision]
+    cmd = ['git', 'rev-list', '-n', '1', revision]
     try:
         return subprocess.run(cmd, capture_output=True, cwd=proj_path,
                               check=True, text=True).stdout.strip()

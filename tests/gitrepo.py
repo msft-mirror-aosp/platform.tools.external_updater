@@ -124,11 +124,16 @@ class GitRepo:
         args = ["branch", "-D", name]
         self.run(args)
 
-    def tag(self, name: str, ref: str | None = None) -> None:
-        """Creates a tag at the given ref, or HEAD if not provided."""
+    def lightweight_tag(self, name: str, ref: str | None = None) -> None:
+        """Creates a lightweight tag at the given ref, or HEAD if not provided."""
         args = ["tag", name]
         if ref is not None:
             args.append(ref)
+        self.run(args)
+
+    def annotated_tag(self, name: str, message: str) -> None:
+        """Creates an annotated tag."""
+        args = ["tag", "-a", name, "-m", message]
         self.run(args)
 
     def commit_message_at_revision(self, revision: str) -> str:
