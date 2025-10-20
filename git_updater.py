@@ -50,7 +50,7 @@ class GitUpdater(base_updater.Updater):
         if non_default_branch is not None:
             self.upstream_branch = non_default_branch
             self._identifier_with_branch = old_identifier.value
-            old_identifier.value = old_identifier.value.strip(f'tree/{self.upstream_branch}')
+            old_identifier.value = old_identifier.value.removesuffix(f'tree/{self.upstream_branch}')
 
     def is_supported_url(self) -> bool:
         return git_utils.is_valid_url(self._proj_path, self._old_identifier.value)
