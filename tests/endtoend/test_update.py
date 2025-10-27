@@ -106,14 +106,14 @@ class TestUpdate:
         tree = tree_builder.repo_tree("tree")
         a = tree.project("platform/external/foo", "external/foo")
         a.upstream.commit("Initial commit.", allow_empty=True)
-        a.upstream.tag("v1.0.0")
+        a.upstream.lightweight_tag("v1.0.0")
         tree.create_manifest_repo()
         a.initial_import(True)
         tree.init_and_sync()
         a.upstream.commit("Second commit.", allow_empty=True)
-        a.upstream.tag("v2.0.0")
+        a.upstream.lightweight_tag("v2.0.0")
         a.upstream.commit("Third commit.", allow_empty=True)
-        a.upstream.tag("v3.0.0")
+        a.upstream.lightweight_tag("v3.0.0")
         self.update(updater_cmd, [a.local.path], args=['--custom-version', "v2.0.0"])
         latest_sha = a.local.head()
         latest_commit_message = a.local.commit_message_at_revision(latest_sha)
@@ -126,9 +126,9 @@ class TestUpdate:
         tree = tree_builder.repo_tree("tree")
         a = tree.project("platform/external/foo", "external/foo")
         a.upstream.commit("Initial commit.", allow_empty=True)
-        a.upstream.tag("v1.0.0")
+        a.upstream.lightweight_tag("v1.0.0")
         a.upstream.commit("Second commit.", allow_empty=True)
-        a.upstream.tag("v2.0.0")
+        a.upstream.lightweight_tag("v2.0.0")
         tree.create_manifest_repo()
         a.initial_import(True)
         tree.init_and_sync()
@@ -274,7 +274,7 @@ class TestUpdate:
 
         a.upstream.commit("Second commit.", allow_empty=True)
         commit_two = a.upstream.head()
-        a.upstream.tag("tag1")
+        a.upstream.lightweight_tag("tag1")
 
         output = self.update(updater_cmd, [a.local.path], input='yes')
         expected_output = (
@@ -303,7 +303,7 @@ class TestUpdate:
         tree.init_and_sync()
 
         a.upstream.commit("Second commit.", allow_empty=True)
-        a.upstream.tag("tag1")
+        a.upstream.lightweight_tag("tag1")
 
         a.upstream.commit("Third commit.", allow_empty=True)
         commit_three = a.upstream.head()
@@ -329,14 +329,14 @@ class TestUpdate:
         tree = tree_builder.repo_tree("tree")
         a = tree.project("platform/external/foo", "external/foo")
         a.upstream.commit("Initial commit.", allow_empty=True)
-        a.upstream.tag("tag1")
+        a.upstream.lightweight_tag("tag1")
         tree.create_manifest_repo()
         a.initial_import(True)
         tree.init_and_sync()
 
         a.upstream.commit("Second commit.", allow_empty=True)
         commit_two = a.upstream.head()
-        a.upstream.tag("tag2")
+        a.upstream.lightweight_tag("tag2")
 
         output = self.update(updater_cmd, [a.local.path], input='no')
         expected_output = (
@@ -359,7 +359,7 @@ class TestUpdate:
         tree = tree_builder.repo_tree("tree")
         a = tree.project("platform/external/foo", "external/foo")
         a.upstream.commit("Initial commit.", allow_empty=True)
-        a.upstream.tag("tag1")
+        a.upstream.lightweight_tag("tag1")
         tree.create_manifest_repo()
         a.initial_import(True)
         tree.init_and_sync()
@@ -382,14 +382,14 @@ class TestUpdate:
         tree = tree_builder.repo_tree("tree")
         a = tree.project("platform/external/foo", "external/foo")
         a.upstream.commit("Initial commit.", allow_empty=True)
-        a.upstream.tag("tag1")
+        a.upstream.lightweight_tag("tag1")
 
         tree.create_manifest_repo()
         a.initial_import(True)
         tree.init_and_sync()
 
         a.upstream.commit("Second commit.", allow_empty=True)
-        a.upstream.tag("tag2")
+        a.upstream.lightweight_tag("tag2")
 
         a.upstream.commit("Third commit.", allow_empty=True)
         commit_three = a.upstream.head()
@@ -415,7 +415,7 @@ class TestUpdate:
         tree = tree_builder.repo_tree("tree")
         a = tree.project("platform/external/foo", "external/foo")
         a.upstream.commit("Initial commit.", allow_empty=True)
-        a.upstream.tag("tag1")
+        a.upstream.lightweight_tag("tag1")
 
         tree.create_manifest_repo()
         a.initial_import(True)

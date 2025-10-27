@@ -96,10 +96,10 @@ class GetMostRecentTagTest(GitRepoTestCase):
         """Tests that only tags on the given branch are found."""
         self.repo.init("main")
         self.repo.commit("Initial commit.", allow_empty=True)
-        self.repo.tag("v1.0.0")
+        self.repo.lightweight_tag("v1.0.0")
         self.repo.switch_to_new_branch("release-2.0")
         self.repo.commit("Second commit.", allow_empty=True)
-        self.repo.tag("v2.0.0")
+        self.repo.lightweight_tag("v2.0.0")
         self.assertEqual(
             git_utils.get_most_recent_tag(self.repo.path, "main"), "v1.0.0"
         )
@@ -116,7 +116,7 @@ class GetMostRecentTagTest(GitRepoTestCase):
         self.repo.commit("Initial commit.", allow_empty=True)
         self.repo.switch_to_new_branch("release-2.0")
         self.repo.commit("Second commit.", allow_empty=True)
-        self.repo.tag("v2.0.0")
+        self.repo.lightweight_tag("v2.0.0")
         self.assertIsNone(git_utils.get_most_recent_tag(self.repo.path, "main"))
 
 
@@ -153,12 +153,21 @@ class DiffTest(GitRepoTestCase):
 class GetShaForRevisionTest(GitRepoTestCase):
     """Tests for git_utils.get_sha_for_revision."""
 
-    def test_get_sha_for_existing_tag(self) -> None:
-        """Tests if it can find the SHA of an existing tag"""
+    def test_get_sha_for_existing_lightweight_tag(self) -> None:
+        """Tests if it can find the SHA of an existing lightweight tag"""
         self.repo.init("main")
         self.repo.commit("Initial commit.", allow_empty=True)
         first_commit = self.repo.head()
-        self.repo.tag("tag1")
+        self.repo.lightweight_tag("tag1")
+        out = git_utils.get_sha_for_revision(self.repo.path, "tag1")
+        assert first_commit == out
+
+    def test_get_sha_for_existing_annotated_tag(self) -> None:
+        """Tests if it can find the SHA of an existing annotated tag"""
+        self.repo.init("main")
+        self.repo.commit("Initial commit.", allow_empty=True)
+        first_commit = self.repo.head()
+        self.repo.annotated_tag("tag1", "Creating an annotated tag")
         out = git_utils.get_sha_for_revision(self.repo.path, "tag1")
         assert first_commit == out
 
@@ -185,7 +194,7 @@ class GetTagForRevisionTest(GitRepoTestCase):
         """Tests if it finds the tag of a SHA."""
         self.repo.init("main")
         self.repo.commit("Initial commit.", allow_empty=True)
-        self.repo.tag("tag1")
+        self.repo.lightweight_tag("tag1")
         first_commit = self.repo.head()
         out = git_utils.get_tag_for_revision(self.repo.path, first_commit)
         assert out == "tag1"
