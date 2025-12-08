@@ -83,6 +83,7 @@ message Identifier {
   optional string omission_reason = 2;
   optional string value = 3;
   optional string version = 4;
+  optional string closest_version = 5;
   optional bool primary_source = 6;
 }
 
