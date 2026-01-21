@@ -140,6 +140,17 @@ class GitUpdater(base_updater.Updater):
         print(f"Running 'git merge {self._new_identifier.version}'...")
         git_utils.merge(self._proj_path, self._new_identifier.version)
 
+    def update_metadata(self, metadata: metadata_pb2.MetaData) -> metadata_pb2:
+        updated_metadata = super().update_metadata(metadata)
+        for identifier in updated_metadata.third_party.identifier:
+            if identifier.type != fileutils.IdentifierType.GIT.value:
+                continue
+            if git_utils.is_commit(identifier.version):
+                continue
+            identifier.closest_version = identifier.version
+            identifier.version = git_utils.get_sha_for_revision(self._proj_path, identifier.version)
+        return updated_metadata
+
     def is_metadata_accurate(self, common_ancestor: str) -> bool:
         sha_of_claimed_version = git_utils.get_sha_for_revision(self._proj_path, self._old_identifier.version)
         if sha_of_claimed_version == common_ancestor:

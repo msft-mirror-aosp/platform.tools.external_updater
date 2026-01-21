@@ -206,6 +206,28 @@ def convert_url_to_identifier(metadata: metadata_pb2.MetaData) -> metadata_pb2.M
     metadata.third_party.ClearField("url")
     return metadata
 
+def move_git_closest_version(metadata: metadata_pb2.MetaData) -> metadata_pb2.MetaData:
+    """Overwrites version with closest_version for git identifiers.
+
+    If a git identifier contains both version and closest_version, then the
+    version is a commit SHA derived from the tagged closest_version.
+    Closest_version has been used to reason about the update in the previous
+    update iteration.
+
+    External updater has extensive functionality built around identifier.version
+    being either a git commit SHA, or a tagged version. To preserve this logic,
+    while also allowing the METADATA files to store both, this function
+    consolidates the fields during the file read. At the end, during the new
+    METADATA file write, they will be written to separate fields again.
+    """
+    for identifier in metadata.third_party.identifier:
+        if identifier.type != IdentifierType.GIT.value:
+            continue
+        if not identifier.HasField("closest_version"):
+            continue
+        identifier.version = identifier.closest_version
+        identifier.ClearField("closest_version")
+    return metadata
 
 def write_metadata(proj_path: Path, metadata: metadata_pb2.MetaData, keep_date: bool) -> None:
     """Writes updated METADATA file for a project.
