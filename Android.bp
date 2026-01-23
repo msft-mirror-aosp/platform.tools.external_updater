@@ -152,6 +152,20 @@ python_test_host {
     },
 }
 
+python_test_host {
+    name: "external_updater_git_updater_test",
+    defaults: ["external_updater_test_defaults"],
+    main: "test_git_updater.py",
+    srcs: ["test_git_updater.py"],
+    libs: [
+        "external_updater_lib",
+        "external_updater_test_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
+
 // Same as above. Needs protobuf.
 python_test_host {
     name: "external_updater_updater_utils_test",

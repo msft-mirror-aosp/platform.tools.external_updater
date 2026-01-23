@@ -16,11 +16,12 @@
 """Unit tests for fileutils."""
 
 import contextlib
-import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import unittest
 
 import fileutils
+import metadata_pb2
 
 UNFORMATTED_BP_FILE = """\
 cc_library_shared {
@@ -162,6 +163,44 @@ class BpfmtTest(unittest.TestCase):
         content = (self.temp_dir / "Android.bp").read_text()
         if results:
             self.assertEqual(content, FORMATTED_BP_FILE)
+
+
+class MoveGitClosestVersionTest(unittest.TestCase):
+
+    def test_non_git_identifier_unchanged(self):
+        identifier = metadata_pb2.Identifier(type="Archive", version="1.0.0")
+        metadata = metadata_pb2.MetaData(
+            third_party=metadata_pb2.ThirdPartyMetaData(identifier=[identifier])
+        )
+
+        fileutils.move_git_closest_version(metadata)
+
+        self.assertEqual(metadata.third_party.identifier[0], identifier)
+
+    def test_git_identifier_no_closest_version_unchanged(self):
+        identifier = metadata_pb2.Identifier(type="Git", version="sha")
+        metadata = metadata_pb2.MetaData(
+            third_party=metadata_pb2.ThirdPartyMetaData(identifier=[identifier])
+        )
+
+        fileutils.move_git_closest_version(metadata)
+
+        self.assertEqual(metadata.third_party.identifier[0], identifier)
+
+    def test_git_identifier_with_closest_version_is_moved(self):
+        identifier = metadata_pb2.Identifier(
+            type="Git", version="sha", closest_version="1.2.3"
+        )
+        metadata = metadata_pb2.MetaData(
+            third_party=metadata_pb2.ThirdPartyMetaData(identifier=[identifier])
+        )
+
+        fileutils.move_git_closest_version(metadata)
+
+        self.assertEqual(metadata.third_party.identifier[0].version, "1.2.3")
+        self.assertFalse(
+            metadata.third_party.identifier[0].HasField("closest_version")
+        )
 
 
 if __name__ == "__main__":
